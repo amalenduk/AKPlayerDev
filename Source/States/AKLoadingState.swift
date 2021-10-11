@@ -31,16 +31,16 @@ final class AKLoadingState: AKPlayerStateControllable {
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayer.State = .loading
+    let state: AKPlayerState = .loading
     
     private let media: AKPlayable
-
+    
     let autoPlay: Bool
-
+    
     private let position: CMTime?
     
-    private var playerItemInitializationService: AKPlayerItemInitializationService!
-
+    private var playerItemInitializationController: AKPlayerItemInitializationController!
+    
     private var determiningPlayerItemStatusService: AKDeterminingPlayerItemStatusService!
     
     // MARK: - Init
@@ -55,15 +55,15 @@ final class AKLoadingState: AKPlayerStateControllable {
         self.media = media
         self.autoPlay = autoPlay
         self.position = position
-        setMetadata()
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleState)
     }
-
-    func stateChanged() {
+    
+    func stateDidChange() {
+        setMetadata()
         resetPlayer()
         manager.delegate?.playerManager(didCurrentMediaChange: media)
         manager.plugins?.forEach({$0.playerPlugin(willStartLoading: media)})
@@ -125,11 +125,28 @@ final class AKLoadingState: AKPlayerStateControllable {
         manager.change(controller)
     }
     
+    func togglePlayPause() {
+        pause()
+    }
+    
     func stop() {
         cancelLoading()
         let controller = AKStoppedState(manager: manager,
                                         playerItemAssetKeysObservingService: nil)
         manager.change(controller)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.waitTillMediaLoaded.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .waitTillMediaLoaded)
+        completionHandler(false)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.waitTillMediaLoaded.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .waitTillMediaLoaded)
     }
     
     func seek(to time: CMTime,
@@ -155,6 +172,18 @@ final class AKLoadingState: AKPlayerStateControllable {
     }
     
     func seek(to time: Double) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.waitTillMediaLoaded.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .waitTillMediaLoaded)
+    }
+    
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.waitTillMediaLoaded.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .waitTillMediaLoaded)
+    }
+    
+    func seek(to date: Date) {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.waitTillMediaLoaded.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .waitTillMediaLoaded)
@@ -197,35 +226,30 @@ final class AKLoadingState: AKPlayerStateControllable {
     // MARK: - Additional Helper Functions
     
     private func createPlayerItem(with media: AKPlayable) {
-        if let item = media as? AKMediaItemPlayable {
-            manager.player.replaceCurrentItem(with: item.item)
-            startObservingStatus(for: item.item)
-        }else {
-            playerItemInitializationService = AKPlayerItemInitializationService(with: media,
-                                                                                configuration: manager.configuration)
-            playerItemInitializationService.onCompletedCreatingPlayerItem = { [unowned self] result in
-                switch result {
-                case .success(let item):
-                    manager.player.replaceCurrentItem(with: item)
-                    startObservingStatus(for: item)
-                case .failure(let error):
-                    assetFailedToPrepareForPlayback(with: error)
-                }
+        playerItemInitializationController = AKPlayerItemInitializationController(with: media,
+                                                                            configuration: manager.configuration)
+        playerItemInitializationController.onCompletedCreatingPlayerItem = { [unowned self] result in
+            switch result {
+            case .success(let item):
+                manager.player.replaceCurrentItem(with: item)
+                startObservingStatus(for: item)
+            case .failure(let error):
+                assetFailedToPrepareForPlayback(with: error)
             }
-
-            playerItemInitializationService.startInitialization()
         }
+        
+        playerItemInitializationController.startInitialization()
     }
     
     private func startObservingStatus(for item: AVPlayerItem) {
         determiningPlayerItemStatusService = AKDeterminingPlayerItemStatusService(playerItem: item) { [unowned self] (status) in
             switch status {
             case .unknown:
-                assertionFailure()
+                AKPlayerLogger.shared.log(message: "AVPlayerItem.status: 'unknown'", domain: .state)
             case .readyToPlay:
                 becameReadyToPlay()
             case .failed:
-                assetFailedToPrepareForPlayback(with: .loadingFailed)
+                assetFailedToPrepareForPlayback(with: .loadingFailed(error: item.error!))
             @unknown default:
                 assertionFailure()
             }
@@ -240,8 +264,8 @@ final class AKLoadingState: AKPlayerStateControllable {
     }
     
     private func cancelLoading() {
-        if let playerItemInitializationService = playerItemInitializationService {
-            playerItemInitializationService.cancelLoading(clearCallBacks: true)
+        if let playerItemInitializationController = playerItemInitializationController {
+            playerItemInitializationController.cancelLoading(clearCallBacks: true)
         }
         if let determiningPlayerItemStatusService = determiningPlayerItemStatusService {
             determiningPlayerItemStatusService.stop()
@@ -267,6 +291,7 @@ final class AKLoadingState: AKPlayerStateControllable {
     }
     
     private func setMetadata() {
+        manager.playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
         manager.setNowPlayingMetadata()
     }
     

@@ -1,5 +1,5 @@
 //
-//  AKMedia.swift
+//  AKPlayable.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -24,37 +24,26 @@
 //
 
 import Foundation
-import  AVKit
 
-open class AKMedia: AKPlayable {
+public protocol AKPlayable: AnyObject {
+    var url: URL { get }
+    var options: [String: Any]? { get }
+    var type: AKMediaType { get }
+    var staticMetadata: AKPlayableStaticMetadata? { get }
     
-    // MARK: - Properties
-    
-    public let url: URL
-    
-    public let type: AKMediaType
-    
-    public let options: [String : Any]?
-    
-    public var staticMetadata: AKPlayableStaticMetadata? {
-        return _staticMetadata
+    func isLive() -> Bool
+    func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata)
+}
+
+public extension AKPlayable {
+    var description: String {
+        return "url: \(url.description) | type: \(type.description)"
     }
+}
 
-    private var _staticMetadata: AKPlayableStaticMetadata?
-    
-    // MARK: - Init
-    
-    public init(url: URL,
-                type: AKMediaType,
-                options: [String : Any]? = nil,
-                staticMetadata: AKPlayableStaticMetadata? = nil) {
-        self.url = url
-        self.type = type
-        self.options = options
-        self._staticMetadata = staticMetadata
-    }
-
-    open func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata) {
-        self._staticMetadata = staticMetadata
+public extension AKPlayable {
+    func isLive() -> Bool {
+        guard case let AKMediaType.stream(isLive) = type, isLive else { return false }
+        return true
     }
 }

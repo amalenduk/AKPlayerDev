@@ -1,0 +1,6 @@
+1. Remove the print state ment from the buffering state
+2. Fix issue with skking calback when callback is not called then changed the state
+3. Fix the _seekinTimg variable
+4. Add underlying error
+5. Add akmedia delegate
+6. To minimize stalls with buffer full becuase of playing state while not playing

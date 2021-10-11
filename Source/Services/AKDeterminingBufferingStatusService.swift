@@ -63,8 +63,6 @@ final class AKDeterminingBufferingStatusService {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.playerItem = playerItem
         self.configuration = configuration
-        // startObservation(playerItem: playerItem)
-        startObservationWithTimeInterval(playerItem: playerItem)
     }
     
     deinit {
@@ -72,34 +70,38 @@ final class AKDeterminingBufferingStatusService {
         playerItemIsPlaybackLikelyToKeepUpObserver?.invalidate()
         playerItemIsPlaybackBufferEmptyObserver?.invalidate()
         playerItemIsPlaybackBufferFullObserver?.invalidate()
-
+        
         timer?.invalidate()
         timer = nil
     }
     
     // MARK: - Additional Helper Functions
     
-    private func startObservation(playerItem: AVPlayerItem) {
-        playerItemIsPlaybackLikelyToKeepUpObserver = playerItem.observe(\AVPlayerItem.isPlaybackLikelyToKeepUp, options: [.initial, .new]) { [unowned self] (item, _) in
-            DispatchQueue.main.async {
-                onChangePlaybackLikelyToKeepUpStatus?(item.isPlaybackLikelyToKeepUp)
-            }
-        }
+    func startObservationIsPlaybackBufferEmpty() {
+        /*
+         playerItemIsPlaybackLikelyToKeepUpObserver = playerItem.observe(\AVPlayerItem.isPlaybackLikelyToKeepUp, options: [.initial, .new]) { [unowned self] (item, _) in
+         DispatchQueue.main.async {
+         onChangePlaybackLikelyToKeepUpStatus?(item.isPlaybackLikelyToKeepUp)
+         }
+         }
+         
+         playerItemIsPlaybackBufferFullObserver = playerItem.observe(\AVPlayerItem.isPlaybackBufferFull, options: [.initial, .new]) { [unowned self] (item, _) in
+         DispatchQueue.main.async {
+         onChangePlaybackBufferFullStatus?(item.isPlaybackBufferFull)
+         }
+         }
+         
+         */
         
-        playerItemIsPlaybackBufferFullObserver = playerItem.observe(\AVPlayerItem.isPlaybackBufferFull, options: [.initial, .new]) { [unowned self] (item, _) in
+        playerItemIsPlaybackBufferEmptyObserver = playerItem.observe(\AVPlayerItem.isPlaybackBufferEmpty, options: [.initial, .new]) { [weak self] (item, _) in
+            guard let strongSelf = self else { return }
             DispatchQueue.main.async {
-                onChangePlaybackBufferFullStatus?(item.isPlaybackBufferFull)
-            }
-        }
-        
-        playerItemIsPlaybackBufferEmptyObserver = playerItem.observe(\AVPlayerItem.isPlaybackBufferEmpty, options: [.initial, .new]) { [unowned self] (item, _) in
-            DispatchQueue.main.async {
-                onChangePlaybackBufferEmptyStatus?(item.isPlaybackBufferEmpty)
+                strongSelf.onChangePlaybackBufferEmptyStatus?(item.isPlaybackBufferEmpty)
             }
         }
     }
     
-    private func startObservationWithTimeInterval(playerItem: AVPlayerItem) {
+    func startObservationWithTimeInterval() {
         
         var remainingTime: TimeInterval = configuration.bufferObservingTimeout
         
@@ -117,7 +119,7 @@ final class AKDeterminingBufferingStatusService {
             }
         })
     }
-
+    
     func stop(clearCallBacks flag: Bool) {
         if flag {
             onChangePlaybackLikelyToKeepUpStatus = nil
@@ -125,6 +127,9 @@ final class AKDeterminingBufferingStatusService {
             onChangePlaybackBufferEmptyStatus = nil
             onChangePlaybackBufferStatus = nil
         }
+        playerItemIsPlaybackLikelyToKeepUpObserver?.invalidate()
+        playerItemIsPlaybackBufferFullObserver?.invalidate()
+        playerItemIsPlaybackBufferEmptyObserver?.invalidate()
         timer?.invalidate()
         timer = nil
     }

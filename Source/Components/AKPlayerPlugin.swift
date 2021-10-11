@@ -39,7 +39,6 @@ public protocol AKPlayerPlugin: AnyObject {
     func playerPlugin(didStopped media: AKPlayable, at position: CMTime)
     func playerPlugin(didStartWaitingForNetwork media: AKPlayable)
     func playerPlugin(didVolumeChange volume: Float, isMuted: Bool)
-    func playerPlugin(didBrightnessChange brightness: CGFloat)
     func playerPlugin(didFailed media: AKPlayable, with error: AKPlayerError)
     func playerPlugin(didPlayToEnd media: AKPlayable, at endTime: CMTime)
 }
@@ -57,7 +56,6 @@ public extension AKPlayerPlugin {
     func playerPlugin(didStopped media: AKPlayable, at position: CMTime) { }
     func playerPlugin(didStartWaitingForNetwork media: AKPlayable) { }
     func playerPlugin(didVolumeChange volume: Float, isMuted: Bool) { }
-    func playerPlugin(didBrightnessChange brightness: CGFloat) { }
     func playerPlugin(didFailed media: AKPlayable, with error: AKPlayerError) { }
     func playerPlugin(didPlayToEnd media: AKPlayable, at endTime: CMTime) { }
 }

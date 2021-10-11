@@ -26,20 +26,35 @@
 import AVFoundation
 
 public protocol AKPlayerConfiguration {
-    var itemLoadedAssetKeys: [String] { get }
-    var periodicPlayingTimeInSecond: Double { get }
-    var boundaryTimeObserverMultiplier: Double { get }
-    var preferredTimescale: CMTimeScale { get }
-    var bufferObservingTimeout: TimeInterval { get }
-    var bufferObservingTimeInterval: TimeInterval { get }
+    var itemLoadedAssetKeys: [String] { get set }
+    var periodicPlayingTimeInSecond: Double { get set }
+    var boundaryTimeObserverMultiplier: Double { get set }
+    var preferredTimescale: CMTimeScale { get set }
+    var bufferObservingTimeout: TimeInterval { get set }
+    var bufferObservingTimeInterval: TimeInterval { get set }
     
-    var audioSessionCategory: AVAudioSession.Category { get }
-    var audioSessionMode: AVAudioSession.Mode { get }
-    var audioSessionCategoryOptions: AVAudioSession.CategoryOptions { get }
-
-    var pauseInBackground: Bool { get }
-    var isNowPlayingEnabled: Bool { get }
-    var idleTimerDisabledForStates: [AKPlayer.State] { get }
+    var audioSessionCategory: AVAudioSession.Category { get set }
+    var audioSessionMode: AVAudioSession.Mode { get set }
+    var audioSessionCategoryOptions: AVAudioSession.CategoryOptions { get set }
+    
+    /// Pauses playback automatically when resigning active.
+    var playbackPausesWhenResigningActive: Bool { get set }
+    
+    /// Pauses playback automatically when backgrounded.
+    var playbackPausesWhenBackgrounded: Bool { get set }
+    
+    /// Resumes playback when became active.
+    var playbackResumesWhenBecameActive: Bool { get set }
+    
+    /// Resumes playback when entering foreground.
+    var playbackResumesWhenEnteringForeground: Bool { get set }
+    
+    /// Playback freezes on last frame frame when true and does not reset seek position timestamp..
+    var playbackFreezesAtEnd: Bool { get set }
+    
+    
+    var isNowPlayingEnabled: Bool { get set }
+    var idleTimerDisabledForStates: [AKPlayerState] { get set }
 }
 
 public enum AKTimeEventFrequency {
@@ -47,7 +62,7 @@ public enum AKTimeEventFrequency {
     case everyHalfSecond
     case everyQuarterSecond
     case custom(time: CMTime)
-
+    
     func getTime() -> CMTime {
         switch self {
         case .everySecond: return CMTime(value: 1, timescale: 1)

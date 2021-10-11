@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0416BE5C263DCEA900D2ECA6 /* YoutubeVideoExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0416BE5B263DCEA900D2ECA6 /* YoutubeVideoExtractor.swift */; };
+		0430C1232710ABB500D40AAF /* AudioSearchTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */; };
 		5A2E83E4D8DA25F73A9FD72E /* Pods_AKPlayer_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78F4A1351222960D5319D480 /* Pods_AKPlayer_Tests.framework */; };
 		607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 607FACD51AFB9204008FA782 /* AppDelegate.swift */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
@@ -40,6 +42,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		0416BE5B263DCEA900D2ECA6 /* YoutubeVideoExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YoutubeVideoExtractor.swift; sourceTree = "<group>"; };
+		0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSearchTableViewController.swift; sourceTree = "<group>"; };
 		0FB847605FBD3AFE367613FA /* Pods-AKPlayer_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Tests.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Tests/Pods-AKPlayer_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		3235A9DAAE16B3C5C2906893 /* Pods_AKPlayer_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AKPlayer_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		409D138A202EADAE1074C338 /* Pods-AKPlayer_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Example.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Example/Pods-AKPlayer_Example.debug.xcconfig"; sourceTree = "<group>"; };
@@ -93,6 +97,13 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		0430C1212710AB8B00D40AAF /* AudioSearchViewController */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = AudioSearchViewController;
+			sourceTree = "<group>";
+		};
 		5C285B9BC0DE7AB66E7D4A0F /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -188,6 +199,7 @@
 		F40ED5B025E2BBDC003FBD82 /* Helper */ = {
 			isa = PBXGroup;
 			children = (
+				0416BE5B263DCEA900D2ECA6 /* YoutubeVideoExtractor.swift */,
 			);
 			name = Helper;
 			sourceTree = "<group>";
@@ -269,6 +281,7 @@
 				F492604525489459009844FA /* SimpleVideoViewController.swift */,
 				F49260482548947C009844FA /* SimpleVideo.storyboard */,
 				F42C69DC25E68E31000A8646 /* AssetInfoViewController.swift */,
+				0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */,
 			);
 			name = SimpleVideoViewController;
 			sourceTree = "<group>";
@@ -284,6 +297,7 @@
 		F4D6B12B25565A280011F71C /* Controller */ = {
 			isa = PBXGroup;
 			children = (
+				0430C1212710AB8B00D40AAF /* AudioSearchViewController */,
 				F492604425489451009844FA /* SimpleVideoViewController */,
 				F4926041254893F6009844FA /* TableViewController */,
 				F48CF84825493E4100F64886 /* PlayerWithUiControlViewController */,
@@ -470,6 +484,7 @@
 			files = (
 				F44E648E25519CA900B7BB4D /* AKPlaybackButton.swift in Sources */,
 				F4926040254893E3009844FA /* DemoScreen.swift in Sources */,
+				0416BE5C263DCEA900D2ECA6 /* YoutubeVideoExtractor.swift in Sources */,
 				F492604325489400009844FA /* TableViewController.swift in Sources */,
 				F44E648C25512F6300B7BB4D /* ProgressAndBufferedSlider.swift in Sources */,
 				F44E64902551D0FC00B7BB4D /* AKVideoPlayerControlView.swift in Sources */,
@@ -477,6 +492,7 @@
 				F48CF84F25493F9300F64886 /* AKVideoPlayer.swift in Sources */,
 				F48CF84C25493E9600F64886 /* PlayerWithUIControlViewController.swift in Sources */,
 				F492604625489459009844FA /* SimpleVideoViewController.swift in Sources */,
+				0430C1232710ABB500D40AAF /* AudioSearchTableViewController.swift in Sources */,
 				607FACD61AFB9204008FA782 /* AppDelegate.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

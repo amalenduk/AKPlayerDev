@@ -29,12 +29,13 @@ import MediaPlayer
 public protocol AKPlayerNowPlayingMetadataServiceable {
     func setNowPlayingMetadata(_ metadata: AKPlayableStaticMetadata)
     func setNowPlayingPlaybackInfo(_ metadata: AKPlayableDynamicMetadata)
+    func clearNowPlayingPlaybackInfo()
 }
 
 open class AKPlayerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable {
     
     // MARK: - Properties
-    
+
     // MARK: - Init
     
     public init() {
@@ -57,11 +58,18 @@ open class AKPlayerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServicea
         nowPlayingInfo[MPNowPlayingInfoPropertyIsLiveStream] = metadata.isLiveStream
         nowPlayingInfo[MPMediaItemPropertyTitle] = metadata.title
         nowPlayingInfo[MPMediaItemPropertyArtist] = metadata.artist
-        nowPlayingInfo[MPMediaItemPropertyArtwork] = metadata.artwork
         nowPlayingInfo[MPMediaItemPropertyAlbumArtist] = metadata.albumArtist
         nowPlayingInfo[MPMediaItemPropertyAlbumTitle] = metadata.albumTitle
+
+        if let itemArtwork = metadata.itemArtwork {
+            nowPlayingInfo[MPMediaItemPropertyArtwork] = itemArtwork
+        }else {
+            nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyArtwork)
+        }
         
-        nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
+        DispatchQueue.main.async {
+            nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
+        }
     }
     
     /* Set playback info. Implementations of `handleNowPlayablePlaybackChange(playing:rate:position:duration:)`
@@ -70,15 +78,28 @@ open class AKPlayerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServicea
         
         let nowPlayingInfoCenter = MPNowPlayingInfoCenter.default()
         var nowPlayingInfo = nowPlayingInfoCenter.nowPlayingInfo ?? [String: Any]()
-        
-        nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = metadata.duration
+
         nowPlayingInfo[MPNowPlayingInfoPropertyElapsedPlaybackTime] = metadata.position
         nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = metadata.rate
         nowPlayingInfo[MPNowPlayingInfoPropertyDefaultPlaybackRate] = AKPlaybackRate.normal.rate
         nowPlayingInfo[MPNowPlayingInfoPropertyCurrentLanguageOptions] = metadata.currentLanguageOptions
         nowPlayingInfo[MPNowPlayingInfoPropertyAvailableLanguageOptions] = metadata.availableLanguageOptionGroups
+
+        if let duration = metadata.duration, duration.isNormal {
+            nowPlayingInfo[MPMediaItemPropertyPlaybackDuration] = duration
+        }else {
+            nowPlayingInfo.removeValue(forKey: MPMediaItemPropertyPlaybackDuration)
+        }
         
-        nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
+        DispatchQueue.main.async {
+            nowPlayingInfoCenter.nowPlayingInfo = nowPlayingInfo
+        }
+    }
+
+    public func clearNowPlayingPlaybackInfo() {
+        DispatchQueue.main.async {
+            MPNowPlayingInfoCenter.default().nowPlayingInfo = [:]
+        }
     }
 }
 

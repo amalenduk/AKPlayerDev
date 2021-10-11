@@ -1,5 +1,5 @@
 //
-//  AKPlayerItemInitializationService.swift
+//  AKPlayerItemInitializationController.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPlayerItemInitializationService {
+final class AKPlayerItemInitializationController {
     
     // MARK: - Properties
     
@@ -37,14 +37,17 @@ final class AKPlayerItemInitializationService {
     
     // MARK: - Init
     
-    init(with media: AKPlayable, configuration: AKPlayerConfiguration) {
-        AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
+    init(with media: AKPlayable,
+         configuration: AKPlayerConfiguration) {
+        AKPlayerLogger.shared.log(message: "Init",
+                                  domain: .lifecycleService)
         self.media = media
         self.configuration = configuration
     }
     
     deinit {
-        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+        AKPlayerLogger.shared.log(message: "DeInit",
+                                  domain: .lifecycleService)
     }
     
     func startInitialization() {
@@ -63,7 +66,8 @@ final class AKPlayerItemInitializationService {
          Create an asset for inspection of a resource referenced by a given URL.
          Load the values for the asset key "playable".
          */
-        let asset: AVURLAsset = AVURLAsset(url: media.url, options: media.options)
+        let asset: AVURLAsset = AVURLAsset(url: media.url,
+                                           options: media.options)
         self.asset = asset
         set(asset: asset)
     }
@@ -74,7 +78,8 @@ final class AKPlayerItemInitializationService {
             guard let self = self else { return }
             /* IMPORTANT: Must dispatch to main queue in order to operate on the AVPlayer and AVPlayerItem. */
             DispatchQueue.main.async {
-                self.loaded(asset: asset, with: self.configuration.itemLoadedAssetKeys)
+                self.loaded(asset: asset,
+                            with: self.configuration.itemLoadedAssetKeys)
             }
         }
     }
@@ -84,18 +89,21 @@ final class AKPlayerItemInitializationService {
      Checks whether loading was successfull and whether the asset is playable.
      If so, sets up an AVPlayerItem and an AVPlayer to play the asset.
      */
-    private func loaded(asset: AVURLAsset, with keys: [String]) {
+    private func loaded(asset: AVURLAsset,
+                        with keys: [String]) {
         /* Make sure that the value of each key has loaded successfully. */
         for key in keys {
             var error: NSError? = nil
-            let status: AVKeyValueStatus = asset.statusOfValue(forKey: key, error: &error)
+            let status: AVKeyValueStatus = asset.statusOfValue(forKey: key,
+                                                               error: &error)
             /* If you are also implementing -[AVAsset cancelLoading], add your code here to bail out properly in the case of cancellation. */
             switch status {
             case .loaded:
                 // Sucessfully loaded. Continue processing.
                 continue
             case .failed:
-                return assetFailedToPrepareForPlayback(with: .failedLoadKey(key: key, error: error!))
+                return assetFailedToPrepareForPlayback(with: .failedLoadKey(forKey: key,
+                                                                            error: error!))
             case .unknown:
                 assertionFailure()
             case .loading:
@@ -108,7 +116,8 @@ final class AKPlayerItemInitializationService {
         }
         
         /* Use the AVAsset playable property to detect whether the asset can be played. */
-        guard asset.isPlayable || !asset.hasProtectedContent else {
+        guard asset.isPlayable
+                || !asset.hasProtectedContent else {
             return assetFailedToPrepareForPlayback(with: .contentsUnabailable)
         }
         
@@ -119,6 +128,7 @@ final class AKPlayerItemInitializationService {
     private func createPlayerItem(with asset: AVURLAsset) {        
         /* Create a new instance of AVPlayerItem from the now successfully loaded AVAsset. */
         let assetKeys = configuration.itemLoadedAssetKeys
+        print("asset.availableMediaCharacteristicsWithMediaSelectionOptions", asset.availableMediaCharacteristicsWithMediaSelectionOptions.count)
         
         // Create a new AVPlayerItem with the asset and an
         // array of asset keys to be automatically loaded
@@ -139,7 +149,8 @@ final class AKPlayerItemInitializationService {
      **  3) the item did not become ready to play.
      ** ----------------------------------------------------------- */
     private func assetFailedToPrepareForPlayback(with error: AKPlayerError) {
-        AKPlayerLogger.shared.log(message: error.localizedDescription, domain: .error)
+        AKPlayerLogger.shared.log(message: error.localizedDescription,
+                                  domain: .error)
         onCompletedCreatingPlayerItem?(.failure(error))
     }
 }

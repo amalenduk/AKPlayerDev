@@ -31,7 +31,7 @@ final class AKInitState: AKPlayerStateControllable {
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayer.State = .initialization
+    let state: AKPlayerState = .initialization
     
     // MARK: - Init
     
@@ -45,8 +45,8 @@ final class AKInitState: AKPlayerStateControllable {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleState)
     }
-
-    func stateChanged() {
+    
+    func stateDidChange() {
         manager.plugins?.forEach({$0.playerPlugin(didInit: manager.player)})
     }
     
@@ -99,7 +99,26 @@ final class AKInitState: AKPlayerStateControllable {
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
     }
     
+    func togglePlayPause() {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
     func stop() {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
@@ -128,6 +147,18 @@ final class AKInitState: AKPlayerStateControllable {
     }
     
     func seek(to time: Double) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to date: Date) {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)

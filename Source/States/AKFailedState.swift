@@ -31,7 +31,7 @@ final class AKFailedState: AKPlayerStateControllable {
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayer.State = .failed
+    let state: AKPlayerState = .failed
     
     public var error: AKPlayerError
     
@@ -43,19 +43,19 @@ final class AKFailedState: AKPlayerStateControllable {
                                   domain: .lifecycleState)
         self.manager = manager
         self.error = error
-        setMetadata()
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleState)
     }
-
-    func stateChanged() {
+    
+    func stateDidChange() {
         manager.delegate?.playerManager(didFailedWith: error)
         guard let media = manager.currentMedia else { assertionFailure("Media should available"); return }
         manager.plugins?.forEach({$0.playerPlugin(didFailed: media,
                                                   with: error)})
+        setPlaybackInfo()
     }
     
     // MARK: - Commands
@@ -96,9 +96,9 @@ final class AKFailedState: AKPlayerStateControllable {
     }
     
     func play() {
-        guard let media = manager.currentMedia
-        else { assertionFailure("Should not possible to be in failed state without load any media"); return }
-        if manager.currentTime.isValid && manager.currentTime.isNumeric {
+        guard let media = manager.currentMedia else {
+            return assertionFailure("Should not possible to be in failed state without load any media") }
+        if manager.currentTime.isValid {
             load(media: media,
                  autoPlay: true,
                  at: manager.currentTime)
@@ -114,10 +114,22 @@ final class AKFailedState: AKPlayerStateControllable {
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
     }
     
+    func togglePlayPause() {
+        play()
+    }
+    
     func stop() {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
     }
     
     func seek(to time: CMTime,
@@ -143,6 +155,18 @@ final class AKFailedState: AKPlayerStateControllable {
     }
     
     func seek(to time: Double) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
+                                  domain: .unavailableCommand)
+        manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
+    }
+    
+    func seek(to date: Date) {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.loadMediaFirst.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .loadMediaFirst)
@@ -184,7 +208,7 @@ final class AKFailedState: AKPlayerStateControllable {
     
     // MARK: - Additional Helper Functions
     
-    private func setMetadata() {
+    private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
     }
 }

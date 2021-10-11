@@ -34,12 +34,17 @@ public protocol AKPlayerCommand {
     // Controlling Playback
     func play()
     func pause()
+    func togglePlayPause()
     func stop()
     // Seeking Through Media
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void)
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime)
     func seek(to time: CMTime, completionHandler: @escaping (Bool) -> Void)
     func seek(to time: CMTime)
     func seek(to time: Double, completionHandler: @escaping (Bool) -> Void)
     func seek(to time: Double)
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void)
+    func seek(to date: Date)
     func seek(offset: Double)
     func seek(offset: Double, completionHandler: @escaping (Bool) -> Void)
     func seek(toPercentage value: Double, completionHandler: @escaping (Bool) -> Void)

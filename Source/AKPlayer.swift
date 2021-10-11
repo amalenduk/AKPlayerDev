@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-open class AKPlayer: NSObject, AKPlayerProtocol {
+open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommand {
     
     // MARK: - Properties
     
@@ -41,17 +41,17 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
         return manager.currentTime
     }
     
-    open var itemDuration: CMTime? {
-        return manager.itemDuration
+    open var duration: CMTime? {
+        return manager.duration
     }
     
-    open var state: AKPlayer.State {
+    open var state: AKPlayerState {
         return manager.state
     }
     
-    open var playbackRate: AKPlaybackRate {
-        get { return manager.playbackRate }
-        set { manager.playbackRate = newValue }
+    open var rate: AKPlaybackRate {
+        get { return manager.rate }
+        set { manager.rate = newValue }
     }
     
     open var volume: Float {
@@ -68,13 +68,17 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
         get { return manager.isPlaying }
     }
     
-    open var brightness: CGFloat {
-        get { return manager.brightness }
-        set { manager.brightness = newValue }
+    open var isSeeking: Bool {
+        get { return manager.isSeeking }
     }
     
     open var error: Error? {
         return manager.error
+    }
+    
+    open var remoteCommands: [AKRemoteCommand] {
+        get { return manager.remoteCommands }
+        set { manager.remoteCommands = newValue }
     }
     
     public let player: AVPlayer
@@ -82,24 +86,31 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
     private var manager: AKPlayerManager
     
     open weak var delegate: AKPlayerDelegate?
+    open weak var playbackDelegate: AKPlaybackDelegate?
     
     // MARK: - Init
     
     public init(player: AVPlayer = AVPlayer(),
                 plugins: [AKPlayerPlugin] = [],
                 configuration: AKPlayerConfiguration = AKPlayerDefaultConfiguration(),
-                audioSessionService: AKAudioSessionServiceable = AKAudioSessionService()) {
+                audioSessionService: AKAudioSessionServiceable = AKAudioSessionService(),
+                remoteCommandController: AKRemoteCommandController = AKRemoteCommandController()) {
         self.player = player
         manager = AKPlayerManager(player: player,
                                   plugins: plugins,
                                   configuration: configuration,
-                                  audioSessionService: audioSessionService)
+                                  audioSessionService: audioSessionService,
+                                  remoteCommandController: remoteCommandController)
         super.init()
         manager.delegate = self
     }
     
     deinit {
         print("AKPlayer: Deinit called from the AKPLayer ✌🏼")
+    }
+    
+    open func prepare() {
+        manager.prepare()
     }
     
     // MARK: - Commands
@@ -138,8 +149,20 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
         manager.pause()
     }
     
+    open func togglePlayPause() {
+        manager.togglePlayPause()
+    }
+    
     open func stop() {
         manager.stop()
+    }
+    
+    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        manager.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    
+    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        manager.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
     }
     
     open func seek(to time: CMTime,
@@ -160,6 +183,14 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
     
     open func seek(to time: Double) {
         manager.seek(to: time)
+    }
+    
+    open func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        manager.seek(to: date, completionHandler: completionHandler)
+    }
+    
+    open func seek(to date: Date) {
+        manager.seek(to: date)
     }
     
     open func seek(offset: Double) {
@@ -199,98 +230,79 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
 
 extension AKPlayer: AKPlayerManagerDelegate {
     
-    func playerManager(didStateChange state: AKPlayer.State) {
+    open func playerManager(didStateChange state: AKPlayerState) {
         delegate?.akPlayer(self, didStateChange: state)
     }
     
-    func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate) {
+    open func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate) {
         delegate?.akPlayer(self, didPlaybackRateChange: playbackRate)
     }
     
-    func playerManager(didCurrentMediaChange media: AKPlayable) {
+    open func playerManager(didCurrentMediaChange media: AKPlayable) {
         delegate?.akPlayer(self, didCurrentMediaChange: media)
     }
     
-    func playerManager(didCurrentTimeChange currentTime: CMTime) {
+    open func playerManager(didCurrentTimeChange currentTime: CMTime) {
         delegate?.akPlayer(self, didCurrentTimeChange: currentTime)
     }
     
-    func playerManager(didItemDurationChange itemDuration: CMTime) {
+    open func playerManager(didItemDurationChange itemDuration: CMTime) {
         delegate?.akPlayer(self, didItemDurationChange: itemDuration)
     }
     
-    func playerManager(didItemPlayToEndTime endTime: CMTime) {
+    open func playerManager(didItemPlayToEndTime endTime: CMTime) {
         delegate?.akPlayer(self, didItemPlayToEndTime: endTime)
     }
     
-    func playerManager(didVolumeChange volume: Float, isMuted: Bool) {
+    open func playerManager(didVolumeChange volume: Float, isMuted: Bool) {
         delegate?.akPlayer(self, didVolumeChange: volume, isMuted: isMuted)
     }
     
-    func playerManager(didBrightnessChange brightness: CGFloat) {
-        delegate?.akPlayer(self, didBrightnessChange: brightness)
-    }
-    
-    func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason) {
+    open func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason) {
         delegate?.akPlayer(self, unavailableAction: reason)
     }
     
-    func playerManager(didFailedWith error: AKPlayerError) {
+    open func playerManager(didFailedWith error: AKPlayerError) {
         delegate?.akPlayer(self, didFailedWith: error)
     }
     
-    func playerManager(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanPlayReverseStatusChange: canPlayReverse, for: media)
+    open func playerManager(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanPlayReverseStatusChange: canPlayReverse, for: media)
     }
     
-    func playerManager(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanPlayFastForwardStatusChange: canPlayFastForward, for: media)
+    open func playerManager(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanPlayFastForwardStatusChange: canPlayFastForward, for: media)
     }
     
-    func playerManager(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanPlayFastReverseStatusChange: canPlayFastReverse, for: media)
+    open func playerManager(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanPlayFastReverseStatusChange: canPlayFastReverse, for: media)
     }
     
-    func playerManager(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanPlaySlowForwardStatusChange: canPlaySlowForward, for: media)
+    open func playerManager(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanPlaySlowForwardStatusChange: canPlaySlowForward, for: media)
     }
     
-    func playerManager(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanPlaySlowReverseStatusChange: canPlaySlowReverse, for: media)
+    open func playerManager(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanPlaySlowReverseStatusChange: canPlaySlowReverse, for: media)
     }
     
-    func playerManager(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanStepForwardStatusChange: canStepForward, for: media)
+    open func playerManager(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanStepForwardStatusChange: canStepForward, for: media)
     }
     
-    func playerManager(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) {
-        delegate?.akPlayer(self, didCanStepBackwardStatusChange: canStepBackward, for: media)
+    open func playerManager(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didCanStepBackwardStatusChange: canStepBackward, for: media)
     }
-
-    func playerManager(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
-        delegate?.akPlayer(self, didLoadedTimeRangesChange: loadedTimeRanges, for: media)
+    
+    open func playerManager(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didLoadedTimeRangesChange: loadedTimeRanges, for: media)
     }
-}
-
-public extension AKPlayer {
-    enum State: String, CustomStringConvertible {
-        case buffering
-        case failed
-        case initialization
-        case loaded
-        case loading
-        case paused
-        case playing
-        case stopped
-        case waitingForNetwork
-        
-        public var description: String {
-            switch self {
-            case .waitingForNetwork:
-                return "Waiting For Network"
-            default:
-                return rawValue.capitalized
-            }
-        }
+    
+    open func playerManager(didSeekableTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didSeekableTimeRangesChange: loadedTimeRanges, for: media)
+    }
+    
+    open func playerManager(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable) {
+        playbackDelegate?.akPlayback(didChangedTracks: tracks, for: media)
     }
 }

@@ -27,7 +27,7 @@ import AVFoundation
 
 public protocol AKAudioSessionServiceable {
     var audioSession: AVAudioSession { get }
-    func activate(_ active: Bool)
+    func activate(_ active: Bool) -> Error?
     func setCategory(_ category: AVAudioSession.Category, mode: AVAudioSession.Mode, options: AVAudioSession.CategoryOptions)
 }
 
@@ -43,20 +43,22 @@ open class AKAudioSessionService: AKAudioSessionServiceable {
     public init(audioSession: AVAudioSession = AVAudioSession.sharedInstance()) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.audioSession = audioSession
-        startAudioSessionInterruptionObserving()
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
     }
     
-    open func activate(_ active: Bool) {
+    open func activate(_ active: Bool) -> Error? {
+        var err: Error?
         do {
             try audioSession.setActive(active, options: [])
             AKPlayerLogger.shared.log(message: "Active audio session: \(active)", domain: .service)
         } catch {
+            err = error
             AKPlayerLogger.shared.log(message: "Active audio session: \(active) : \(error.localizedDescription)", domain: .error)
         }
+        return err
     }
     
     open func setCategory(_ category: AVAudioSession.Category, mode: AVAudioSession.Mode = .default, options: AVAudioSession.CategoryOptions = []) {

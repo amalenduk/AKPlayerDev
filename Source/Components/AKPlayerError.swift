@@ -26,10 +26,12 @@
 import Foundation
 
 public enum AKPlayerError: Error {
-    case failedLoadKey(key: String, error: Error)
+    case failedLoadKey(forKey: String, error: Error)
     case loadingCancelled
     case contentsUnabailable
-    case loadingFailed
+    case loadingFailed(error: Error)
+    case noItemToPlay
+    case itemFailedToPlayToEndTime
 }
 
 extension AKPlayerError: LocalizedError {
@@ -48,6 +50,12 @@ extension AKPlayerError: LocalizedError {
         case .loadingFailed:
             return NSLocalizedString("The media loading is failed",
                                      comment: "Item cannot be played")
+        case .noItemToPlay:
+            return NSLocalizedString("The player item got nil",
+                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
+        case .itemFailedToPlayToEndTime:
+            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
+                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
         }
     }
     
@@ -65,6 +73,12 @@ extension AKPlayerError: LocalizedError {
         case .loadingFailed:
             return NSLocalizedString("The media loading is failed",
                                      comment: "Item cannot be played")
+        case .noItemToPlay:
+            return NSLocalizedString("The player item got nil",
+                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
+        case .itemFailedToPlayToEndTime:
+            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
+                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
         }
     }
 }

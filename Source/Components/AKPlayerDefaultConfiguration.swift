@@ -30,24 +30,44 @@ public struct AKPlayerDefaultConfiguration: AKPlayerConfiguration {
     // MARK: - Properties
     
     public var periodicPlayingTimeInSecond: Double = 0.5
+    
     public var preferredTimescale: CMTimeScale = CMTimeScale(NSEC_PER_SEC)
-    public var itemLoadedAssetKeys: [String] = []
+    
+    public var itemLoadedAssetKeys: [String] = ["availableChapterLocales", "duration"]
+    
     public var boundaryTimeObserverMultiplier: Double = 0.20
-    public var bufferObservingTimeout: TimeInterval = 10
+    
+    public var bufferObservingTimeout: TimeInterval = 480
+    
     public var bufferObservingTimeInterval: TimeInterval = 0.3
+    
     public var audioSessionCategory: AVAudioSession.Category = .playback
+    
     public var audioSessionMode: AVAudioSession.Mode = .moviePlayback
-    public var audioSessionCategoryOptions: AVAudioSession.CategoryOptions = [.mixWithOthers]
+    
+    public var audioSessionCategoryOptions: AVAudioSession.CategoryOptions = []
+    
     public var isNowPlayingEnabled: Bool = true
-    public var pauseInBackground: Bool = false
-    public var idleTimerDisabledForStates: [AKPlayer.State] = [AKPlayer.State.buffering,
-                                                               AKPlayer.State.playing]
-
+    
+    public var idleTimerDisabledForStates: [AKPlayerState] = [AKPlayerState.buffering,
+                                                              AKPlayerState.playing]
+    public var textStyleRules: [AVTextStyleRule]? = nil
+    
+    public var playbackPausesWhenResigningActive: Bool = true
+    
+    public var playbackPausesWhenBackgrounded: Bool = true
+    
+    public var playbackResumesWhenBecameActive: Bool = true
+    
+    public var playbackResumesWhenEnteringForeground: Bool = true
+    
+    public var playbackFreezesAtEnd: Bool = true
+    
     /// Default Configuration
     public static var `default` = AKPlayerDefaultConfiguration()
     
     // MARK: - Init
-
+    
     public init() {}
-
+    
 }

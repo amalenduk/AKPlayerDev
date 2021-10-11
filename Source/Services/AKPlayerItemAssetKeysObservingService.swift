@@ -25,23 +25,25 @@
 
 import AVFoundation
 
-final class AKPlayerItemAssetKeysObservingService: NSObject {
+final class AKPlayerItemAssetKeysObservingService {
     
     // MARK: - Properties
     
     private unowned let manager: AKPlayerManagerProtocol
     
     private let playerItem: AVPlayerItem
-
+    
     private let media: AKPlayable
     
     private var determiningPlaybackCapabilitiesService: AKDeterminingPlaybackCapabilitiesService!
-
+    
     private var steppingThroughMediaService: AKSteppingThroughMediaService!
-
+    
     private var accessingTimingInformationService: AKAccessingTimingInformationService!
-
+    
     private var determiningAvailableTimeRangesService: AKDeterminingAvailableTimeRangesService!
+    
+    private var accessingAssetAndTracks: AKAccessingAssetAndTracksService!
     
     // MARK: - Init
     
@@ -56,17 +58,6 @@ final class AKPlayerItemAssetKeysObservingService: NSObject {
     }
     
     deinit {
-        /*
-         playerItem.removeObserver(self, forKeyPath: "canPlayReverse")
-         playerItem.removeObserver(self, forKeyPath: "canPlayFastForward")
-         playerItem.removeObserver(self, forKeyPath: "canPlayFastReverse")
-         playerItem.removeObserver(self, forKeyPath: "canPlaySlowForward")
-         playerItem.removeObserver(self, forKeyPath: "canPlaySlowReverse")
-         playerItem.removeObserver(self, forKeyPath: "canStepForward")
-         playerItem.removeObserver(self, forKeyPath: "canStepBackward")
-         playerItem.removeObserver(self, forKeyPath: "loadedTimeRanges")
-         playerItem.removeObserver(self, forKeyPath: "duration")
-         */
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleService)
     }
@@ -135,15 +126,33 @@ final class AKPlayerItemAssetKeysObservingService: NSObject {
         }
     }
     
+    private func setupAccessingAssetAndTracksService() {
+        accessingAssetAndTracks = AKAccessingAssetAndTracksService(with: playerItem)
+        
+        accessingAssetAndTracks.onChangeTracks = { [unowned self] tracks in
+            manager.delegate?.playerManager(didChangedTracks: tracks, for: media)
+        }
+    }
+    
+    var vc: AKAccessingChapterMetadataService?
+    var vc2: AKMediaSelectionService!
+    
     func startObserving() {
         setupDeterminingPlaybackCapabilitiesService()
         setupSteppingThroughMediaService()
         setupAccessingTimingInformationService()
         setupDeterminingAvailableTimeRangesService()
+        setupAccessingAssetAndTracksService()
         
         accessingTimingInformationService.startObserving()
         steppingThroughMediaService.startObserving()
         determiningPlaybackCapabilitiesService.startObserving()
         determiningAvailableTimeRangesService.startObserving()
+        accessingAssetAndTracks.startObserving()
+        
+        vc = AKAccessingChapterMetadataService(with: playerItem.asset)
+        vc?.startObserving()
+        
+        vc2 = AKMediaSelectionService(with: playerItem)
     }
 }

@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPlayerRateObservingService {
+public final class AKPlayerRateObservingService {
     
     // MARK: - Properties
     

@@ -1,5 +1,5 @@
 //
-//  AKDeterminingPlayerItemStatusService.swift
+//  AKAccessingAssetAndTracksService.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,39 +25,42 @@
 
 import AVFoundation
 
-final class AKDeterminingPlayerItemStatusService {
+final class AKAccessingAssetAndTracksService {
     
     // MARK: - Properties
     
     private let playerItem: AVPlayerItem
-    private let itemStatusCallback: ((AVPlayerItem.Status) -> Void)
+    
+    var onChangeTracks: (([AVPlayerItemTrack]) -> Void)?
     
     /**
-     The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.status`.
+     The `NSKeyValueObservation` for the KVO on
+     `\AVPlayerItem.tracks`.
      */
-    private var playerItemStatusObserver: NSKeyValueObservation!
+    private var playerItemTracksObserver: NSKeyValueObservation?
     
     // MARK: - Init
     
-    init(playerItem: AVPlayerItem, callback: @escaping (AVPlayerItem.Status) -> Void) {
-        AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
+    init(with playerItem: AVPlayerItem) {
+        AKPlayerLogger.shared.log(message: "Init",
+                                  domain: .lifecycleService)
         self.playerItem = playerItem
-        self.itemStatusCallback = callback
-        /*
-         Register as an observer of the player item's status property
-         Observe the player item "status" key to determine when it is ready to play.
-         */
-        playerItemStatusObserver = playerItem.observe(\.status, options: [.new], changeHandler: { [unowned self] (playerItem, change) in
-            itemStatusCallback(playerItem.status)
-        })
     }
     
     deinit {
-        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
-        playerItemStatusObserver.invalidate()
+        AKPlayerLogger.shared.log(message: "DeInit",
+                                  domain: .lifecycleService)
+        playerItemTracksObserver?.invalidate()
     }
     
-    func stop() {
-        playerItemStatusObserver.invalidate()
+    // MARK: - Additional Helper Functions
+    
+    func startObserving() {
+        /*
+         Register as an observer of the player item's canPlayReverse property
+         */
+        playerItemTracksObserver = playerItem.observe(\AVPlayerItem.tracks, options: [.initial, .new]) { [unowned self] (item, _) in
+            onChangeTracks?(item.tracks)
+        }
     }
 }

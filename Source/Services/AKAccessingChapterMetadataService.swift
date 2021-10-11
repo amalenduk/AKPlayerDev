@@ -1,5 +1,5 @@
 //
-//  AKMediaItem.swift
+//  AKAccessingChapterMetadataService.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,42 +23,40 @@
 //  SOFTWARE.
 //
 
-import AVFoundation.AVPlayerItem
+import AVFoundation
 
-public class AKMediaItem: AKMediaItemPlayable {
+final class AKAccessingChapterMetadataService {
     
     // MARK: - Properties
     
-    public let item: AVPlayerItem
+    private let asset: AVAsset
     
-    public let url: URL
+    var onChangeAvailableChapterLocalesCallback: ((_ loadedTimeRanges: [Locale]) -> Void)?
     
-    public let type: AKMediaType
-    
-    public let options: [String : Any]?
-    
-    public var staticMetadata: AKPlayableStaticMetadata? {
-        return _staticMetadata
-    }
-    
-    private var _staticMetadata: AKPlayableStaticMetadata?
+    /**
+     The `NSKeyValueObservation` for the KVO on `\AVAsset.availableChapterLocales`.
+     */
+    private var assetAvailableChapterLocalesObserver: NSKeyValueObservation!
     
     // MARK: - Init
     
-    public init?(item: AVPlayerItem,
-                 type: AKMediaType,
-                 options: [String : Any]? = nil,
-                 staticMetadata: AKPlayableStaticMetadata? = nil) {
-        self.item = item
-        self.type = type
-        self.options = options
-        self._staticMetadata = staticMetadata
-        
-        guard let url = (item.asset as? AVURLAsset)?.url else { return nil }
-        self.url = url
+    init(with asset: AVAsset) {
+        AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
+        self.asset = asset
     }
     
-    public func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata) {
-        self._staticMetadata = staticMetadata
+    func startObserving() {
+        /*
+         Register as an observer of the player item's loadedTimeRanges property.
+         */
+        assetAvailableChapterLocalesObserver = asset.observe(\.availableChapterLocales, options: [.initial, .new], changeHandler: { [unowned self] (player, change) in
+            print(asset.availableChapterLocales.count)
+            onChangeAvailableChapterLocalesCallback?(asset.availableChapterLocales)
+        })
+    }
+    
+    deinit {
+        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+        assetAvailableChapterLocalesObserver.invalidate()
     }
 }

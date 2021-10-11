@@ -61,7 +61,7 @@ final class AKConfiguringAutomaticWaitingBehaviorService {
          reflect the playback state of the player's `timeControStatus` property.
          */
         playerTimeControlStatusObserver = player.observe(\AVPlayer.timeControlStatus,
-                                                         options: [.new]) {
+                                                         options: [.initial, .new]) {
             [unowned self] _, _ in
             onChangeTimeControlStatus?(player.timeControlStatus)
         }
@@ -73,7 +73,7 @@ final class AKConfiguringAutomaticWaitingBehaviorService {
             playerTimeControlStatusObserver.invalidate()
         }
     }
-
+    
     func stop(clearCallBacks flag: Bool) {
         if flag {
             onChangeTimeControlStatus = nil

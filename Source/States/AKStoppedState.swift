@@ -31,8 +31,8 @@ final class AKStoppedState: AKPlayerStateControllable {
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayer.State = .stopped
-
+    let state: AKPlayerState = .stopped
+    
     private let playerItemDidPlayToEndTime: Bool
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
@@ -50,20 +50,20 @@ final class AKStoppedState: AKPlayerStateControllable {
         self.playerItemDidPlayToEndTime = flag
         self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
         manager.player.pause()
-        setMetadata()
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleState)
     }
-
-    func stateChanged() {
+    
+    func stateDidChange() {
         guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
         manager.plugins?.forEach({$0.playerPlugin(didStopped: media,
                                                   at: manager.currentTime)})
         startObservingPlayerTimeService()
         if !playerItemDidPlayToEndTime { seek(to: 0) }
+        setPlaybackInfo()
     }
     
     // MARK: - Commands
@@ -105,14 +105,15 @@ final class AKStoppedState: AKPlayerStateControllable {
     
     func play() {
         if manager.currentItem?.status == .readyToPlay {
-            if manager.currentTime.seconds >= (manager.itemDuration?.seconds ?? 0) { seek(to: 0) }
+            if (manager.currentTime.seconds + 1) >= (manager.duration?.seconds ?? 0) { seek(to: 0) }
             let controller = AKBufferingState(manager: manager,
                                               playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
             manager.change(controller)
             controller.playCommand()
         } else if let media = manager.currentMedia {
             let controller = AKLoadingState(manager: manager,
-                                            media: media)
+                                            media: media,
+                                            autoPlay: true)
             manager.change(controller)
         } else {
             assertionFailure("Sould not be here")
@@ -125,21 +126,31 @@ final class AKStoppedState: AKPlayerStateControllable {
         manager.delegate?.playerManager(unavailableAction: .alreadyStopped)
     }
     
+    func togglePlayPause() {
+        play()
+    }
+    
     func stop() {
         AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.alreadyStopped.description,
                                   domain: .unavailableCommand)
         manager.delegate?.playerManager(unavailableAction: .alreadyStopped)
     }
     
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    }
+    
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        manager.currentItem?.cancelPendingSeeks()
         manager.player.seek(to: time,
                             completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        manager.currentItem?.cancelPendingSeeks()
         manager.player.seek(to: time)
     }
     
@@ -155,6 +166,14 @@ final class AKStoppedState: AKPlayerStateControllable {
                         preferredTimescale: manager.configuration.preferredTimescale))
     }
     
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        manager.player.seek(to: date, completionHandler: completionHandler)
+    }
+    
+    func seek(to date: Date) {
+        manager.player.seek(to: date)
+    }
+    
     func seek(offset: Double) {
         seek(to: manager.currentTime.seconds + offset)
     }
@@ -167,12 +186,12 @@ final class AKStoppedState: AKPlayerStateControllable {
     
     func seek(toPercentage value: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (manager.itemDuration?.seconds ?? 0) / value,
+        seek(to: (manager.duration?.seconds ?? 0) / value,
              completionHandler: completionHandler)
     }
     
     func seek(toPercentage value: Double) {
-        seek(to: (manager.itemDuration?.seconds ?? 0) / value)
+        seek(to: (manager.duration?.seconds ?? 0) / value)
     }
     
     func step(byCount stepCount: Int) {
@@ -188,14 +207,15 @@ final class AKStoppedState: AKPlayerStateControllable {
          Sometimes state can change direct from loading state to stop state
          */
         guard manager.player.currentItem != nil else { return }
-        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
+        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player,
+                                                                  configuration: manager.configuration)
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
-            setMetadata()
+            setPlaybackInfo()
             manager.delegate?.playerManager(didCurrentTimeChange: time)
         }
     }
     
-    private func setMetadata() {
+    private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
     }
 }

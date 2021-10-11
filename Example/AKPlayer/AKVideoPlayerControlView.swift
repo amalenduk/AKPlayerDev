@@ -168,7 +168,7 @@ class AKVideoPlayerControlView: UIView {
         playbackButton.changePlayback(state)
     }
     
-    open func changedPlayerState(_ state: AKPlayer.State) {
+    open func changedPlayerState(_ state: AKPlayerState) {
         switch state {
         case .buffering:
             playbackButton.changePlayback(.playing)

@@ -25,45 +25,53 @@
 
 import Foundation
 import AVFoundation
+import MediaPlayer
 
-protocol AKPlayerManagerDelegate: AnyObject {
-    func playerManager(didStateChange state: AKPlayer.State)
+public protocol AKPlayerManagerDelegate: AnyObject {
+    func playerManager(didStateChange state: AKPlayerState)
     func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate)
     func playerManager(didCurrentMediaChange media: AKPlayable)
     func playerManager(didCurrentTimeChange currentTime: CMTime)
     func playerManager(didItemDurationChange itemDuration: CMTime)
     func playerManager(didItemPlayToEndTime endTime: CMTime)
     func playerManager(didVolumeChange volume: Float, isMuted: Bool)
-    func playerManager(didBrightnessChange brightness: CGFloat)
     func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason)
     func playerManager(didFailedWith error: AKPlayerError)
-
+    
     func playerManager(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable)
     func playerManager(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable)
     func playerManager(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable)
     func playerManager(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable)
     func playerManager(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable)
-
+    
     func playerManager(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable)
     func playerManager(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable)
     func playerManager(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable)
+    func playerManager(didSeekableTimeRangesChange seekableTimeRanges: [NSValue], for media: AKPlayable)
+    
+    func playerManager(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable)
 }
 
-protocol AKPlayerManagerProtocol: AKPlayerProtocol {
+public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommand {
+    var audioSessionInterrupted: Bool { get }
+    var playingBeforeInterruption: Bool { get }
+    var requestedSeekingTime: CMTime? { get }
+    
     var configuration: AKPlayerConfiguration { get }
     var controller: AKPlayerStateControllable! { get }
+    
     var delegate: AKPlayerManagerDelegate? { get }
     var plugins: [AKPlayerPlugin]? { get }
-    var playingBeforeInterruption: Bool { get }
-    var audioSessionInterrupted: Bool { get }
+    
+    var remoteCommands: [AKRemoteCommand] { get }
     
     var audioSessionService: AKAudioSessionServiceable { get }
     var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable? { get }
-    var remoteCommandsService: AKNowPlayableCommandService? { get }
+    var remoteCommandController: AKRemoteCommandController? { get }
     var playerRateObservingService: AKPlayerRateObservingService! { get }
     var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable! { get }
     var managingAudioOutputService: AKManagingAudioOutputService! { get }
-    var screenBrightnessObservingService: AKScreenBrightnessObservingService! { get }
     
+    func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
     func change(_ controller: AKPlayerStateControllable)
 }

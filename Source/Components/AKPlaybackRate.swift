@@ -25,7 +25,7 @@
 
 import Foundation
 
-public enum AKPlaybackRate {
+public enum AKPlaybackRate: CaseIterable {
     case slowest
     case slower
     case slow

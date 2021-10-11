@@ -29,6 +29,39 @@ import AVFoundation
 import AKPlayer
 import UIKit
 
+var vids = [
+    [
+        "name": "Big Buck Bunny",
+        "description": "2008 ‧ Short/Comedy ‧ 12 mins",
+        "imageUrl": "bbb",
+        "videoSource": "https://cdn.theoplayer.com/video/big_buck_bunny/big_buck_bunny_metadata.m3u8"
+    ],
+    [
+        "name": "Sintel",
+        "description": "2010 ‧ Fantasy/Short ‧ 15 mins",
+        "imageUrl": "sintel",
+        "videoSource": "https://cdn.theoplayer.com/video/sintel/nosubs.m3u8"
+    ],
+    [
+        "name": "Tears of Steel",
+        "description": "2012 ‧ Short/Sci-fi ‧ 12 mins",
+        "imageUrl": "tears",
+        "videoSource": "https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8"
+    ],
+    [
+        "name": "Elephant's Dream",
+        "description": "2006 ‧ Sci-fi/Short ‧ 11 mins",
+        "imageUrl": "elephant",
+        "videoSource": "https://cdn.theoplayer.com/video/elephants-dream/playlist.m3u8"
+    ],
+    [
+        "name": "Caminandes Llama Drama",
+        "description": "2013 ‧ Short/Comedy ‧ 3 mins",
+        "imageUrl": "llama",
+        "videoSource": "http://amssamples.streaming.mediaservices.windows.net/634cd01c-6822-4630-8444-8dd6279f94c6/CaminandesLlamaDrama4K.ism/manifest(format=m3u8-aapl-v3)"
+    ]
+]
+
 class SimpleVideoViewController: UIViewController {
     
     // MARK: - Outlates
@@ -52,12 +85,19 @@ class SimpleVideoViewController: UIViewController {
     @IBOutlet weak private var stepBackwardButton: UIButton!
     @IBOutlet weak private var stepForwardButton: UIButton!
     @IBOutlet weak var bufferProgressView: UIProgressView!
-
+    
     private lazy var player: AKPlayer = {
-        AKPlayerLogger.setup.domains = [.lifecycleService]
-        let configuration = AKPlayerDefaultConfiguration()
-        let player = AKPlayer(plugins: [self], configuration: configuration)
+        AKPlayerLogger.setup.domains = []
+        var configuration = AKPlayerDefaultConfiguration()
+        let rl1 = AVTextStyleRule(textMarkupAttributes: [kCMTextFormatDescriptionRect_Bottom as String: 100, kCMTextMarkupAttribute_BoldStyle as String: kCFBooleanTrue!])
+        let rl2 = AVTextStyleRule(textMarkupAttributes: [kCMTextMarkupAttribute_UnderlineStyle as String: kCFBooleanTrue!])
+        let rl3 = AVTextStyleRule(textMarkupAttributes: [kCMTextMarkupAttribute_BackgroundColorARGB as String: [1, 1, 0.5, 0.7]])
+        let rl4 = AVTextStyleRule(textMarkupAttributes: [kCMTextMarkupAttribute_RelativeFontSize as String: 180])
+        
+        configuration.textStyleRules = [rl1!, rl2!, rl3!, rl4!]
+        let player = AKPlayer(plugins: [self], configuration: configuration, remoteCommandController: AKRemoteCommandController())
         player.player.appliesMediaSelectionCriteriaAutomatically = true
+        player.remoteCommands = AKRemoteCommand.playbackCommands + [.seekForward, .seekBackward, .changePlaybackPosition, .skipForward(preferredIntervals: [15]), .skipBackward(preferredIntervals: [15])]
         return player
     }()
     
@@ -72,6 +112,8 @@ class SimpleVideoViewController: UIViewController {
         guard let videoLayer = playerVideoLayer.layer as? AVPlayerLayer else { return }
         videoLayer.player = player.player
         player.delegate = self
+        player.playbackDelegate = self
+        player.prepare()
         
         NotificationCenter.default.addObserver(self, selector: #selector(didEnterInBackground(_ :)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         
@@ -88,25 +130,26 @@ class SimpleVideoViewController: UIViewController {
         timeSlider.minimumValue = 0
         timeSlider.maximumValue = 1
         timeSlider.value = 0
-
+        
         bufferProgressView.progress = 0
         
         audioButton.isEnabled = false
         subtitleButton.isEnabled = false
         
         volumeSlider.value = player.volume
-        brightnessSlider.value = Float(player.brightness)
         
         muteButton.setTitle("Mute", for: .normal)
         muteButton.setTitle("Muted", for: .selected)
         
         muteButton.isSelected = player.isMuted
+        
+        audioButton.addTarget(self, action: #selector(audioButtonAction(_ :)), for: .touchUpInside)
+        subtitleButton.addTarget(self, action: #selector(subtitleButtonAction(_ :)), for: .touchUpInside)
     }
     
     deinit {
         NotificationCenter.default.removeObserver(self, name: UIApplication.didEnterBackgroundNotification, object: nil)
         NotificationCenter.default.removeObserver(self, name: UIApplication.willEnterForegroundNotification, object: nil)
-        print("Deinit called")
     }
     
     // MARK: - Additional Helpers
@@ -131,15 +174,15 @@ class SimpleVideoViewController: UIViewController {
         reverseItems.removeAll()
         
         for rate in AKPlaybackRate.allCases {
-            let action = UIAction(title: rate.rateTitle, identifier: UIAction.Identifier.init("\(rate.rate)"), state: rate == player.playbackRate ? .on : .off) { [unowned self] _ in
-                player.playbackRate = rate
+            let action = UIAction(title: rate.rateTitle, identifier: UIAction.Identifier.init("\(rate.rate)"), state: rate == player.rate ? .on : .off) { [unowned self] _ in
+                player.rate = rate
             }
             items.append(action)
         }
         
         for rate in AKPlaybackRate.allCases {
             let action = UIAction(title: ("-" + rate.rateTitle), identifier: UIAction.Identifier.init("\(-rate.rate)"), state: .off) { [unowned self] _ in
-                player.playbackRate = .custom(-rate.rate)
+                player.rate = .custom(-rate.rate)
             }
             reverseItems.append(action)
         }
@@ -152,83 +195,51 @@ class SimpleVideoViewController: UIViewController {
         }
     }
     
-    @available(iOS 13.0, *)
-    func reloadAudioTracksMenu() {
-        /*
-         guard mediaSelectionService.availableOption(for: .audible).count > 0 else { setDebugMessage("No tracks found"); return }
-         let destruct = UIAction(title: "Cancel", attributes: .destructive) { _ in }
-         var items: [UIAction] = []
-         
-         for option in mediaSelectionService.availableOption(for: .audible) {
-         let action = UIAction(title: option.displayName, identifier: UIAction.Identifier.init("\(option.locale?.currencyCode ?? option.displayName)"), state: .off) { [unowned self] _ in
-         mediaSelectionService.select(mediaSelectionOption: option, for: .audible)
-         }
-         items.append(action)
-         }
-         
-         items.append(UIAction(title: "Off", identifier: UIAction.Identifier.init("off"), state: .off) { [unowned self] _ in
-         mediaSelectionService.select(mediaSelectionOption: nil, for: .audible)
-         })
-         
-         let menu = UIMenu(title: "Tracks", options: .displayInline, children: [destruct] + items)
-         
-         if #available(iOS 14.0, *) {
-         audioButton.menu = menu
-         audioButton.showsMenuAsPrimaryAction = true
-         }
-         */
+    @objc func audioButtonAction(_ sender: UIButton) {
+//        guard let audibleGroup =  player.currentMedia?.mediaSelection?.audibleGroup else { return }
+//        guard audibleGroup.options.count > 0 else { setDebugMessage("No tracks found"); return }
+//        let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
+//
+//        for option in audibleGroup.options {
+//            let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+//                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: option, for: .audible)
+//            }
+//            alert.addAction(action)
+//        }
+//
+//        if audibleGroup.allowsEmptySelection {
+//            let action = UIAlertAction(title: "Off", style: .default) { (_) in
+//                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: nil, for: .audible)
+//            }
+//            alert.addAction(action)
+//        }
+//        let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+//        alert.addAction(destruct)
+//        present(alert, animated: true, completion: nil)
     }
     
-    @available(iOS 13.0, *)
-    func reloadSubtitleMenu() {
-        /*
-         let char: AVMediaCharacteristic = .legible
-         let destruct = UIAction(title: "Cancel", attributes: .destructive) { _ in }
-         var items: [UIAction] = []
-         for option in mediaSelectionService.availableOption(for: char) {
-         let action = UIAction(title: option.displayName, identifier: UIAction.Identifier.init("\(option.locale?.currencyCode ?? option.displayName)"), state: .off) { [unowned self] _ in
-         mediaSelectionService.select(mediaSelectionOption: option, for: char)
-         }
-         items.append(action)
-         }
-         
-         items.append(UIAction(title: "Off", identifier: UIAction.Identifier.init("off"), state: .off) { [unowned self] _ in
-         mediaSelectionService.select(mediaSelectionOption: nil, for: char)
-         
-         })
-         
-         let menu = UIMenu(title: "Subtitles", options: .displayInline, children: [destruct] + items)
-         
-         if #available(iOS 14.0, *) {
-         subtitleButton.menu = menu
-         subtitleButton.showsMenuAsPrimaryAction = true
-         }
-         */
-    }
-
-    func convertTimedMetadataGroupsToChapters(groups: [AVTimedMetadataGroup]) -> [Chapter] {
-        return groups.map { group in
-            // Retrieve the title metadata items.
-            let titleItems = AVMetadataItem.metadataItems(from: group.items,
-                                                          filteredByIdentifier: .commonIdentifierTitle)
-
-            // Retrieve the artwork metadata items.
-            let artworkItems = AVMetadataItem.metadataItems(from: group.items,
-                                                            filteredByIdentifier: .commonIdentifierArtwork)
-
-            var title = "Default Title"
-            var image = UIImage(named: "placeholder")!
-
-            if let titleValue = titleItems.first?.stringValue {
-                title = titleValue
-            }
-
-            if let imgData = artworkItems.first?.dataValue, let imageValue = UIImage(data: imgData) {
-                image = imageValue
-            }
-
-            return Chapter(time: group.timeRange.start, title: title, image: image)
-        }
+    @objc func subtitleButtonAction(_ sender: UIButton) {
+//        guard let legibleGroup =  player.currentMedia?.mediaSelection?.legibleGroup else { return }
+//        guard legibleGroup.options.count > 0 else { setDebugMessage("No subtitles found"); return }
+//        let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
+//        
+//        for option in legibleGroup.options {
+//            let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+//                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: option, for: .legible)
+//            }
+//            alert.addAction(action)
+//        }
+//        
+//        if legibleGroup.allowsEmptySelection {
+//            let action = UIAlertAction(title: "Off", style: .default) { (_) in
+//                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: nil, for: .legible)
+//            }
+//            alert.addAction(action)
+//        }
+//        let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+//        alert.addAction(destruct)
+//        
+//        present(alert, animated: true, completion: nil)
     }
     
     // MARK: - User Interactions
@@ -236,17 +247,19 @@ class SimpleVideoViewController: UIViewController {
     @IBAction func updateNowPlayingInfoButtonActon(_ sender: Any) {
         player.setNowPlayingMetadata()
         player.setNowPlayingPlaybackInfo()
+        player.currentItem?.textStyleRules = nil
     }
     
     @objc func rateChangeButtonAction(_ sender: UIButton) {
-        player.playbackRate = player.playbackRate.next
+        player.rate = player.rate.next
     }
     
     @IBAction func infoButtonAction(_ sender: Any) {
-        let vc = storyboard?.instantiateViewController(withIdentifier: "AssetInfoViewController") as! AssetInfoViewController
-        let navVc = UINavigationController(rootViewController: vc)
-        vc.assetInfo = AKMediaMetadata(with: player.currentItem?.asset.commonMetadata ?? [])
-        present(navVc, animated: true, completion: nil)
+        //        let vc = storyboard?.instantiateViewController(withIdentifier: "AssetInfoViewController") as! AssetInfoViewController
+        //        let navVc = UINavigationController(rootViewController: vc)
+        //        vc.assetInfo = AKMediaMetadata(with: player.currentItem?.asset.commonMetadata ?? [])
+        //        present(navVc, animated: true, completion: nil)
+        // print(CMTIME_IS_POSITIVEINFINITY(player.currentTime))
     }
     
     @objc func progressSliderDidStartTracking(_ slider: UISlider) {
@@ -254,7 +267,7 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func progressSliderDidEndTracking(_ slider: UISlider) {
-        player.seek(toPercentage: Double(slider.value)) { finished in
+        player.seek(to: CMTime(seconds: ((player.duration?.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC)), toleranceBefore: .zero, toleranceAfter: .zero) { _ in
             self.isTracking = false
         }
     }
@@ -275,18 +288,19 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func load(_ sender: Any) {
-        let media = AKMedia(url: URL(string: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8")!, type: .clip)
+        let url =  URL(string: "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")!
+        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: "Akplayer", artist: "Gualm habib, nazim amal kar || darun gaan", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
+        let media = AKMedia(url: url, type: .clip, staticMetadata: staticMetadata)
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
     
     @IBAction func changeAudioTrackButtonAction(_ sender: Any) {
-
+        
     }
     
     @IBAction func brightnessSliderDidChageValue(_ sender: UISlider) {
-        player.brightness = CGFloat(sender.value)
     }
-
+    
     @IBAction func changeSubtitleButtonAction(_ sender: Any) {
         
     }
@@ -312,11 +326,8 @@ class SimpleVideoViewController: UIViewController {
         guard let asset = player.currentItem?.asset else { return }
         let languages = Locale.preferredLanguages
         let chapterMetadata = asset.chapterMetadataGroups(bestMatchingPreferredLanguages: languages)
-        convertTimedMetadataGroupsToChapters(groups: chapterMetadata).forEach { (chapter) in
-            print(chapter.title, chapter.time, chapter.image)
-        }
     }
-
+    
     // MARK: - Observers
     
     @objc func didEnterInBackground(_ notification: Notification) {
@@ -340,8 +351,8 @@ class SimpleVideoViewController: UIViewController {
 // MARK: - AKPlayerDelegate
 
 extension SimpleVideoViewController: AKPlayerDelegate {
-
-    func akPlayer(_ player: AKPlayer, didStateChange state: AKPlayer.State) {
+    
+    func akPlayer(_ player: AKPlayer, didStateChange state: AKPlayerState) {
         DispatchQueue.main.async {
             self.stateLabel.text = "State: " + state.description
             if state == .waitingForNetwork || state == .buffering || state == .loading {
@@ -350,6 +361,7 @@ extension SimpleVideoViewController: AKPlayerDelegate {
                 self.indicatorView.stopAnimating()
             }
         }
+        // print("SimpleVideoViewController delegate", state.rawValue)
     }
     
     func akPlayer(_ player: AKPlayer, didCurrentMediaChange media: AKPlayable) {
@@ -359,16 +371,15 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     func akPlayer(_ player: AKPlayer, didCurrentTimeChange currentTime: CMTime) {
         DispatchQueue.main.async {
             self.currentTimeLabel.text = "Current Timing: " + String(format: "%.2f", currentTime.seconds)
-            self.setSliderProgress(currentTime, itemDuration: player.itemDuration)
+            self.setSliderProgress(currentTime, itemDuration: player.duration)
         }
     }
     
     func akPlayer(_ player: AKPlayer, didItemDurationChange itemDuration: CMTime) {
+        print("Duration change,", itemDuration.seconds)
         DispatchQueue.main.async {
             self.durationLabel.text = "Duration: " + String(format: "%.2f", itemDuration.seconds)
         }
-
-        print("itemDuration", itemDuration)
     }
     
     func akPlayer(_ player: AKPlayer, unavailableAction reason: AKPlayerUnavailableActionReason) {
@@ -390,11 +401,12 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     func akPlayer(_ player: AKPlayer, didVolumeChange volume: Float, isMuted: Bool) {
         volumeSlider.value = volume
         muteButton.isSelected = isMuted
+        // print("Player did chaged volume")
     }
-
+    
     func akPlayer(_ player: AKPlayer, didBrightnessChange brightness: CGFloat) {
-        print(brightness)
         brightnessSlider.value = Float(brightness)
+        // print("Player did chaged brightness")
     }
     
     func akPlayer(_ player: AKPlayer, didPlaybackRateChange playbackRate: AKPlaybackRate) {
@@ -403,37 +415,41 @@ extension SimpleVideoViewController: AKPlayerDelegate {
             reloadRateMenus()
         }
     }
+}
 
-    public func akPlayer(_ player: AKPlayer, didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
-        print("canPlayReverse", canPlayReverse)
+// MARK: - AKPlaybackDelegate
+
+extension SimpleVideoViewController: AKPlaybackDelegate {
+    
+    func akPlayback(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
+        // print("canPlayReverse", canPlayReverse)
     }
-
-    public func akPlayer(_ player: AKPlayer, didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
-        print("canPlayFastForward", canPlayFastForward)
+    
+    func akPlayback(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
+        // print("canPlayFastForward", canPlayFastForward)
     }
-
-    public func akPlayer(_ player: AKPlayer, didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
-        print("canPlayFastReverse", canPlayFastReverse)
+    
+    func akPlayback(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
+        // print("canPlayFastReverse", canPlayFastReverse)
     }
-
-    public func akPlayer(_ player: AKPlayer, didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
-        print("canPlaySlowForward", canPlaySlowForward)
+    
+    func akPlayback(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
+        // print("canPlaySlowForward", canPlaySlowForward)
     }
-
-    public func akPlayer(_ player: AKPlayer, didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
-        print("canPlaySlowReverse", canPlaySlowReverse)
+    
+    func akPlayback(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
+        // print("canPlaySlowReverse", canPlaySlowReverse)
     }
-
-    func akPlayer(_ player: AKPlayer, didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) {
+    
+    func akPlayback(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) {
         stepForwardButton.isEnabled = canStepForward
     }
-
-    func akPlayer(_ player: AKPlayer, didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) {
+    
+    func akPlayback(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) {
         stepBackwardButton.isEnabled = canStepBackward
     }
-
-    func akPlayer(_ player: AKPlayer, didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
-        print(loadedTimeRanges)
+    
+    func akPlayback(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
         var availableDuration: Double {
             guard let timeRange = player.currentItem?.loadedTimeRanges.first?.timeRangeValue else {
                 return 0.0
@@ -442,10 +458,11 @@ extension SimpleVideoViewController: AKPlayerDelegate {
             let durationSeconds = timeRange.duration.seconds
             return startSeconds + durationSeconds
         }
-        print(availableDuration)
-        if let seconds = loadedTimeRanges.first?.timeValue.seconds {
-            bufferProgressView.setProgress(Float(availableDuration)/Float(player.currentItem!.duration.seconds), animated: true)
-        }
+        bufferProgressView.setProgress(Float(availableDuration)/Float(player.currentItem!.duration.seconds), animated: true)
+    }
+    
+    func akPlayback(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable) {
+        print("Number of tracks got", tracks.count)
     }
 }
 
@@ -453,12 +470,15 @@ extension SimpleVideoViewController: AKPlayerDelegate {
 
 extension SimpleVideoViewController: AKPlayerPlugin {
     
+    func playerPlugin(didInit player: AVPlayer) {
+        // print("Player plugin init state")
+    }
+    
+    func playerPlugin(willStartLoading media: AKPlayable) {
+        // print("Player plugin willStartLoading state")
+    }
+    
     func playerPlugin(didLoad media: AKPlayable, with duration: CMTime) {
-        if #available(iOS 13.0, *) {
-            reloadAudioTracksMenu()
-            reloadSubtitleMenu()
-        }
-        print("  -------------duration", duration)
         audioButton.isEnabled = true
         subtitleButton.isEnabled = true
     }
@@ -471,17 +491,5 @@ extension SimpleVideoViewController: AKPlayerPlugin {
     func playerPlugin(didFailed media: AKPlayable, with error: AKPlayerError) {
         audioButton.isEnabled = false
         subtitleButton.isEnabled = false
-    }
-}
-
-struct Chapter {
-    var time: CMTime
-    var title: String
-    var image: UIImage
-
-    init(time: CMTime, title: String, image: UIImage) {
-        self.time = time
-        self.title = title
-        self.image = image
     }
 }

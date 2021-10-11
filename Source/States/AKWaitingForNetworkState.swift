@@ -31,19 +31,19 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayer.State = .waitingForNetwork
-
+    let state: AKPlayerState = .waitingForNetwork
+    
     private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-
+    
+    private var playerItemObservingNotificationsService: AKPlayerItemObservingNotificationsService!
+    
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
-
+    
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
-
+    
     private var routeChangeObservingService: AKRouteChangeObservingService!
     
     private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
-
-    private var timer: Timer?
     
     // MARK: - Init
     
@@ -53,19 +53,33 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
                                   domain: .lifecycleState)
         self.manager = manager
         self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
-        setMetadata()
+        
+        guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
+        
+        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
+        
+        playerItemObservingNotificationsService = AKPlayerItemObservingNotificationsService(playerItem: playerItem)
+        
+        configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player, configuration: manager.configuration)
+        
+        
+        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
+        
+        routeChangeObservingService = AKRouteChangeObservingService(audioSession: manager.audioSessionService.audioSession)
+        
+        setPlaybackInfo()
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleState)
-        timer?.invalidate()
     }
-
-    func stateChanged() {
+    
+    func stateDidChange() {
         guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
         manager.plugins?.forEach({$0.playerPlugin(didStartWaitingForNetwork: media)})
         startAudioSessionInterruptionObservingService()
+        startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
         startRouteChangeObservingService()
         startConfiguringAutomaticWaitingBehaviorService()
@@ -113,7 +127,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
     }
     
     func play() {
-        guard let media = manager.currentMedia else { assertionFailure("Should available media at this stage"); return}
+        // Add Network Reachability
         guard let reasonForWaitingToPlay = manager.player.reasonForWaitingToPlay else {
             let controller = AKBufferingState(manager: manager,
                                               playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
@@ -123,15 +137,16 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
         }
         
         switch reasonForWaitingToPlay {
-        case .evaluatingBufferingRate:
-            load(media: media,
-                 autoPlay: true,
-                 at: manager.currentTime)
-        case .toMinimizeStalls:
+        case .evaluatingBufferingRate, .toMinimizeStalls:
             let controller = AKBufferingState(manager: manager,
                                               playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
             change(controller)
             controller.playCommand()
+        case .noItemToPlay:
+            let controller = AKLoadingState(manager: manager,
+                                            media: manager.currentMedia!,
+                                            autoPlay: true)
+            change(controller)
         default:
             assertionFailure("Sould be not here \(reasonForWaitingToPlay.rawValue)")
         }
@@ -144,6 +159,10 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
         change(controller)
     }
     
+    func togglePlayPause() {
+        pause()
+    }
+    
     func stop() {
         clearCallBacks()
         let controller = AKStoppedState(manager: manager,
@@ -151,15 +170,21 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
         change(controller)
     }
     
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    }
+    
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    }
+    
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        manager.currentItem?.cancelPendingSeeks()
         manager.player.seek(to: time,
                             completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        manager.currentItem?.cancelPendingSeeks()
         manager.player.seek(to: time)
     }
     
@@ -175,6 +200,14 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
                         preferredTimescale: manager.configuration.preferredTimescale))
     }
     
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        manager.player.seek(to: date, completionHandler: completionHandler)
+    }
+    
+    func seek(to date: Date) {
+        manager.player.seek(to: date)
+    }
+    
     func seek(offset: Double) {
         seek(to: manager.currentTime.seconds + offset)
     }
@@ -187,12 +220,12 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
     
     func seek(toPercentage value: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (manager.itemDuration?.seconds ?? 0) / value,
+        seek(to: (manager.duration?.seconds ?? 0) / value,
              completionHandler: completionHandler)
     }
     
     func seek(toPercentage value: Double) {
-        seek(to: (manager.itemDuration?.seconds ?? 0) / value)
+        seek(to: (manager.duration?.seconds ?? 0) / value)
     }
     
     func step(byCount stepCount: Int) {
@@ -202,13 +235,41 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
     
     // MARK: - Additional Helper Functions
     
-    private func startConfiguringAutomaticWaitingBehaviorService() {
-        configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player, configuration: manager.configuration)
+    private func startPlayerItemObservingNotificationsService() {
+        playerItemObservingNotificationsService.onPlayerItemDidPlayToEndTime = { [unowned self] in
+            manager.delegate?.playerManager(didItemPlayToEndTime: manager.currentTime)
+            guard let media = manager.currentMedia else { assertionFailure("Media should available"); return }
+            manager.plugins?.forEach({$0.playerPlugin(didPlayToEnd: media,
+                                                      at: manager.currentTime)})
+            clearCallBacks()
+            let controller = AKStoppedState(manager: manager,
+                                            playerItemDidPlayToEndTime: true,
+                                            playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+            change(controller)
+        }
         
+        playerItemObservingNotificationsService.onPlayerItemFailedToPlayToEndTime = { [unowned self] in
+            guard manager.player.timeControlStatus == .waitingToPlayAtSpecifiedRate, let reasonForWaitingToPlay = manager.player.reasonForWaitingToPlay else {
+                clearCallBacks()
+                let controller = AKFailedState(manager: manager, error: .itemFailedToPlayToEndTime)
+                return change(controller)
+            }
+            if reasonForWaitingToPlay == .noItemToPlay { return stop() }
+            AKPlayerLogger.shared.log(message: "Already Waiting for network `onPlayerItemFailedToPlayToEndTime`", domain: .state)
+        }
+        
+        playerItemObservingNotificationsService.onPlayerItemPlaybackStalled = {
+            AKPlayerLogger.shared.log(message: "Already Waiting for network `onPlayerItemPlaybackStalled`", domain: .state)
+        }
+    }
+    
+    private func startConfiguringAutomaticWaitingBehaviorService() {
         configuringAutomaticWaitingBehaviorService.onChangeTimeControlStatus = { [unowned self] status in
             switch status {
             case .paused:
-                pause()
+                clearCallBacks()
+                let controller = AKFailedState(manager: manager, error: .itemFailedToPlayToEndTime)
+                change(controller)
             case .waitingToPlayAtSpecifiedRate:
                 AKPlayerLogger.shared.log(message: "TimeControlStaus is WaitingToPlayAtSpecifiedRate now",
                                           domain: .state)
@@ -221,30 +282,25 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
             }
         }
     }
-
+    
     private func change(_ controller: AKPlayerStateControllable) {
         manager.change(controller)
     }
     
     private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
-        
         audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
             pause()
         }
     }
     
     private func startObservingPlayerTimeService() {
-        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
-            setMetadata()
+            setPlaybackInfo()
             manager.delegate?.playerManager(didCurrentTimeChange: time)
         }
     }
     
     private func startRouteChangeObservingService() {
-        routeChangeObservingService = AKRouteChangeObservingService(audioSession: manager.audioSessionService.audioSession)
-        
         routeChangeObservingService.onChangeRoute = { [unowned self] reason  in
             switch reason {
             case .oldDeviceUnavailable, .unknown:
@@ -256,7 +312,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
             }
         }
     }
-
+    
     private func clearCallBacks() {
         /* It is necessary to remove the callbacks for time control status before change state to paused state,
          Eighter it will cause an infinite loop between paused state and the time control staus to call on waiting
@@ -265,12 +321,8 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
             configuringAutomaticWaitingBehaviorService.stop(clearCallBacks: true)
         }
     }
-
-    private func setMetadata() {
-        guard manager.configuration.isNowPlayingEnabled else { return }
-        timer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true, block: { [weak self] _ in
-            guard let self = self else { return }
-            self.manager.setNowPlayingPlaybackInfo()
-        })
+    
+    private func setPlaybackInfo() {
+        manager.setNowPlayingPlaybackInfo()
     }
 }

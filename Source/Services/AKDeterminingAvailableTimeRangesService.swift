@@ -26,25 +26,31 @@
 import AVFoundation
 
 final class AKDeterminingAvailableTimeRangesService {
-
+    
     // MARK: - Properties
-
+    
     private let playerItem: AVPlayerItem
-
+    
     var onChangeLoadedTimeRangesCallback: ((_ loadedTimeRanges: [NSValue]) -> Void)?
-
+    var onChangeSeekableTimeRangesCallback: ((_ seekableTimeRanges: [NSValue]) -> Void)?
+    
     /**
      The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.loadedTimeRanges`.
      */
     private var playerItemLoadedTimeRangesObserver: NSKeyValueObservation!
-
+    
+    /**
+     The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.seekableTimeRanges`.
+     */
+    private var playerItemSeekableTimeRangesObserver: NSKeyValueObservation!
+    
     // MARK: - Init
-
+    
     init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.playerItem = playerItem
     }
-
+    
     func startObserving() {
         /*
          Register as an observer of the player item's loadedTimeRanges property.
@@ -52,10 +58,18 @@ final class AKDeterminingAvailableTimeRangesService {
         playerItemLoadedTimeRangesObserver = playerItem.observe(\.loadedTimeRanges, options: [.initial, .new], changeHandler: { [unowned self] (player, change) in
             onChangeLoadedTimeRangesCallback?(playerItem.loadedTimeRanges)
         })
+        
+        /*
+         Register as an observer of the player item's seekableTimeRanges property.
+         */
+        playerItemSeekableTimeRangesObserver = playerItem.observe(\.seekableTimeRanges, options: [.initial, .new], changeHandler: { [unowned self] (player, change) in
+            onChangeSeekableTimeRangesCallback?(playerItem.seekableTimeRanges)
+        })
     }
-
+    
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
         playerItemLoadedTimeRangesObserver.invalidate()
+        playerItemSeekableTimeRangesObserver.invalidate()
     }
 }

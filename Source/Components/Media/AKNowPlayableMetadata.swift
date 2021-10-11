@@ -43,7 +43,7 @@ public struct AKNowPlayableMetadata: AKPlayableMetadata {
     }
 }
 
-/* `AKMediaStaticMetadata` contains static properties of a playable item that don't depend on the state of the player for their value. */
+/* `AKNowPlayableStaticMetadata` contains static properties of a playable item that don't depend on the state of the player for their value. */
 public struct AKNowPlayableStaticMetadata: AKPlayableStaticMetadata {
     
     // MARK: - Properties
@@ -54,7 +54,7 @@ public struct AKNowPlayableStaticMetadata: AKPlayableStaticMetadata {
     
     public var title: String                            // MPMediaItemPropertyTitle
     public var artist: String?                          // MPMediaItemPropertyArtist
-    public var artwork: MPMediaItemArtwork?             // MPMediaItemPropertyArtwork
+    public var artwork: Artwork?                        // MPMediaItemPropertyArtwork
     
     public var albumArtist: String?                     // MPMediaItemPropertyAlbumArtist
     public var albumTitle: String?                      // MPMediaItemPropertyAlbumTitle
@@ -66,7 +66,7 @@ public struct AKNowPlayableStaticMetadata: AKPlayableStaticMetadata {
                 isLiveStream: Bool,
                 title: String,
                 artist: String?,
-                artwork: MPMediaItemArtwork?,
+                artwork: Artwork?,
                 albumArtist: String?,
                 albumTitle: String?
     ) {
@@ -81,16 +81,16 @@ public struct AKNowPlayableStaticMetadata: AKPlayableStaticMetadata {
     }
 }
 
-/* `AKMediaDynamicMetadata` contains dynamic properties of a playable item that depend on the state of the player for their value. */
+/* `AKNowPlayableDynamicMetadata` contains dynamic properties of a playable item that depend on the state of the player for their value. */
 public struct AKNowPlayableDynamicMetadata: AKPlayableDynamicMetadata {
     
     // MARK: - Properties
     
-    public var rate: Float                             // MPNowPlayingInfoPropertyPlaybackRate
-    public var position: Float                         // MPNowPlayingInfoPropertyElapsedPlaybackTime
-    public var duration: Float?                        // MPMediaItemPropertyPlaybackDuration
+    public var rate: Float                                                              // MPNowPlayingInfoPropertyPlaybackRate
+    public var position: Float                                                          // MPNowPlayingInfoPropertyElapsedPlaybackTime
+    public var duration: Float?                                                         // MPMediaItemPropertyPlaybackDuration
     
-    public var currentLanguageOptions: [MPNowPlayingInfoLanguageOption]     // MPNowPlayingInfoPropertyCurrentLanguageOptions
+    public var currentLanguageOptions: [MPNowPlayingInfoLanguageOption]                 // MPNowPlayingInfoPropertyCurrentLanguageOptions
     public var availableLanguageOptionGroups: [MPNowPlayingInfoLanguageOptionGroup]     // MPNowPlayingInfoPropertyAvailableLanguageOptions
     
     // MARK: - Init

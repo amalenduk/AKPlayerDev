@@ -31,49 +31,45 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     // MARK: - Properties
     
-    internal private(set) var currentMedia: AKPlayable? {
+    private(set) var currentMedia: AKPlayable? {
         didSet {
             guard let media = currentMedia else { assertionFailure("Media should available"); return }
             plugins?.forEach({$0.playerPlugin(didChanged: media)})
         }
     }
     
-    internal var currentItem: AVPlayerItem? {
+    var currentItem: AVPlayerItem? {
         return player.currentItem
     }
     
-    internal var currentTime: CMTime {
+    var currentTime: CMTime {
         return player.currentTime()
     }
     
-    internal var itemDuration: CMTime? {
+    var duration: CMTime? {
         return currentItem?.duration
     }
     
-    internal unowned let player: AVPlayer
-    
-    internal var state: AKPlayer.State {
+    var state: AKPlayerState {
         return controller.state
     }
     
-    internal var playbackRate: AKPlaybackRate {
-        get { return _playbackRate }
+    var rate: AKPlaybackRate {
+        get { return _rate }
         set { changePlaybackRate(with: newValue) }
     }
     
-    private var _playbackRate: AKPlaybackRate = .normal
-    
-    internal var volume: Float {
+    var volume: Float {
         get { return player.volume }
         set { player.volume = newValue }
     }
     
-    internal var isMuted: Bool {
+    var isMuted: Bool {
         get { return player.isMuted }
         set { player.isMuted = newValue }
     }
     
-    internal var isPlaying: Bool {
+    var isPlaying: Bool {
         get { return state == .buffering
             || state == .playing
             || state == .waitingForNetwork
@@ -82,228 +78,236 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         }
     }
     
-    internal var brightness: CGFloat {
-        get { return UIScreen.main.brightness }
-        set {
-            UIScreen.main.brightness = (newValue >= 0 && newValue <= 1) ? newValue : brightness
-            UIScreen.main.wantsSoftwareDimming = true
-        }
+    var isSeeking: Bool {
+        return !(requestedSeekingTime == nil)
     }
     
     var error: Error? {
         return (controller as? AKFailedState)?.error
     }
     
-    private var _plugins = NSHashTable<AnyObject>.weakObjects()
+    private(set) var audioSessionInterrupted: Bool = false
     
-    internal var plugins: [AKPlayerPlugin]? {
-        return _plugins.allObjects.compactMap({($0 as? AKPlayerPlugin)})
-    }
+    private(set) var configuration: AKPlayerConfiguration
     
-    internal private(set) var configuration: AKPlayerConfiguration
-    
-    internal private(set) var controller: AKPlayerStateControllable! {
-        didSet {
-            controller.stateChanged()
+    private(set) var controller: AKPlayerStateControllable! {
+        get {
+            guard let controller = _controller else { preconditionFailure("Call `prepare` before performing any action") }
+            return controller
+        }set {
+            _controller = newValue
+            controller.stateDidChange()
             delegate?.playerManager(didStateChange: controller.state)
             UIApplication.shared.isIdleTimerDisabled = configuration.idleTimerDisabledForStates.contains(controller.state)
         }
     }
     
-    internal private(set) var audioSessionInterrupted: Bool = false
+    weak var delegate: AKPlayerManagerDelegate?
     
-    internal weak var delegate: AKPlayerManagerDelegate?
+    var plugins: [AKPlayerPlugin]? {
+        return _plugins.allObjects.compactMap({($0 as? AKPlayerPlugin)})
+    }
     
-    internal let audioSessionService: AKAudioSessionServiceable
+    private(set) var playingBeforeInterruption: Bool = false
     
-    internal private(set) var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable?
+    var remoteCommands: [AKRemoteCommand] = []
     
-    internal private(set) var remoteCommandsService: AKNowPlayableCommandService?
+    private(set) var requestedSeekingTime: CMTime?
     
-    internal private(set) var playerRateObservingService: AKPlayerRateObservingService!
+    let player: AVPlayer
     
-    internal private(set) var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
+    private var _controller: AKPlayerStateControllable!
     
-    internal private(set) var managingAudioOutputService: AKManagingAudioOutputService!
-
-    internal private(set) var screenBrightnessObservingService: AKScreenBrightnessObservingService!
+    private var _rate: AKPlaybackRate = .normal
     
-    internal private(set) var playingBeforeInterruption: Bool = false
+    private var _plugins = NSHashTable<AnyObject>.weakObjects()
+    
+    let audioSessionService: AKAudioSessionServiceable
+    
+    private(set) var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable?
+    
+    private(set) var remoteCommandController: AKRemoteCommandController?
+    
+    private(set) var playerRateObservingService: AKPlayerRateObservingService!
+    
+    private(set) var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
+    
+    private(set) var managingAudioOutputService: AKManagingAudioOutputService!
     
     // MARK: - Init
     
-    internal init(player: AVPlayer,
-                  plugins: [AKPlayerPlugin],
-                  configuration: AKPlayerConfiguration,
-                  audioSessionService: AKAudioSessionServiceable = AKAudioSessionService()) {
+    init(player: AVPlayer,
+         plugins: [AKPlayerPlugin],
+         configuration: AKPlayerConfiguration,
+         audioSessionService: AKAudioSessionServiceable = AKAudioSessionService(),
+         remoteCommandController: AKRemoteCommandController = AKRemoteCommandController()) {
         self.player = player
         self.configuration = configuration
         self.audioSessionService = audioSessionService
+        self.remoteCommandController = remoteCommandController
         super.init()
+        
         plugins.forEach({self._plugins.add($0)})
         
-        setAudioSessionActivate(true)
-        setAudioSessionCategory()
-        startPlaybackRateObserving()
-        startManagingAudioOutputService()
-        startScreenBrightnessObserving()
+        playerRateObservingService = AKPlayerRateObservingService(with: player)
+        
+        managingAudioOutputService = AKManagingAudioOutputService(with: player)
+        
+        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession:
+                                                                                                audioSessionService.audioSession)
         
         if configuration.isNowPlayingEnabled {
             playerNowPlayingMetadataService = AKPlayerNowPlayingMetadataService()
-            remoteCommandsService = AKNowPlayableCommandService(with: self,
-                                                                configuration: configuration)
-            remoteCommandsService?.enable()
-        }
-        
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(didEnterInBackground(_ :)),
-                                               name: UIApplication.didEnterBackgroundNotification,
-                                               object: nil)
-        
-        defer {
-            controller = AKInitState(manager: self)
+            remoteCommandController.manager = self
         }
     }
     
     deinit {
         _plugins.removeAllObjects()
-        AKNowPlayableCommand.allCases.forEach({$0.removeHandler()})
         NotificationCenter.default.removeObserver(self,
                                                   name: UIApplication.didEnterBackgroundNotification,
                                                   object: nil)
         UIScreen.main.wantsSoftwareDimming = false
+        playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
+        remoteCommandController?.disable(commands: AKRemoteCommand.all())
     }
     
-    internal func change(_ controller: AKPlayerStateControllable) {
+    func prepare() {
+        setAudioSessionActivate(true)
+        setAudioSessionCategory()
+        startAudioSessionInterruptionObservingService()
+        startPlaybackRateObservingService()
+        startManagingAudioOutputService()
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(didEnterInBackground(_ :)),
+                                               name: UIApplication.didEnterBackgroundNotification,
+                                               object: nil)
+        controller = AKInitState(manager: self)
+    }
+    
+    func change(_ controller: AKPlayerStateControllable) {
         self.controller = controller
     }
     
     // MARK: - Observers
     
     @objc func didEnterInBackground(_ notification: Notification) {
-        if configuration.pauseInBackground
+        if configuration.playbackPausesWhenBackgrounded
             && isPlaying { pause() }
     }
     
     // MARK: - Commands
     
-    internal func load(media: AKPlayable) {
+    func load(media: AKPlayable) {
         currentMedia = media
         controller.load(media: media)
     }
     
-    internal func load(media: AKPlayable,
-                       autoPlay: Bool) {
+    func load(media: AKPlayable,
+              autoPlay: Bool) {
         currentMedia = media
         controller.load(media: media,
                         autoPlay: autoPlay)
     }
     
-    internal func load(media: AKPlayable,
-                       autoPlay: Bool,
-                       at position: CMTime) {
+    func load(media: AKPlayable,
+              autoPlay: Bool,
+              at position: CMTime) {
         currentMedia = media
         controller.load(media: media,
                         autoPlay: autoPlay,
                         at: position)
     }
     
-    internal func load(media: AKPlayable,
-                       autoPlay: Bool,
-                       at position: Double) {
+    func load(media: AKPlayable,
+              autoPlay: Bool,
+              at position: Double) {
         currentMedia = media
         controller.load(media: media,
                         autoPlay: autoPlay,
                         at: position)
     }
     
-    internal func play() {
+    func play() {
         controller.play()
     }
     
-    internal func pause() {
+    func pause() {
         controller.pause()
     }
     
-    internal func stop() {
+    func togglePlayPause() {
+        controller.togglePlayPause()
+    }
+    
+    func stop() {
         controller.stop()
     }
     
-    internal func seek(to time: CMTime,
-                       completionHandler: @escaping (Bool) -> Void) {
-        guard let item = currentItem else { unaivalableCommand(reason: .loadMediaFirst);
-            completionHandler(false); return }
-        
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: item,
-                                                                      configuration: configuration)
-        let result = seekingThroughMediaService.boundedTime(time)
-        
-        if let seekTime = result.time {
-            controller.seek(to: seekTime,
-                            completionHandler: completionHandler)
-        } else if let reason = result.reason {
-            unaivalableCommand(reason: reason)
-            completionHandler(false)
-        } else {
-            assertionFailure("BoundedPosition should return at least value or reason")
-        }
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        seek(to: time, with: (toleranceBefore, toleranceAfter), completionHandler: completionHandler)
     }
     
-    internal func seek(to time: CMTime) {
-        guard let item = currentItem else { unaivalableCommand(reason: .loadMediaFirst); return }
-        
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: item,
-                                                                      configuration: configuration)
-        let result = seekingThroughMediaService.boundedTime(time)
-        
-        if let seekTime = result.time {
-            controller.seek(to: seekTime)
-        } else if let reason = result.reason {
-            unaivalableCommand(reason: reason)
-        } else {
-            assertionFailure("BoundedPosition should return at least value or reason")
-        }
+    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+        seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { (_) in }
     }
     
-    internal func seek(to time: Double,
-                       completionHandler: @escaping (Bool) -> Void) {
+    func seek(to time: CMTime,
+              completionHandler: @escaping (Bool) -> Void) {
+        seek(to: time, with: nil, completionHandler: completionHandler)
+    }
+    
+    func seek(to time: CMTime) {
+        seek(to: time) { (_) in }
+    }
+    
+    func seek(to time: Double,
+              completionHandler: @escaping (Bool) -> Void) {
         seek(to: CMTime(seconds: time,
                         preferredTimescale: configuration.preferredTimescale),
              completionHandler: completionHandler)
     }
     
-    internal func seek(to time: Double) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: configuration.preferredTimescale))
+    func seek(to time: Double) {
+        seek(to: time) { (finished) in }
     }
     
-    internal func seek(offset: Double) {
+    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        controller.seek(to: date, completionHandler: completionHandler)
+    }
+    
+    func seek(to date: Date) {
+        controller.seek(to: date)
+    }
+    
+    func seek(offset: Double) {
         let position = currentTime.seconds + offset
         seek(to: position)
     }
     
-    internal func seek(offset: Double,
-                       completionHandler: @escaping (Bool) -> Void) {
+    func seek(offset: Double,
+              completionHandler: @escaping (Bool) -> Void) {
         let position = currentTime.seconds + offset
         seek(to: position,
              completionHandler: completionHandler)
     }
     
-    internal func seek(toPercentage value: Double,
-                       completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (itemDuration?.seconds ?? 0) * value,
+    func seek(toPercentage value: Double,
+              completionHandler: @escaping (Bool) -> Void) {
+        seek(to: (duration?.seconds ?? 0) * value,
              completionHandler: completionHandler)
     }
     
-    internal func seek(toPercentage value: Double) {
-        seek(to: (itemDuration?.seconds ?? 0) * value)
+    func seek(toPercentage value: Double) {
+        seek(to: ((duration?.seconds ?? 0) * value))
     }
     
-    internal func step(byCount stepCount: Int) {
+    func step(byCount stepCount: Int) {
         guard let item = currentItem else { unaivalableCommand(reason: .loadMediaFirst); return }
         
         let stepService = AKSteppingThroughMediaService(with: item)
-
+        
         let result = stepService.canStep(byCount: stepCount)
         
         if result.canStep {
@@ -317,8 +321,45 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     // MARK: - Additional Helper Functions
     
-    private func startPlaybackRateObserving() {
-        playerRateObservingService = AKPlayerRateObservingService(with: player)
+    private func seek(to time: CMTime, with tolerance: (before: CMTime, after: CMTime)?,
+                      completionHandler: @escaping (Bool) -> Void) {
+        
+        guard let item = currentItem else {
+            unaivalableCommand(reason: .loadMediaFirst)
+            completionHandler(false)
+            return }
+        
+        item.cancelPendingSeeks()
+        
+        let seekingThroughMediaService = AKSeekingThroughMediaService(with: item,
+                                                                      configuration: configuration)
+        let result = seekingThroughMediaService.boundedTime(time)
+        
+        if let seekTime = result.time {
+            requestedSeekingTime = seekTime
+            if let tolerance = tolerance {
+                controller.seek(to: seekTime, toleranceBefore: tolerance.before, toleranceAfter: tolerance.after) { [weak self] (finished) in
+                    guard let strongSelf = self else { return }
+                    strongSelf.requestedSeekingTime = nil
+                    completionHandler(finished)
+                }
+            }else {
+                controller.seek(to: seekTime) { [weak self] (finished) in
+                    guard let strongSelf = self else { return }
+                    strongSelf.requestedSeekingTime = nil
+                    if !finished { strongSelf.delegate?.playerManager(didCurrentTimeChange: strongSelf.player.currentTime() )}
+                    completionHandler(finished)
+                }
+            }
+        } else if let reason = result.reason {
+            unaivalableCommand(reason: reason)
+            completionHandler(false)
+        } else {
+            assertionFailure("BoundedPosition should return at least value or reason")
+        }
+    }
+    
+    private func startPlaybackRateObservingService() {
         playerRateObservingService?.onChangePlaybackRate = { [unowned self] playbackRate in
             AKPlayerLogger.shared.log(message: "Rate changed \(playbackRate.rate)",
                                       domain: .service)
@@ -326,18 +367,18 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         }
     }
     
-    private func changePlaybackRate(with rate: AKPlaybackRate) {
-        if rate == _playbackRate { return }
+    @discardableResult private func changePlaybackRate(with rate: AKPlaybackRate) -> Bool {
+        if rate == _rate { return true }
         defer {
-            delegate?.playerManager(didPlaybackRateChange: playbackRate)
+            delegate?.playerManager(didPlaybackRateChange: rate)
         }
         if rate.rate == 0.0 {
             pause()
-            _playbackRate = .normal
+            _rate = .normal
         }else {
-            guard let item = currentItem else { _playbackRate = rate; return }
+            guard let item = currentItem else { _rate = rate; return  false }
             if AKDeterminingPlaybackCapabilitiesService.itemCanBePlayed(at: rate, for: item) {
-                _playbackRate = rate
+                _rate = rate
                 if controller.state == .buffering
                     || controller.state == .playing
                     || controller.state == .waitingForNetwork {
@@ -345,6 +386,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                 }
             }
         }
+        return true
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableActionReason) {
@@ -366,19 +408,25 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     public func setNowPlayingMetadata() {
         guard configuration.isNowPlayingEnabled,
               let playerNowPlayingMetadataService = playerNowPlayingMetadataService,
+              let remoteCommandController = remoteCommandController,
               let media = currentMedia else { return }
+        remoteCommandController.enable(commands: remoteCommands)
         if let staticMetadata = media.staticMetadata  {
             playerNowPlayingMetadataService.setNowPlayingMetadata(staticMetadata)
         }else {
             let assetMetadata = AKMediaMetadata(with: currentItem?.asset.commonMetadata ?? [])
+            var artwork: MPMediaItemArtwork?
+            if let artworkData = assetMetadata.artwork, let image = UIImage(data: artworkData) {
+                artwork = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size in
+                    return image
+                })
+            }
             let metadata = AKNowPlayableStaticMetadata(assetURL: media.url,
                                                        mediaType: .video,
                                                        isLiveStream: media.isLive(),
                                                        title: assetMetadata.title ?? "AKPlayer",
                                                        artist: assetMetadata.artist,
-                                                       artwork: MPMediaItemArtwork(boundsSize: CGSize(width: 50, height: 50), requestHandler: { size in
-                                                        return (UIImage(data: assetMetadata.artwork ?? Data()) ?? UIImage())
-                                                       }),
+                                                       artwork: artwork == nil ? nil : .artwork(artwork!),
                                                        albumArtist: assetMetadata.artist,
                                                        albumTitle: assetMetadata.albumName)
             playerNowPlayingMetadataService.setNowPlayingMetadata(metadata)
@@ -388,17 +436,28 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     public func setNowPlayingPlaybackInfo() {
         guard configuration.isNowPlayingEnabled,
               let playerNowPlayingMetadataService = playerNowPlayingMetadataService else { return }
-        let metadata = AKNowPlayableDynamicMetadata(rate: player.rate,
-                                                    position: Float(currentTime.seconds),
-                                                    duration: Float(player.currentItem?.duration.seconds ?? 0),
+        var playbackRate: Float = 0
+        let currentTime: Float = Float(player.currentTime().seconds)
+        
+        switch player.timeControlStatus {
+        case .waitingToPlayAtSpecifiedRate, .paused:
+            playbackRate = 0
+        case .playing:
+            playbackRate = 1
+        @unknown default:
+            // FIXME: - Need to add
+            break
+        }
+        
+        let metadata = AKNowPlayableDynamicMetadata(rate: playbackRate,
+                                                    position: currentTime,
+                                                    duration: (duration?.seconds == nil) ? nil : (Float(duration!.seconds) - 10),
                                                     currentLanguageOptions: [],
                                                     availableLanguageOptionGroups: [])
         playerNowPlayingMetadataService.setNowPlayingPlaybackInfo(metadata)
     }
     
-    private func startAudioSessionInterruptionObserving() {
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: audioSessionService.audioSession)
-        
+    private func startAudioSessionInterruptionObservingService() {
         audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
             playingBeforeInterruption = isPlaying
             audioSessionInterrupted = true
@@ -408,15 +467,13 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             audioSessionInterrupted = false
             if playingBeforeInterruption
                 && shouldResume
-                && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint{
+                && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
                 play()
             }
         }
     }
     
     private func startManagingAudioOutputService() {
-        managingAudioOutputService = AKManagingAudioOutputService(with: player)
-        
         managingAudioOutputService.onChangeVolume = { [unowned self] volume in
             delegate?.playerManager(didVolumeChange: volume,
                                     isMuted: isMuted)
@@ -430,15 +487,85 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
                                               isMuted: isMuted)})
         }
-
+        
         managingAudioOutputService.startObserving()
     }
 
-    private func startScreenBrightnessObserving() {
-        screenBrightnessObservingService = AKScreenBrightnessObservingService()
-
-        screenBrightnessObservingService.onbBrightnessChange = { [unowned self] brightness in
-            delegate?.playerManager(didBrightnessChange: brightness)
+    func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        switch command {
+        case .pause:
+            if isPlaying || state == .paused || state == .stopped || state == .failed {
+                pause()
+                return .success
+            }
+            return .commandFailed
+        case .play:
+            if state == .initialization {
+                return .noSuchContent
+            }
+            play()
+            return .success
+        case .stop:
+            if isPlaying
+                || state == .paused
+                || state == .stopped {
+                stop()
+                return .success
+            }
+            return .commandFailed
+        case .togglePlayPause:
+            if state == .initialization {
+                return .noSuchContent
+            }
+            togglePlayPause()
+            return .success
+        case .nextTrack:
+            return .commandFailed
+        case .previousTrack:
+            return .commandFailed
+        case .changePlaybackRate:
+            guard let event = event as? MPChangePlaybackRateCommandEvent else { return .commandFailed }
+            guard !changePlaybackRate(with: .custom(event.playbackRate)) else { return .commandFailed }
+        case .seekBackward:
+            guard let event = event as? MPSeekCommandEvent else { return .commandFailed }
+            guard !changePlaybackRate(with: event.type == .beginSeeking ? .custom(-3.0) : .normal) else { return .commandFailed }
+        case .seekForward:
+            guard let event = event as? MPSeekCommandEvent else { return .commandFailed }
+            guard !changePlaybackRate(with: event.type == .beginSeeking ? .custom(3.0) : .normal) else { return .commandFailed }
+        case .skipBackward:
+            guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            seek(offset: -event.interval)
+        case .skipForward:
+            guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            seek(offset: event.interval)
+        case .changePlaybackPosition:
+            guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
+            seek(to: event.positionTime)
+        case .enableLanguageOption:
+            guard let _ = event as? MPChangeLanguageOptionCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .disableLanguageOption:
+            guard let _ = event as? MPChangeLanguageOptionCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .changeRepeatMode:
+            guard let event = event as? MPChangeRepeatModeCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .changeShuffleMode:
+            guard let event = event as? MPChangeShuffleModeCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .rating:
+            guard let event = event as? MPRatingCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .like:
+            guard let event = event as? MPFeedbackCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .dislike:
+            guard let event = event as? MPFeedbackCommandEvent else { return .commandFailed }
+            return .commandFailed
+        case .bookmark:
+            guard let event = event as? MPFeedbackCommandEvent else { return .commandFailed }
+            return .commandFailed
         }
+        return .success
     }
 }

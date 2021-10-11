@@ -25,11 +25,11 @@
 
 import AVFoundation
 
-final class AKManagingAudioOutputService {
+public final class AKManagingAudioOutputService {
     
     // MARK: - Properties
     
-    private unowned let player: AVPlayer
+    private let player: AVPlayer
     
     var onChangeVolume: ((_ volume: Float) -> Void)?
     var onChangePlayerIsMuted: ((_ isMuted: Bool) -> Void)?
@@ -73,6 +73,3 @@ final class AKManagingAudioOutputService {
         playerIsMutedObserver.invalidate()
     }
 }
-
-
-

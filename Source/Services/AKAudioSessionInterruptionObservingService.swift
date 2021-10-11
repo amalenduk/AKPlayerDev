@@ -25,23 +25,23 @@
 
 import AVFoundation
 
-protocol AKAudioSessionInterruptionObservingServiceable {
+public protocol AKAudioSessionInterruptionObservingServiceable {
     var onInterruptionBegan: (() -> Void)? { get set }
     var onInterruptionEnded: ((_ shouldResume: Bool) -> Void)? { get set }
 }
 
-final class AKAudioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable {
+open class AKAudioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable {
     
     // MARK: - Properties
     
-    private let audioSession: AVAudioSession
+    public let audioSession: AVAudioSession
     
-    var onInterruptionBegan: (() -> Void)?
-    var onInterruptionEnded: ((_ shouldResume: Bool) -> Void)?
+    open var onInterruptionBegan: (() -> Void)?
+    open var onInterruptionEnded: ((_ shouldResume: Bool) -> Void)?
     
     // MARK: - Init
     
-    init(audioSession: AVAudioSession) {
+    public init(audioSession: AVAudioSession) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.audioSession = audioSession
         /* A notification that’s posted when an audio interruption occurs. */
@@ -55,7 +55,7 @@ final class AKAudioSessionInterruptionObservingService: AKAudioSessionInterrupti
     
     /* A notification that’s posted when an audio interruption occurs. */
     
-    @objc func handleInterruption(_ notification: Notification) {
+    @objc open func handleInterruption(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let typeValue = userInfo[AVAudioSessionInterruptionTypeKey] as? UInt,
               let type = AVAudioSession.InterruptionType(rawValue: typeValue) else {
