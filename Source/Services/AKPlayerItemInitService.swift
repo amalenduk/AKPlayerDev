@@ -1,5 +1,5 @@
 //
-//  AKPlayerItemInitializationController.swift
+//  AKPlayerItemInitService.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,9 +23,15 @@
 //  SOFTWARE.
 //
 
+/*
+ https://developer.apple.com/documentation/avfoundation/avasynchronouskeyvalueloading
+ https://developer.apple.com/documentation/avfoundation/avasset
+ https://developer.apple.com/documentation/avfoundation/avplayeritem
+ */
+
 import AVFoundation
 
-final class AKPlayerItemInitializationController {
+final class AKPlayerItemInitService {
     
     // MARK: - Properties
     
@@ -50,6 +56,8 @@ final class AKPlayerItemInitializationController {
                                   domain: .lifecycleService)
     }
     
+    // MARK: - Additional Helper Functions
+    
     func startInitialization() {
         set(media: media)
     }
@@ -58,8 +66,6 @@ final class AKPlayerItemInitializationController {
         if clearCallBacks { onCompletedCreatingPlayerItem = nil }
         asset?.cancelLoading()
     }
-    
-    // MARK: - Additional Helper Functions
     
     private func set(media: AKPlayable) {
         /*
@@ -118,22 +124,22 @@ final class AKPlayerItemInitializationController {
         /* Use the AVAsset playable property to detect whether the asset can be played. */
         guard asset.isPlayable
                 || !asset.hasProtectedContent else {
-            return assetFailedToPrepareForPlayback(with: .contentsUnabailable)
-        }
+                    return assetFailedToPrepareForPlayback(with: .contentsUnabailable)
+                }
         
         /* At this point we're ready to set up for playback of the asset. */
         createPlayerItem(with: asset)
     }
     
-    private func createPlayerItem(with asset: AVURLAsset) {        
+    private func createPlayerItem(with asset: AVURLAsset) {
         /* Create a new instance of AVPlayerItem from the now successfully loaded AVAsset. */
         let assetKeys = configuration.itemLoadedAssetKeys
-        print("asset.availableMediaCharacteristicsWithMediaSelectionOptions", asset.availableMediaCharacteristicsWithMediaSelectionOptions.count)
         
         // Create a new AVPlayerItem with the asset and an
         // array of asset keys to be automatically loaded
         let playerItem = AVPlayerItem(asset: asset,
                                       automaticallyLoadedAssetKeys: assetKeys)
+        media.playerItem = playerItem
         onCompletedCreatingPlayerItem?(.success(playerItem))
     }
     

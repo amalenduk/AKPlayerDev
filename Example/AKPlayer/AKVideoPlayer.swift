@@ -118,7 +118,7 @@ extension AKVideoPlayer: AKPlayerPlugin { }
 
 // MARK: - AKPlayerCommand
 
-extension AKVideoPlayer: AKPlayerCommand {
+extension AKVideoPlayer: AKPlayerCommandProtocol {
     
     public func load(media: AKPlayable) {
         player.load(media: media)

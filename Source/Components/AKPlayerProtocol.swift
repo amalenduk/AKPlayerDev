@@ -39,6 +39,7 @@ public protocol AKPlayerProtocol: AnyObject {
     var isSeeking: Bool { get }
     var error: Error? { get }
     
+    // TODO: - Fixit
     func prepare()
     
     // TODO: - Find a better way to manage the now playable information

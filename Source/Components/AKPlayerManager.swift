@@ -90,7 +90,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private(set) var configuration: AKPlayerConfiguration
     
-    private(set) var controller: AKPlayerStateControllable! {
+    private(set) var controller: AKPlayerStateControllerProtocol! {
         get {
             guard let controller = _controller else { preconditionFailure("Call `prepare` before performing any action") }
             return controller
@@ -116,7 +116,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     let player: AVPlayer
     
-    private var _controller: AKPlayerStateControllable!
+    private var _controller: AKPlayerStateControllerProtocol!
     
     private var _rate: AKPlaybackRate = .normal
     
@@ -186,7 +186,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         controller = AKInitState(manager: self)
     }
     
-    func change(_ controller: AKPlayerStateControllable) {
+    func change(_ controller: AKPlayerStateControllerProtocol) {
         self.controller = controller
     }
     

@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKFailedState: AKPlayerStateControllable {
+final class AKFailedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     

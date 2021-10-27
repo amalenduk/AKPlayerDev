@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKLoadingState: AKPlayerStateControllable {
+final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -39,7 +39,7 @@ final class AKLoadingState: AKPlayerStateControllable {
     
     private let position: CMTime?
     
-    private var playerItemInitializationController: AKPlayerItemInitializationController!
+    private var playerItemInitService: AKPlayerItemInitService!
     
     private var determiningPlayerItemStatusService: AKDeterminingPlayerItemStatusService!
     
@@ -226,26 +226,31 @@ final class AKLoadingState: AKPlayerStateControllable {
     // MARK: - Additional Helper Functions
     
     private func createPlayerItem(with media: AKPlayable) {
-        playerItemInitializationController = AKPlayerItemInitializationController(with: media,
+        playerItemInitService = AKPlayerItemInitService(with: media,
                                                                             configuration: manager.configuration)
-        playerItemInitializationController.onCompletedCreatingPlayerItem = { [unowned self] result in
+        playerItemInitService.onCompletedCreatingPlayerItem = { [unowned self] result in
             switch result {
             case .success(let item):
-                manager.player.replaceCurrentItem(with: item)
+                /*
+                 You should call this method before associating the player item with the player to make
+                 sure you capture all state changes to the item’s status.
+                 */
                 startObservingStatus(for: item)
+                manager.player.replaceCurrentItem(with: item)
             case .failure(let error):
                 assetFailedToPrepareForPlayback(with: error)
             }
         }
         
-        playerItemInitializationController.startInitialization()
+        playerItemInitService.startInitialization()
     }
     
     private func startObservingStatus(for item: AVPlayerItem) {
         determiningPlayerItemStatusService = AKDeterminingPlayerItemStatusService(playerItem: item) { [unowned self] (status) in
             switch status {
             case .unknown:
-                AKPlayerLogger.shared.log(message: "AVPlayerItem.status: 'unknown'", domain: .state)
+                AKPlayerLogger.shared.log(message: "AVPlayerItem.status: 'unknown'",
+                                          domain: .state)
             case .readyToPlay:
                 becameReadyToPlay()
             case .failed:
@@ -264,8 +269,8 @@ final class AKLoadingState: AKPlayerStateControllable {
     }
     
     private func cancelLoading() {
-        if let playerItemInitializationController = playerItemInitializationController {
-            playerItemInitializationController.cancelLoading(clearCallBacks: true)
+        if let playerItemInitService = playerItemInitService {
+            playerItemInitService.cancelLoading(clearCallBacks: true)
         }
         if let determiningPlayerItemStatusService = determiningPlayerItemStatusService {
             determiningPlayerItemStatusService.stop()

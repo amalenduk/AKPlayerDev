@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKLoadedState: AKPlayerStateControllable {
+final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -238,7 +238,7 @@ final class AKLoadedState: AKPlayerStateControllable {
         playerItemAssetKeysObservingService.startObserving()
     }
     
-    private func change(_ controller: AKPlayerStateControllable) {
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
         workItem?.cancel()
         manager.change(controller)
     }

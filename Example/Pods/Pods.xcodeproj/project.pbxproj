@@ -10,6 +10,7 @@
 		0416BE3B263D8CF900D2ECA6 /* AKAccessingAssetAndTracksService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0416BE3A263D8CF900D2ECA6 /* AKAccessingAssetAndTracksService.swift */; };
 		0416BE47263DB45300D2ECA6 /* AKAccessingChapterMetadataService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0416BE46263DB45300D2ECA6 /* AKAccessingChapterMetadataService.swift */; };
 		044628602639FBC6002643CE /* Tasks in Resources */ = {isa = PBXBuildFile; fileRef = 0446285F2639FBC6002643CE /* Tasks */; };
+		0480B4F22729AA04002BAF2C /* AKPlayable+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0480B4F12729AA04002BAF2C /* AKPlayable+Extensions.swift */; };
 		049DCCB426F1D2E600BD812D /* AKPlayerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 049DCCB326F1D2E600BD812D /* AKPlayerState.swift */; };
 		04A998E92637215200895B1C /* AKRemoteCommandController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A998E82637215200895B1C /* AKRemoteCommandController.swift */; };
 		04AF46F22713FDAF000D3521 /* AKMediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04AF46F12713FDAF000D3521 /* AKMediaItem.swift */; };
@@ -28,7 +29,7 @@
 		26448B5E9580902D306663BFF4B60F26 /* AKFailedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 86C3BB6A54D1EB700E09D17490914953 /* AKFailedState.swift */; };
 		37C217E1EEDBFCA4EF99936FD2440542 /* AKMediaSelectionOption.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7D914DF10E2ED087597705C128AF17DA /* AKMediaSelectionOption.swift */; };
 		38586431ED2B7F7621F329E8C1C16F57 /* AKRemoteCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34CF9B3C74D5DC9FEA75C9517B0AC314 /* AKRemoteCommand.swift */; };
-		398016D749287CAE0DA1EFBBD59D8D29 /* AKPlayerItemInitializationController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitializationController.swift */; };
+		398016D749287CAE0DA1EFBBD59D8D29 /* AKPlayerItemInitService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitService.swift */; };
 		519B02A54A5726CADCD6E8E8BE5454FE /* AKPlayerConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00640540013E0ACEC0C1C14235CFE19F /* AKPlayerConfiguration.swift */; };
 		51C7A7599DF55F06FABF4B35844E1B65 /* AKPlayerUnavailableActionReason.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0A1F3F9D9AF8001BDA29C31096342F /* AKPlayerUnavailableActionReason.swift */; };
 		53A9A07415FEBA5550DA10EFF2F7A805 /* AKBufferingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A81C033B74103429D235A34A7B425A9 /* AKBufferingState.swift */; };
@@ -43,7 +44,7 @@
 		7BCD3FC732462A1D30576FC9BBE9947C /* AKMediaSelectionService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11DBA77561714F9AEBACCB8E1ADD98ED /* AKMediaSelectionService.swift */; };
 		7DB591584BCF68BB91D56A847CEA8ECB /* AKRouteChangeObservingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = ACC8FB8C603B8F4E5F2A45554B06A3F8 /* AKRouteChangeObservingService.swift */; };
 		81196B66C38E282AEBCEF5918CF1015C /* AKPlayingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABFEA6FFF855B526EFC6F17EDBB9C70E /* AKPlayingState.swift */; };
-		8CA50285BE01B81654A6F499A5B863F8 /* AKPlayerCommand.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommand.swift */; };
+		8CA50285BE01B81654A6F499A5B863F8 /* AKPlayerCommandProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommandProtocol.swift */; };
 		94363B52AB1CF88F59CDB3081BAE369F /* AKPlayerItemObservingNotificationsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 191C08AAA31E950AF56166D4842AFE45 /* AKPlayerItemObservingNotificationsService.swift */; };
 		9AB62E8E98ED8320F0B9C6B23D6E4176 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
 		A48FFA322B18A6D43F80969D37374EB9 /* AKManagingAudioOutputService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 561614F50D770C826A028530C8A05259 /* AKManagingAudioOutputService.swift */; };
@@ -53,7 +54,7 @@
 		AE5C6DD39ED52024B50DAB38069DDB0F /* AKPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB32639705FA0C70BC92C1D9AEC004F5 /* AKPlayerView.swift */; };
 		AEA5A8BF63A8676ED7EF92D5E3DA82D3 /* AKPlayableMetadata.swift in Sources */ = {isa = PBXBuildFile; fileRef = E35F66C6A98A6A3472E2F3988DD490C6 /* AKPlayableMetadata.swift */; };
 		B630F6E880DDCE1A3351E681C2C99C02 /* AKPlayerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F043CAF1664AE670EA6E08AA6D84874F /* AKPlayerManager.swift */; };
-		B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllable.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllable.swift */; };
+		B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllerProtocol.swift */; };
 		B7D19F1321C3A9811A5B6A36321FAFCD /* AKPlayerLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EA603B3BB3B0628C03E4B99182D27EA /* AKPlayerLogger.swift */; };
 		B7DCDE121E45F94056D202EB9D2678D7 /* AKLoadingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 67B9194281D02E9FA4DBB03FFC6D0FE6 /* AKLoadingState.swift */; };
 		BBDAFE9C4C12BDDDD555AAE8CB618389 /* AKPlayerManagerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = D010F2EF34F1FFBD1846C2C529D2B573 /* AKPlayerManagerProtocol.swift */; };
@@ -103,6 +104,7 @@
 		0416BE3A263D8CF900D2ECA6 /* AKAccessingAssetAndTracksService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAccessingAssetAndTracksService.swift; sourceTree = "<group>"; };
 		0416BE46263DB45300D2ECA6 /* AKAccessingChapterMetadataService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAccessingChapterMetadataService.swift; sourceTree = "<group>"; };
 		0446285F2639FBC6002643CE /* Tasks */ = {isa = PBXFileReference; lastKnownFileType = text; path = Tasks; sourceTree = "<group>"; };
+		0480B4F12729AA04002BAF2C /* AKPlayable+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AKPlayable+Extensions.swift"; sourceTree = "<group>"; };
 		049DCCB326F1D2E600BD812D /* AKPlayerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlayerState.swift; sourceTree = "<group>"; };
 		04A998E82637215200895B1C /* AKRemoteCommandController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKRemoteCommandController.swift; sourceTree = "<group>"; };
 		04AF46F02713E803000D3521 /* Notes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Notes.md; sourceTree = "<group>"; };
@@ -142,7 +144,7 @@
 		6EA603B3BB3B0628C03E4B99182D27EA /* AKPlayerLogger.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerLogger.swift; sourceTree = "<group>"; };
 		73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS14.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		741EC0BA2CF30776D4746939CC23AF58 /* AKWaitingForNetworkState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKWaitingForNetworkState.swift; sourceTree = "<group>"; };
-		74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitializationController.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerItemInitializationController.swift; sourceTree = "<group>"; };
+		74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerItemInitService.swift; sourceTree = "<group>"; };
 		7AF62EA76148D7FE810B575804389B29 /* AKPlayer.podspec */ = {isa = PBXFileReference; explicitFileType = text.script.ruby; includeInIndex = 1; indentWidth = 2; path = AKPlayer.podspec; sourceTree = "<group>"; tabWidth = 2; xcLanguageSpecificationIdentifier = xcode.lang.ruby; };
 		7C1E132F7AD3FE59DDE1C77DE7945B7A /* AKPlayer.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = AKPlayer.debug.xcconfig; sourceTree = "<group>"; };
 		7D914DF10E2ED087597705C128AF17DA /* AKMediaSelectionOption.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKMediaSelectionOption.swift; sourceTree = "<group>"; };
@@ -171,7 +173,7 @@
 		C80FDC7043DC70B3875B1EE019931935 /* AKNowPlayableMetadata.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKNowPlayableMetadata.swift; sourceTree = "<group>"; };
 		C8368EB2950E10350A15475D436221BA /* Pods-AKPlayer_Tests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; path = "Pods-AKPlayer_Tests.release.xcconfig"; sourceTree = "<group>"; };
 		CD02CE081D4330959DC6FB2EDA8D3B3A /* LICENSE */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
-		CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommand.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerCommand.swift; sourceTree = "<group>"; };
+		CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommandProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerCommandProtocol.swift; sourceTree = "<group>"; };
 		CF0A1F3F9D9AF8001BDA29C31096342F /* AKPlayerUnavailableActionReason.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerUnavailableActionReason.swift; sourceTree = "<group>"; };
 		CFB036645D9D47350DF284A8816F9352 /* CMTime+Extension.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = "CMTime+Extension.swift"; sourceTree = "<group>"; };
 		D010F2EF34F1FFBD1846C2C529D2B573 /* AKPlayerManagerProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerManagerProtocol.swift; sourceTree = "<group>"; };
@@ -182,7 +184,7 @@
 		DE862BBF8A1ADB89460F7BFF10B6F908 /* Pods_AKPlayer_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AKPlayer_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		DF85DC5DF59913310F2036EC9FB56721 /* AKPlayerError.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerError.swift; sourceTree = "<group>"; };
 		E35F66C6A98A6A3472E2F3988DD490C6 /* AKPlayableMetadata.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayableMetadata.swift; sourceTree = "<group>"; };
-		E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllable.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerStateControllable.swift; sourceTree = "<group>"; };
+		E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllerProtocol.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerStateControllerProtocol.swift; sourceTree = "<group>"; };
 		EA0DE00DC075334D0DDE01B9F78625D7 /* AKPausedState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPausedState.swift; sourceTree = "<group>"; };
 		EA84A5E7CA37B1CC6F80EA0CFC21AF5C /* AKPlayerDefaultConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerDefaultConfiguration.swift; sourceTree = "<group>"; };
 		F043CAF1664AE670EA6E08AA6D84874F /* AKPlayerManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerManager.swift; sourceTree = "<group>"; };
@@ -242,6 +244,7 @@
 				3DFCE490635A43D4E4445D2DEFB7279B /* AKMediaMetadata.swift */,
 				2290748FFDCA2BB60BA23C6A43F3C97F /* AKMedia.swift */,
 				04AF46F12713FDAF000D3521 /* AKMediaItem.swift */,
+				0480B4F12729AA04002BAF2C /* AKPlayable+Extensions.swift */,
 			);
 			path = Media;
 			sourceTree = "<group>";
@@ -296,7 +299,7 @@
 				04E3BEB82648423300ADB254 /* Media */,
 				7D914DF10E2ED087597705C128AF17DA /* AKMediaSelectionOption.swift */,
 				0BBE325CE21EA3330E89BA1E616C68A6 /* AKPlaybackRate.swift */,
-				CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommand.swift */,
+				CE110DA40E48F20473EFAFEE57E33070 /* AKPlayerCommandProtocol.swift */,
 				00640540013E0ACEC0C1C14235CFE19F /* AKPlayerConfiguration.swift */,
 				EA84A5E7CA37B1CC6F80EA0CFC21AF5C /* AKPlayerDefaultConfiguration.swift */,
 				5DC07BFBBF5CFA69B972DC079D929A5E /* AKPlayerProtocol.swift */,
@@ -306,7 +309,7 @@
 				F043CAF1664AE670EA6E08AA6D84874F /* AKPlayerManager.swift */,
 				D010F2EF34F1FFBD1846C2C529D2B573 /* AKPlayerManagerProtocol.swift */,
 				36951920B914C7CEFCE26DBE2895F4D9 /* AKPlayerPlugin.swift */,
-				E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllable.swift */,
+				E5C087B36595AD266A32A921A17CD10F /* AKPlayerStateControllerProtocol.swift */,
 				CF0A1F3F9D9AF8001BDA29C31096342F /* AKPlayerUnavailableActionReason.swift */,
 				049DCCB326F1D2E600BD812D /* AKPlayerState.swift */,
 			);
@@ -373,7 +376,7 @@
 				40C9CF8612134BCCA4D477B20E31834D /* AKDeterminingPlaybackCapabilitiesService.swift */,
 				11DBA77561714F9AEBACCB8E1ADD98ED /* AKMediaSelectionService.swift */,
 				249E1A332960C7DECCA24493B41C77D5 /* AKDeterminingBufferingStatusService.swift */,
-				74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitializationController.swift */,
+				74C5E1BDE8ECE92F52DF254A7AA45F4B /* AKPlayerItemInitService.swift */,
 				382CDD270D842589E5D8B2FFA2E75241 /* AKDeterminingPlayerItemStatusService.swift */,
 				BBE7A6BAA0981A9402B026A0AB4BC41A /* AKPlayerNowPlayingMetadataService.swift */,
 				191C08AAA31E950AF56166D4842AFE45 /* AKPlayerItemObservingNotificationsService.swift */,
@@ -628,6 +631,7 @@
 				5E4C1DEAD9EC7CA1133CFE90CE89A398 /* AKInitState.swift in Sources */,
 				FBB734F5F7A8CCE85C6F4957F37A6BC4 /* AKLoadedState.swift in Sources */,
 				B7DCDE121E45F94056D202EB9D2678D7 /* AKLoadingState.swift in Sources */,
+				0480B4F22729AA04002BAF2C /* AKPlayable+Extensions.swift in Sources */,
 				F45BAE002612613700BB3DDB /* AKAccessingTimingInformationService.swift in Sources */,
 				A48FFA322B18A6D43F80969D37374EB9 /* AKManagingAudioOutputService.swift in Sources */,
 				BF267D7AD66EB9D7BB3BAB04A2D342C2 /* AKMedia.swift in Sources */,
@@ -650,14 +654,14 @@
 				04A998E92637215200895B1C /* AKRemoteCommandController.swift in Sources */,
 				049DCCB426F1D2E600BD812D /* AKPlayerState.swift in Sources */,
 				55044F748E64FA8817097310B06CE234 /* AKPlayer.swift in Sources */,
-				8CA50285BE01B81654A6F499A5B863F8 /* AKPlayerCommand.swift in Sources */,
+				8CA50285BE01B81654A6F499A5B863F8 /* AKPlayerCommandProtocol.swift in Sources */,
 				519B02A54A5726CADCD6E8E8BE5454FE /* AKPlayerConfiguration.swift in Sources */,
 				DA7AADDCCE7CD34EA1B2CBA211EC522F /* AKPlayerDefaultConfiguration.swift in Sources */,
 				1B3BADF29CCB9150798EB988F971F9FF /* AKPlayerDelegate.swift in Sources */,
 				6E885AADABFEDFCC5D12571F8317F092 /* AKPlayerProtocol.swift in Sources */,
 				609AEFA29ADD4F0A5B1963B041B2A690 /* AKPlayerError.swift in Sources */,
 				105D4562F3585BD8373AC7202400ABDF /* AKDeterminingBufferingStatusService.swift in Sources */,
-				398016D749287CAE0DA1EFBBD59D8D29 /* AKPlayerItemInitializationController.swift in Sources */,
+				398016D749287CAE0DA1EFBBD59D8D29 /* AKPlayerItemInitService.swift in Sources */,
 				EB4C52ED037F2BD145BB6C8392DA8851 /* AKDeterminingPlayerItemStatusService.swift in Sources */,
 				B7D19F1321C3A9811A5B6A36321FAFCD /* AKPlayerLogger.swift in Sources */,
 				6CA2FDBA124900D0E8CF6FA390DB0BD3 /* AKPlayerLoggerDomain.swift in Sources */,
@@ -672,7 +676,7 @@
 				55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */,
 				F4AF932226137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift in Sources */,
 				F43B790D261E1D74002E3EE5 /* AKPlaybackDelegate.swift in Sources */,
-				B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllable.swift in Sources */,
+				B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllerProtocol.swift in Sources */,
 				179E3814B196BCAEC657460244AF42FE /* AKConfiguringAutomaticWaitingBehaviorService.swift in Sources */,
 				1BF74F86408E29DA85EE04B96AD32C2B /* AKObservingPlayerTimeService.swift in Sources */,
 				51C7A7599DF55F06FABF4B35844E1B65 /* AKPlayerUnavailableActionReason.swift in Sources */,

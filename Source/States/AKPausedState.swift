@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPausedState: AKPlayerStateControllable {
+final class AKPausedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -204,7 +204,7 @@ final class AKPausedState: AKPlayerStateControllable {
     
     // MARK: - Additional Helper Functions
     
-    private func change(_ controller: AKPlayerStateControllable) {
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
         clearCallBacks()
         manager.change(controller)
     }

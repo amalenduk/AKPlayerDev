@@ -23,7 +23,12 @@
 //  SOFTWARE.
 //
 
+/*
+ https://stackoverflow.com/questions/24133058/is-there-a-way-to-set-associated-objects-in-swift
+ */
+
 import Foundation
+import AVFoundation
 
 public protocol AKPlayable: AnyObject {
     var url: URL { get }

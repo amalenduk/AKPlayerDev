@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKBufferingState: AKPlayerStateControllable {
+final class AKBufferingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -318,7 +318,7 @@ final class AKBufferingState: AKPlayerStateControllable {
         }
     }
     
-    private func change(_ controller: AKPlayerStateControllable) {
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
         determiningBufferingStatusService.stop(clearCallBacks: true)
         guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
         if controller is AKPlayingState { manager.plugins?.forEach({$0.playerPlugin(didStartPlaying: media,

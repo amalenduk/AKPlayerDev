@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPlayingState: AKPlayerStateControllable {
+final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     

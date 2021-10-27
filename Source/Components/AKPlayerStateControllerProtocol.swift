@@ -1,5 +1,5 @@
 //
-//  AKPlayerStateControllable.swift
+//  AKPlayerStateControllerProtocol.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-public protocol AKPlayerStateControllable: AKPlayerCommand {
+public protocol AKPlayerStateControllerProtocol: AKPlayerCommandProtocol {
     var manager: AKPlayerManagerProtocol { get }
     var state: AKPlayerState { get }
     

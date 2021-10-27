@@ -33,7 +33,7 @@ public struct AKPlayerDefaultConfiguration: AKPlayerConfiguration {
     
     public var preferredTimescale: CMTimeScale = CMTimeScale(NSEC_PER_SEC)
     
-    public var itemLoadedAssetKeys: [String] = ["availableChapterLocales", "duration"]
+    public var itemLoadedAssetKeys: [String] = ["availableChapterLocales", "duration", "playable", "hasProtectedContent"]
     
     public var boundaryTimeObserverMultiplier: Double = 0.20
     

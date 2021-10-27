@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKWaitingForNetworkState: AKPlayerStateControllable {
+final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -283,7 +283,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllable {
         }
     }
     
-    private func change(_ controller: AKPlayerStateControllable) {
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
         manager.change(controller)
     }
     

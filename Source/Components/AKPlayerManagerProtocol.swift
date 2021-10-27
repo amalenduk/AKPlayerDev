@@ -52,13 +52,13 @@ public protocol AKPlayerManagerDelegate: AnyObject {
     func playerManager(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable)
 }
 
-public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommand {
+public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtocol {
     var audioSessionInterrupted: Bool { get }
     var playingBeforeInterruption: Bool { get }
     var requestedSeekingTime: CMTime? { get }
     
     var configuration: AKPlayerConfiguration { get }
-    var controller: AKPlayerStateControllable! { get }
+    var controller: AKPlayerStateControllerProtocol! { get }
     
     var delegate: AKPlayerManagerDelegate? { get }
     var plugins: [AKPlayerPlugin]? { get }
@@ -73,5 +73,5 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommand {
     var managingAudioOutputService: AKManagingAudioOutputService! { get }
     
     func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
-    func change(_ controller: AKPlayerStateControllable)
+    func change(_ controller: AKPlayerStateControllerProtocol)
 }

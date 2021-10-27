@@ -1,5 +1,5 @@
 //
-//  AKPlayerCommand.swift
+//  AKPlayerCommandProtocol.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -26,7 +26,7 @@
 import Foundation
 import AVFoundation
 
-public protocol AKPlayerCommand {
+public protocol AKPlayerCommandProtocol {
     func load(media: AKPlayable)
     func load(media: AKPlayable, autoPlay: Bool)
     func load(media: AKPlayable, autoPlay: Bool, at position: CMTime)
