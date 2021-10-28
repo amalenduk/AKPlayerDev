@@ -41,6 +41,8 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private var playerItemInitService: AKPlayerItemInitService!
     
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    
     private var determiningPlayerItemStatusService: AKDeterminingPlayerItemStatusService!
     
     // MARK: - Init
@@ -227,10 +229,15 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private func createPlayerItem(with media: AKPlayable) {
         playerItemInitService = AKPlayerItemInitService(with: media,
-                                                                            configuration: manager.configuration)
+                                                        configuration: manager.configuration)
         playerItemInitService.onCompletedCreatingPlayerItem = { [unowned self] result in
             switch result {
             case .success(let item):
+                /*
+                 Setup some key-value observers on the player to update the
+                 app's user interface elements.
+                 */
+                startPlayerItemAssetKeysObservingService(with: item)
                 /*
                  You should call this method before associating the player item with the player to make
                  sure you capture all state changes to the item’s status.
@@ -243,6 +250,12 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
         }
         
         playerItemInitService.startInitialization()
+    }
+    
+    private func startPlayerItemAssetKeysObservingService(with item: AVPlayerItem) {
+        playerItemAssetKeysObservingService = AKPlayerItemAssetKeysObservingService(with: item,
+                                                                                    media: media)
+        playerItemAssetKeysObservingService.startObserving()
     }
     
     private func startObservingStatus(for item: AVPlayerItem) {
@@ -264,7 +277,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     private func becameReadyToPlay() {
         let controller = AKLoadedState(manager: manager,
                                        autoPlay: autoPlay,
-                                       at: position)
+                                       at: position, playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
         manager.change(controller)
     }
     

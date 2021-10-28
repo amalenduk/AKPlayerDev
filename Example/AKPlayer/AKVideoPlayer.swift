@@ -241,7 +241,7 @@ extension AKVideoPlayer: AKPlayerDelegate {
         
     }
     
-    public func akPlayer(_ player: AKPlayer, didVolumeChange volume: Float, isMuted: Bool) {
+    public func akPlayer(_ player: AKPlayer, didChangeVolume volume: Float, isMuted: Bool) {
         
     }
     

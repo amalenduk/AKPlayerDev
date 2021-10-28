@@ -39,7 +39,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     }
     
     var currentItem: AVPlayerItem? {
-        return player.currentItem
+        return currentMedia?.playerItem
     }
     
     var currentTime: CMTime {

@@ -29,27 +29,14 @@ import MediaPlayer
 
 public protocol AKPlayerManagerDelegate: AnyObject {
     func playerManager(didStateChange state: AKPlayerState)
-    func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate)
     func playerManager(didCurrentMediaChange media: AKPlayable)
+    func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate)
     func playerManager(didCurrentTimeChange currentTime: CMTime)
     func playerManager(didItemDurationChange itemDuration: CMTime)
     func playerManager(didItemPlayToEndTime endTime: CMTime)
     func playerManager(didVolumeChange volume: Float, isMuted: Bool)
     func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason)
     func playerManager(didFailedWith error: AKPlayerError)
-    
-    func playerManager(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable)
-    func playerManager(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable)
-    func playerManager(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable)
-    func playerManager(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable)
-    func playerManager(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable)
-    
-    func playerManager(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable)
-    func playerManager(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable)
-    func playerManager(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable)
-    func playerManager(didSeekableTimeRangesChange seekableTimeRanges: [NSValue], for media: AKPlayable)
-    
-    func playerManager(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable)
 }
 
 public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtocol {

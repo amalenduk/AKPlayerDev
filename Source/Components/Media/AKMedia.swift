@@ -39,6 +39,8 @@ open class AKMedia: AKPlayable {
         return _staticMetadata
     }
     
+    public var delegate: AKPlaybackDelegate?
+    
     private var _staticMetadata: AKPlayableStaticMetadata?
     
     // MARK: - Init

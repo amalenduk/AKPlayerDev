@@ -36,6 +36,8 @@ public protocol AKPlayable: AnyObject {
     var type: AKMediaType { get }
     var staticMetadata: AKPlayableStaticMetadata? { get }
     
+    var delegate: AKPlaybackDelegate? { get set }
+    
     func isLive() -> Bool
     func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata)
 }

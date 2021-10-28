@@ -86,7 +86,6 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandProtocol {
     private var manager: AKPlayerManager
     
     open weak var delegate: AKPlayerDelegate?
-    open weak var playbackDelegate: AKPlaybackDelegate?
     
     // MARK: - Init
     
@@ -230,79 +229,39 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandProtocol {
 
 extension AKPlayer: AKPlayerManagerDelegate {
     
-    open func playerManager(didStateChange state: AKPlayerState) {
-        delegate?.akPlayer(self, didStateChange: state)
+    public func playerManager(didStateChange state: AKPlayerState) {
+        delegate?.akPlayer(self, didChangeState: state)
     }
     
-    open func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate) {
-        delegate?.akPlayer(self, didPlaybackRateChange: playbackRate)
+    public func playerManager(didCurrentMediaChange media: AKPlayable) {
+        delegate?.akPlayer(self, didChangeCurrentMedia: media)
     }
     
-    open func playerManager(didCurrentMediaChange media: AKPlayable) {
-        delegate?.akPlayer(self, didCurrentMediaChange: media)
+    public func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate) {
+        delegate?.akPlayer(self, didChangePlaybackRate: playbackRate)
     }
     
-    open func playerManager(didCurrentTimeChange currentTime: CMTime) {
-        delegate?.akPlayer(self, didCurrentTimeChange: currentTime)
+    public func playerManager(didCurrentTimeChange currentTime: CMTime) {
+        delegate?.akPlayer(self, didChangeCurrentTime: currentTime)
     }
     
-    open func playerManager(didItemDurationChange itemDuration: CMTime) {
-        delegate?.akPlayer(self, didItemDurationChange: itemDuration)
+    public func playerManager(didItemDurationChange itemDuration: CMTime) {
+        delegate?.akPlayer(self, didChangeItemDuration: itemDuration)
     }
     
-    open func playerManager(didItemPlayToEndTime endTime: CMTime) {
+    public func playerManager(didItemPlayToEndTime endTime: CMTime) {
         delegate?.akPlayer(self, didItemPlayToEndTime: endTime)
     }
     
-    open func playerManager(didVolumeChange volume: Float, isMuted: Bool) {
-        delegate?.akPlayer(self, didVolumeChange: volume, isMuted: isMuted)
+    public func playerManager(didVolumeChange volume: Float, isMuted: Bool) {
+        delegate?.akPlayer(self, didChangeVolume: volume, isMuted: isMuted)
     }
     
-    open func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason) {
+    public func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason) {
         delegate?.akPlayer(self, unavailableAction: reason)
     }
     
-    open func playerManager(didFailedWith error: AKPlayerError) {
+    public func playerManager(didFailedWith error: AKPlayerError) {
         delegate?.akPlayer(self, didFailedWith: error)
-    }
-    
-    open func playerManager(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanPlayReverseStatusChange: canPlayReverse, for: media)
-    }
-    
-    open func playerManager(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanPlayFastForwardStatusChange: canPlayFastForward, for: media)
-    }
-    
-    open func playerManager(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanPlayFastReverseStatusChange: canPlayFastReverse, for: media)
-    }
-    
-    open func playerManager(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanPlaySlowForwardStatusChange: canPlaySlowForward, for: media)
-    }
-    
-    open func playerManager(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanPlaySlowReverseStatusChange: canPlaySlowReverse, for: media)
-    }
-    
-    open func playerManager(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanStepForwardStatusChange: canStepForward, for: media)
-    }
-    
-    open func playerManager(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didCanStepBackwardStatusChange: canStepBackward, for: media)
-    }
-    
-    open func playerManager(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didLoadedTimeRangesChange: loadedTimeRanges, for: media)
-    }
-    
-    open func playerManager(didSeekableTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didSeekableTimeRangesChange: loadedTimeRanges, for: media)
-    }
-    
-    open func playerManager(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable) {
-        playbackDelegate?.akPlayback(didChangedTracks: tracks, for: media)
     }
 }

@@ -26,31 +26,29 @@
 import AVFoundation
 
 public protocol AKPlaybackDelegate: AnyObject {
-    func akPlayback(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable)
-    func akPlayback(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable)
-    func akPlayback(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable)
-    func akPlayback(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable)
-    func akPlayback(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable)
-    
-    func akPlayback(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable)
-    func akPlayback(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable)
-    func akPlayback(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable)
-    func akPlayback(didSeekableTimeRangesChange seekableTimeRanges: [NSValue], for media: AKPlayable)
-    
-    func akPlayback(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable)
+    func akPlayback(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime)
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayReverseStatus canPlayReverse: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayFastForwardStatus canPlayFastForward: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanPlaySlowForwardStatus canPlaySlowForward: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanPlaySlowReverseStatus canPlaySlowReverse: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool)
+    func akPlayback(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue])
+    func akPlayback(_ media: AKPlayable, didChangeSeekableTimeRanges seekableTimeRanges: [NSValue])
+    func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack])
 }
 
 public extension AKPlaybackDelegate {
-    func akPlayback(didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) { }
-    func akPlayback(didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) { }
-    func akPlayback(didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) { }
-    func akPlayback(didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) { }
-    func akPlayback(didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) { }
-    
-    func akPlayback(didCanStepForwardStatusChange canStepForward: Bool, for media: AKPlayable) { }
-    func akPlayback(didCanStepBackwardStatusChange canStepBackward: Bool, for media: AKPlayable) { }
-    func akPlayback(didLoadedTimeRangesChange loadedTimeRanges: [NSValue], for media: AKPlayable) { }
-    func akPlayback(didSeekableTimeRangesChange seekableTimeRanges: [NSValue], for media: AKPlayable) { }
-    
-    func akPlayback(didChangedTracks tracks: [AVPlayerItemTrack], for media: AKPlayable) { }
+    func akPlayback(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayReverseStatus canPlayReverse: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayFastForwardStatus canPlayFastForward: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanPlaySlowForwardStatus canPlaySlowForward: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanPlaySlowReverseStatus canPlaySlowReverse: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) { }
+    func akPlayback(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) { }
+    func akPlayback(_ media: AKPlayable, didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) { }
+    func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) { }
 }

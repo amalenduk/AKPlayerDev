@@ -95,6 +95,7 @@ final class AKPlayerItemInitService {
      Checks whether loading was successfull and whether the asset is playable.
      If so, sets up an AVPlayerItem and an AVPlayer to play the asset.
      */
+    
     private func loaded(asset: AVURLAsset,
                         with keys: [String]) {
         /* Make sure that the value of each key has loaded successfully. */

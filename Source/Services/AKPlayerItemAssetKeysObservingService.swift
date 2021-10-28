@@ -29,8 +29,6 @@ final class AKPlayerItemAssetKeysObservingService {
     
     // MARK: - Properties
     
-    private unowned let manager: AKPlayerManagerProtocol
-    
     private let playerItem: AVPlayerItem
     
     private let media: AKPlayable
@@ -48,13 +46,11 @@ final class AKPlayerItemAssetKeysObservingService {
     // MARK: - Init
     
     init(with playerItem: AVPlayerItem,
-         media: AKPlayable,
-         manager: AKPlayerManagerProtocol) {
+         media: AKPlayable) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleService)
         self.playerItem = playerItem
         self.media = media
-        self.manager = manager
     }
     
     deinit {
@@ -68,31 +64,24 @@ final class AKPlayerItemAssetKeysObservingService {
         determiningPlaybackCapabilitiesService = AKDeterminingPlaybackCapabilitiesService(with: playerItem)
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayReverseCallback = { [unowned self] canPlayReverse in
-            manager.delegate?.playerManager(didCanPlayReverseStatusChange: canPlayReverse,
-                                            for: media)
+            media.delegate?.akPlayback(media, didChangeCanPlayReverseStatus: canPlayReverse)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayFastForwardCallback = { [unowned self] canPlayFastForward in
-            manager.delegate?.playerManager(didCanPlayFastForwardStatusChange: canPlayFastForward,
-                                            for: media)
+            media.delegate?.akPlayback(media, didChangeCanPlayFastForwardStatus: canPlayFastForward)
             
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayFastReverseCallback = { [unowned self] canPlayFastReverse in
-            manager.delegate?.playerManager(didCanPlayFastReverseStatusChange: canPlayFastReverse,
-                                            for: media)
-            
+            media.delegate?.akPlayback(media, didChangeCanPlayFastReverseStatus: canPlayFastReverse)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlaySlowForwardCallback = { [unowned self] canPlaySlowForward in
-            manager.delegate?.playerManager(didCanPlaySlowForwardStatusChange: canPlaySlowForward,
-                                            for: media)
-            
+            media.delegate?.akPlayback(media, didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlaySlowReverseCallback = { [unowned self] canPlaySlowReverse in
-            manager.delegate?.playerManager(didCanPlaySlowReverseStatusChange: canPlaySlowReverse,
-                                            for: media)
+            media.delegate?.akPlayback(media, didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
         }
     }
     
@@ -100,13 +89,11 @@ final class AKPlayerItemAssetKeysObservingService {
         steppingThroughMediaService = AKSteppingThroughMediaService(with: playerItem)
         
         steppingThroughMediaService.onChangecanStepForwardCallback = { [unowned self] canStepForward in
-            manager.delegate?.playerManager(didCanStepForwardStatusChange: canStepForward,
-                                            for: media)
+            media.delegate?.akPlayback(media, didChangeCanStepForwardStatus: canStepForward)
         }
         
         steppingThroughMediaService.onChangecanStepBackwardCallback = { [unowned self] canStepBackward in
-            manager.delegate?.playerManager(didCanStepBackwardStatusChange: canStepBackward,
-                                            for: media)
+            media.delegate?.akPlayback(media, didChangeCanStepBackwardStatus: canStepBackward)
         }
     }
     
@@ -114,7 +101,7 @@ final class AKPlayerItemAssetKeysObservingService {
         determiningAvailableTimeRangesService = AKDeterminingAvailableTimeRangesService(with: playerItem)
         
         determiningAvailableTimeRangesService.onChangeLoadedTimeRangesCallback = { [unowned self] loadedTimeRanges in
-            manager.delegate?.playerManager(didLoadedTimeRangesChange: loadedTimeRanges, for: media)
+            media.delegate?.akPlayback(media, didChangeLoadedTimeRanges: loadedTimeRanges)
         }
     }
     
@@ -122,7 +109,7 @@ final class AKPlayerItemAssetKeysObservingService {
         accessingTimingInformationService = AKAccessingTimingInformationService(with: playerItem)
         
         accessingTimingInformationService.onChangeDurationCallback = { [unowned self] duration in
-            manager.delegate?.playerManager(didItemDurationChange: duration)
+            media.delegate?.akPlayback(media, didChangeItemDuration: duration)
         }
     }
     
@@ -130,12 +117,9 @@ final class AKPlayerItemAssetKeysObservingService {
         accessingAssetAndTracks = AKAccessingAssetAndTracksService(with: playerItem)
         
         accessingAssetAndTracks.onChangeTracks = { [unowned self] tracks in
-            manager.delegate?.playerManager(didChangedTracks: tracks, for: media)
+            media.delegate?.akPlayback(media, didChangeTracks: tracks)
         }
     }
-    
-    var vc: AKAccessingChapterMetadataService?
-    var vc2: AKMediaSelectionService!
     
     func startObserving() {
         setupDeterminingPlaybackCapabilitiesService()
@@ -149,10 +133,5 @@ final class AKPlayerItemAssetKeysObservingService {
         determiningPlaybackCapabilitiesService.startObserving()
         determiningAvailableTimeRangesService.startObserving()
         accessingAssetAndTracks.startObserving()
-        
-        vc = AKAccessingChapterMetadataService(with: playerItem.asset)
-        vc?.startObserving()
-        
-        vc2 = AKMediaSelectionService(with: playerItem)
     }
 }

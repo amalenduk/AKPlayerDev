@@ -49,24 +49,18 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     init(manager: AKPlayerManagerProtocol,
          autoPlay: Bool = false,
-         at position: CMTime? = nil) {
+         at position: CMTime? = nil,
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
         self.autoPlay = autoPlay
         self.position = position
-        
-        guard let media = manager.currentMedia,
-              let currentItem = manager.currentItem else { assertionFailure("Media and Current item should available"); return }
-        
+
         audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
-        
         observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player,
                                                                   configuration: manager.configuration)
-        
-        playerItemAssetKeysObservingService = AKPlayerItemAssetKeysObservingService(with: currentItem,
-                                                                                    media: media,
-                                                                                    manager: manager)
+        self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
     }
     
     deinit {
@@ -78,6 +72,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
         guard let media = manager.currentMedia,
               let currentItem = manager.currentItem else { assertionFailure("Media and Current item should available"); return }
         startPlayerItemAssetKeysObservingService()
+        manager.delegate?.playerManager(didItemDurationChange: currentItem.duration)
         manager.plugins?.forEach({$0.playerPlugin(didLoad: media,
                                                   with: currentItem.duration)})
         startAudioSessionInterruptionObservingService()
