@@ -282,7 +282,7 @@ extension AKVideoPlayer: AKVideoPlayerControlViewDelegate {
         switch player.state {
         case .playing, .buffering, .loading, .waitingForNetwork:
             player.pause()
-        case .initialization, .failed:
+        case .idle, .failed:
             player.play()
         case .loaded, .paused, .stopped:
             player.play()

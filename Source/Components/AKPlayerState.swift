@@ -26,7 +26,7 @@
 import Foundation
 
 public enum AKPlayerState: String, CustomStringConvertible {
-    case initialization
+    case idle
     case loading
     case loaded
     case buffering
@@ -43,6 +43,10 @@ public enum AKPlayerState: String, CustomStringConvertible {
         default:
             return rawValue.capitalized
         }
+    }
+    
+    var isIdle: Bool {
+        return self == .idle
     }
     
     var isLoading: Bool {
@@ -82,7 +86,7 @@ extension AKPlayerState: Equatable {}
 
 public func == (lhs: AKPlayerState, rhs: AKPlayerState) -> Bool {
     switch (lhs, rhs) {
-    case (.initialization, .initialization),
+    case (.idle, .idle),
         (.loading, .loading),
         (.loaded, .loaded),
         (.paused, .paused),

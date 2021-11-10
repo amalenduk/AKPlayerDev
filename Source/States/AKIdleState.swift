@@ -1,5 +1,5 @@
 //
-//  AKInitState.swift
+//  AKIdleState.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,13 +25,13 @@
 
 import AVFoundation
 
-final class AKInitState: AKPlayerStateControllerProtocol {
+final class AKIdleState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
     unowned let manager: AKPlayerManagerProtocol
     
-    let state: AKPlayerState = .initialization
+    let state: AKPlayerState = .idle
     
     // MARK: - Init
     

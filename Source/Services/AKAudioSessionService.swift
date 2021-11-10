@@ -49,7 +49,7 @@ open class AKAudioSessionService: AKAudioSessionServiceable {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
     }
     
-    open func activate(_ active: Bool) -> Error? {
+    @discardableResult open func activate(_ active: Bool) -> Error? {
         var err: Error?
         do {
             try audioSession.setActive(active, options: [])

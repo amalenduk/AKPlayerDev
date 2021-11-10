@@ -178,7 +178,7 @@ class AKVideoPlayerControlView: UIView {
             playbackButton.changePlayback(.failed)
             playbackButton.isHidden = false
             indicator.stopAnimating()
-        case .initialization:
+        case .idle:
             break
         case .loaded:
             playbackButton.changePlayback(.paused)

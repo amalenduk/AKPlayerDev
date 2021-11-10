@@ -410,7 +410,11 @@ extension SimpleVideoViewController: AKPlayerDelegate {
 
 // MARK: - AKPlaybackDelegate
 
-extension SimpleVideoViewController: AKPlaybackDelegate {
+extension SimpleVideoViewController: AKMediaDelegate {
+  
+    func akPlayback(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset) {
+        print("key is ---- \(key)", asset.duration)
+    }
     
     func akPlayer(_ player: AKPlayer, didChangeItemDuration itemDuration: CMTime) {
         print("Duration change,", itemDuration.seconds)

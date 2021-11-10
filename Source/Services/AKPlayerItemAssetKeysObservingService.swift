@@ -64,24 +64,24 @@ final class AKPlayerItemAssetKeysObservingService {
         determiningPlaybackCapabilitiesService = AKDeterminingPlaybackCapabilitiesService(with: playerItem)
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayReverseCallback = { [unowned self] canPlayReverse in
-            media.delegate?.akPlayback(media, didChangeCanPlayReverseStatus: canPlayReverse)
+            media.delegate?.akMedia(media, didChangeCanPlayReverseStatus: canPlayReverse)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayFastForwardCallback = { [unowned self] canPlayFastForward in
-            media.delegate?.akPlayback(media, didChangeCanPlayFastForwardStatus: canPlayFastForward)
+            media.delegate?.akMedia(media, didChangeCanPlayFastForwardStatus: canPlayFastForward)
             
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlayFastReverseCallback = { [unowned self] canPlayFastReverse in
-            media.delegate?.akPlayback(media, didChangeCanPlayFastReverseStatus: canPlayFastReverse)
+            media.delegate?.akMedia(media, didChangeCanPlayFastReverseStatus: canPlayFastReverse)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlaySlowForwardCallback = { [unowned self] canPlaySlowForward in
-            media.delegate?.akPlayback(media, didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
+            media.delegate?.akMedia(media, didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
         }
         
         determiningPlaybackCapabilitiesService.onChangeCanPlaySlowReverseCallback = { [unowned self] canPlaySlowReverse in
-            media.delegate?.akPlayback(media, didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
+            media.delegate?.akMedia(media, didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
         }
     }
     
@@ -89,11 +89,11 @@ final class AKPlayerItemAssetKeysObservingService {
         steppingThroughMediaService = AKSteppingThroughMediaService(with: playerItem)
         
         steppingThroughMediaService.onChangecanStepForwardCallback = { [unowned self] canStepForward in
-            media.delegate?.akPlayback(media, didChangeCanStepForwardStatus: canStepForward)
+            media.delegate?.akMedia(media, didChangeCanStepForwardStatus: canStepForward)
         }
         
         steppingThroughMediaService.onChangecanStepBackwardCallback = { [unowned self] canStepBackward in
-            media.delegate?.akPlayback(media, didChangeCanStepBackwardStatus: canStepBackward)
+            media.delegate?.akMedia(media, didChangeCanStepBackwardStatus: canStepBackward)
         }
     }
     
@@ -101,7 +101,7 @@ final class AKPlayerItemAssetKeysObservingService {
         determiningAvailableTimeRangesService = AKDeterminingAvailableTimeRangesService(with: playerItem)
         
         determiningAvailableTimeRangesService.onChangeLoadedTimeRangesCallback = { [unowned self] loadedTimeRanges in
-            media.delegate?.akPlayback(media, didChangeLoadedTimeRanges: loadedTimeRanges)
+            media.delegate?.akMedia(media, didChangeLoadedTimeRanges: loadedTimeRanges)
         }
     }
     
@@ -109,7 +109,7 @@ final class AKPlayerItemAssetKeysObservingService {
         accessingTimingInformationService = AKAccessingTimingInformationService(with: playerItem)
         
         accessingTimingInformationService.onChangeDurationCallback = { [unowned self] duration in
-            media.delegate?.akPlayback(media, didChangeItemDuration: duration)
+            media.delegate?.akMedia(media, didChangeItemDuration: duration)
         }
     }
     
@@ -117,7 +117,7 @@ final class AKPlayerItemAssetKeysObservingService {
         accessingAssetAndTracks = AKAccessingAssetAndTracksService(with: playerItem)
         
         accessingAssetAndTracks.onChangeTracks = { [unowned self] tracks in
-            media.delegate?.akPlayback(media, didChangeTracks: tracks)
+            media.delegate?.akMedia(media, didChangeTracks: tracks)
         }
     }
     

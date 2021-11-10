@@ -167,7 +167,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         NotificationCenter.default.removeObserver(self,
                                                   name: UIApplication.didEnterBackgroundNotification,
                                                   object: nil)
-        UIScreen.main.wantsSoftwareDimming = false
         playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
         remoteCommandController?.disable(commands: AKRemoteCommand.all())
     }
@@ -183,7 +182,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                                                selector: #selector(didEnterInBackground(_ :)),
                                                name: UIApplication.didEnterBackgroundNotification,
                                                object: nil)
-        controller = AKInitState(manager: self)
+        controller = AKIdleState(manager: self)
     }
     
     func change(_ controller: AKPlayerStateControllerProtocol) {
@@ -500,7 +499,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             }
             return .commandFailed
         case .play:
-            if state == .initialization {
+            if state == .idle {
                 return .noSuchContent
             }
             play()
@@ -514,7 +513,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             }
             return .commandFailed
         case .togglePlayPause:
-            if state == .initialization {
+            if state == .idle {
                 return .noSuchContent
             }
             togglePlayPause()

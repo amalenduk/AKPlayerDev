@@ -35,7 +35,7 @@
 		53A9A07415FEBA5550DA10EFF2F7A805 /* AKBufferingState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A81C033B74103429D235A34A7B425A9 /* AKBufferingState.swift */; };
 		55044F748E64FA8817097310B06CE234 /* AKPlayer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11004A24CFB4BAD2D269C9CBA0CB741F /* AKPlayer.swift */; };
 		55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1467660B34BFA63B2597CCF2C55092C2 /* AKSeekingThroughMediaService.swift */; };
-		5E4C1DEAD9EC7CA1133CFE90CE89A398 /* AKInitState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF49FDB8A13D504705241A8CF4DEEF2B /* AKInitState.swift */; };
+		5E4C1DEAD9EC7CA1133CFE90CE89A398 /* AKIdleState.swift in Sources */ = {isa = PBXBuildFile; fileRef = AF49FDB8A13D504705241A8CF4DEEF2B /* AKIdleState.swift */; };
 		609AEFA29ADD4F0A5B1963B041B2A690 /* AKPlayerError.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF85DC5DF59913310F2036EC9FB56721 /* AKPlayerError.swift */; };
 		6BD185BD13CAB29BF494C45DC4F583A4 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73010CC983E3809BECEE5348DA1BB8C6 /* Foundation.framework */; };
 		6CA2FDBA124900D0E8CF6FA390DB0BD3 /* AKPlayerLoggerDomain.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1671EF94F76FA2CF6CF1AF74D5D58290 /* AKPlayerLoggerDomain.swift */; };
@@ -71,7 +71,7 @@
 		EB4C52ED037F2BD145BB6C8392DA8851 /* AKDeterminingPlayerItemStatusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 382CDD270D842589E5D8B2FFA2E75241 /* AKDeterminingPlayerItemStatusService.swift */; };
 		EDAD3995C4B447493FD2D859BD441C6F /* Pods-AKPlayer_Tests-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 00747DA8B9E381E0EBDB2A9EF6F01321 /* Pods-AKPlayer_Tests-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
 		EFA801A6912213CEAAAF2EECC6BC4EDD /* AKPlayer-umbrella.h in Headers */ = {isa = PBXBuildFile; fileRef = 24917B9E08EABCC87A013658A3A18FAA /* AKPlayer-umbrella.h */; settings = {ATTRIBUTES = (Public, ); }; };
-		F43B790D261E1D74002E3EE5 /* AKPlaybackDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43B790C261E1D74002E3EE5 /* AKPlaybackDelegate.swift */; };
+		F43B790D261E1D74002E3EE5 /* AKMediaDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F43B790C261E1D74002E3EE5 /* AKMediaDelegate.swift */; };
 		F4467CC6262B1EDA000AAA83 /* AKBackgroundHandler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4467CC5262B1EDA000AAA83 /* AKBackgroundHandler.swift */; };
 		F45BAE002612613700BB3DDB /* AKAccessingTimingInformationService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45BADFF2612613700BB3DDB /* AKAccessingTimingInformationService.swift */; };
 		F4AF932226137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4AF932126137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift */; };
@@ -163,7 +163,7 @@
 		ABFEA6FFF855B526EFC6F17EDBB9C70E /* AKPlayingState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayingState.swift; sourceTree = "<group>"; };
 		AC6B959AD42B73EEBADE29986DE26149 /* Pods-AKPlayer_Tests.modulemap */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.module; path = "Pods-AKPlayer_Tests.modulemap"; sourceTree = "<group>"; };
 		ACC8FB8C603B8F4E5F2A45554B06A3F8 /* AKRouteChangeObservingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKRouteChangeObservingService.swift; sourceTree = "<group>"; };
-		AF49FDB8A13D504705241A8CF4DEEF2B /* AKInitState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKInitState.swift; sourceTree = "<group>"; };
+		AF49FDB8A13D504705241A8CF4DEEF2B /* AKIdleState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKIdleState.swift; sourceTree = "<group>"; };
 		BB32639705FA0C70BC92C1D9AEC004F5 /* AKPlayerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerView.swift; sourceTree = "<group>"; };
 		BBE7A6BAA0981A9402B026A0AB4BC41A /* AKPlayerNowPlayingMetadataService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerNowPlayingMetadataService.swift; sourceTree = "<group>"; };
 		BFA0DA6A4A07D0DEF79EA6530A3737D8 /* Pods-AKPlayer_Tests-acknowledgements.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "Pods-AKPlayer_Tests-acknowledgements.plist"; sourceTree = "<group>"; };
@@ -189,7 +189,7 @@
 		EA84A5E7CA37B1CC6F80EA0CFC21AF5C /* AKPlayerDefaultConfiguration.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerDefaultConfiguration.swift; sourceTree = "<group>"; };
 		F043CAF1664AE670EA6E08AA6D84874F /* AKPlayerManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlayerManager.swift; sourceTree = "<group>"; };
 		F436A4B6581EF7C14FF262307120EB27 /* AKMediaType.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKMediaType.swift; sourceTree = "<group>"; };
-		F43B790C261E1D74002E3EE5 /* AKPlaybackDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlaybackDelegate.swift; sourceTree = "<group>"; };
+		F43B790C261E1D74002E3EE5 /* AKMediaDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKMediaDelegate.swift; sourceTree = "<group>"; };
 		F4467CC5262B1EDA000AAA83 /* AKBackgroundHandler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKBackgroundHandler.swift; sourceTree = "<group>"; };
 		F45BADFF2612613700BB3DDB /* AKAccessingTimingInformationService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAccessingTimingInformationService.swift; sourceTree = "<group>"; };
 		F4AF932126137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlayerItemAssetKeysObservingService.swift; sourceTree = "<group>"; };
@@ -320,7 +320,7 @@
 		3CA94EE7F417B240616D52882901DF31 /* States */ = {
 			isa = PBXGroup;
 			children = (
-				AF49FDB8A13D504705241A8CF4DEEF2B /* AKInitState.swift */,
+				AF49FDB8A13D504705241A8CF4DEEF2B /* AKIdleState.swift */,
 				67B9194281D02E9FA4DBB03FFC6D0FE6 /* AKLoadingState.swift */,
 				63FC388B5F6D0DBEB64A6220B314F023 /* AKLoadedState.swift */,
 				4A81C033B74103429D235A34A7B425A9 /* AKBufferingState.swift */,
@@ -457,7 +457,7 @@
 			children = (
 				11004A24CFB4BAD2D269C9CBA0CB741F /* AKPlayer.swift */,
 				9D6B90ECDB576E13115BF8DE1A418FE2 /* AKPlayerDelegate.swift */,
-				F43B790C261E1D74002E3EE5 /* AKPlaybackDelegate.swift */,
+				F43B790C261E1D74002E3EE5 /* AKMediaDelegate.swift */,
 				3C90EF2B00C222DBA8775F2FDB48B6A8 /* Components */,
 				D7AF98B6E9DB8C6A00BB5B2075E62921 /* Extensions */,
 				C9A232E47CFB7B9B81BEBD6F91376FA1 /* Pod */,
@@ -628,7 +628,7 @@
 				E43CD90D9C5A7E4FC16E4F62DB591506 /* AKAudioSessionService.swift in Sources */,
 				53A9A07415FEBA5550DA10EFF2F7A805 /* AKBufferingState.swift in Sources */,
 				26448B5E9580902D306663BFF4B60F26 /* AKFailedState.swift in Sources */,
-				5E4C1DEAD9EC7CA1133CFE90CE89A398 /* AKInitState.swift in Sources */,
+				5E4C1DEAD9EC7CA1133CFE90CE89A398 /* AKIdleState.swift in Sources */,
 				FBB734F5F7A8CCE85C6F4957F37A6BC4 /* AKLoadedState.swift in Sources */,
 				B7DCDE121E45F94056D202EB9D2678D7 /* AKLoadingState.swift in Sources */,
 				0480B4F22729AA04002BAF2C /* AKPlayable+Extensions.swift in Sources */,
@@ -675,7 +675,7 @@
 				F4467CC6262B1EDA000AAA83 /* AKBackgroundHandler.swift in Sources */,
 				55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */,
 				F4AF932226137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift in Sources */,
-				F43B790D261E1D74002E3EE5 /* AKPlaybackDelegate.swift in Sources */,
+				F43B790D261E1D74002E3EE5 /* AKMediaDelegate.swift in Sources */,
 				B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllerProtocol.swift in Sources */,
 				179E3814B196BCAEC657460244AF42FE /* AKConfiguringAutomaticWaitingBehaviorService.swift in Sources */,
 				1BF74F86408E29DA85EE04B96AD32C2B /* AKObservingPlayerTimeService.swift in Sources */,

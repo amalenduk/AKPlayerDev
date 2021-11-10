@@ -107,8 +107,10 @@ final class AKPlayerItemInitService {
             switch status {
             case .loaded:
                 // Sucessfully loaded. Continue processing.
+                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: nil, forAsset: asset)
                 continue
             case .failed:
+                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: error!, forAsset: asset)
                 return assetFailedToPrepareForPlayback(with: .failedLoadKey(forKey: key,
                                                                             error: error!))
             case .unknown:
@@ -116,6 +118,7 @@ final class AKPlayerItemInitService {
             case .loading:
                 assertionFailure("Calling the getter for any key should be avoided befor the -loadValuesAsynchronouslyForKeys:completionHandler:")
             case .cancelled:
+                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: AKPlayerError.loadingCancelled, forAsset: asset)
                 return assetFailedToPrepareForPlayback(with: .loadingCancelled)
             @unknown default:
                 assertionFailure()
