@@ -23,11 +23,17 @@
 //  SOFTWARE.
 //
 
+// Ref: https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_interruptions
+
 import AVFoundation
 
 public protocol AKAudioSessionServiceable {
     var audioSession: AVAudioSession { get }
-    func activate(_ active: Bool) -> Error?
+    
+    var isActive: Bool { get }
+    var isInterrupted: Bool { get }
+    
+    func activate(_ active: Bool)
     func setCategory(_ category: AVAudioSession.Category, mode: AVAudioSession.Mode, options: AVAudioSession.CategoryOptions)
 }
 
@@ -36,6 +42,10 @@ open class AKAudioSessionService: AKAudioSessionServiceable {
     // MARK: - Properties
     
     public let audioSession: AVAudioSession
+    
+    public private(set) var isActive: Bool = false
+    public private(set) var isInterrupted: Bool = false
+    
     private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
     
     // MARK: - Init
@@ -43,22 +53,23 @@ open class AKAudioSessionService: AKAudioSessionServiceable {
     public init(audioSession: AVAudioSession = AVAudioSession.sharedInstance()) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.audioSession = audioSession
+        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: audioSession)
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
     }
     
-    @discardableResult open func activate(_ active: Bool) -> Error? {
-        var err: Error?
+    open func activate(_ active: Bool) {
+        guard !isActive else { AKPlayerLogger.shared.log(message: "Audio session is already activated", domain: .unavailableCommand); return }
         do {
             try audioSession.setActive(active, options: [])
+            isActive = true
             AKPlayerLogger.shared.log(message: "Active audio session: \(active)", domain: .service)
         } catch {
-            err = error
+            isActive = false
             AKPlayerLogger.shared.log(message: "Active audio session: \(active) : \(error.localizedDescription)", domain: .error)
         }
-        return err
     }
     
     open func setCategory(_ category: AVAudioSession.Category, mode: AVAudioSession.Mode = .default, options: AVAudioSession.CategoryOptions = []) {
@@ -71,15 +82,83 @@ open class AKAudioSessionService: AKAudioSessionServiceable {
     }
     
     private func startAudioSessionInterruptionObserving() {
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: audioSession)
         
         audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
+            isInterrupted = true
             activate(true)
         }
         
-        audioSessionInterruptionObservingService.onInterruptionEnded = { [unowned self] shouldResume in
+        audioSessionInterruptionObservingService.onInterruptionEnded = { [unowned self] _ in
+            isInterrupted = false
             activate(false)
         }
     }
 }
 
+open class AKAudioSessionService1: AKAudioSessionServiceable {
+    
+    // MARK: - Properties
+    
+    public let audioSession: AVAudioSession
+    
+    public private(set) var isActive: Bool = false
+    public var isInterrupted: Bool { audioSessionInterruptionEventProducer.isInterrupted }
+    
+    private var audioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible!
+    
+    // MARK: - Init
+    
+    public init(audioSession: AVAudioSession = AVAudioSession.sharedInstance()) {
+        AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
+        self.audioSession = audioSession
+        audioSessionInterruptionEventProducer = AKAudioSessionInterruptionEventProducer(audioSession: audioSession)
+        audioSessionInterruptionEventProducer.eventListener = self
+    }
+    
+    deinit {
+        activate(false)
+        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+    }
+    
+    open func activate(_ active: Bool) {
+        guard isActive else { AKPlayerLogger.shared.log(message: "Audio session is already activated", domain: .unavailableCommand); return }
+        do {
+            try audioSession.setActive(active, options: [])
+            isActive = true
+            AKPlayerLogger.shared.log(message: "Active audio session: \(active)", domain: .service)
+        } catch {
+            isActive = false
+            AKPlayerLogger.shared.log(message: "Active audio session: \(active) : \(error.localizedDescription)", domain: .error)
+        }
+    }
+    
+    open func setCategory(_ category: AVAudioSession.Category, mode: AVAudioSession.Mode = .default, options: AVAudioSession.CategoryOptions = []) {
+        do {
+            try audioSession.setCategory(category, mode: mode, options: options)
+            AKPlayerLogger.shared.log(message: "Set audio session category to: \(category)", domain: .service)
+        } catch let error {
+            AKPlayerLogger.shared.log(message: "Set \(category) category: \(error.localizedDescription)", domain: .error)
+        }
+    }
+    
+    // MARK: - Additional Helper Functions
+    
+    private func startAudioSessionInterruptionObserving() {
+        audioSessionInterruptionEventProducer.startProducingEvents()
+    }
+}
+
+// MARK: - AKEventListener
+
+extension AKAudioSessionService1: AKEventListener {
+    
+    public func onEvent(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        guard let event = event as? AKAudioSessionInterruptionEventProducer.AudioSessionInterruptionEvent else { fatalError() }
+        switch event {
+        case .interruptionBegan:
+            activate(false)
+        case .interruptionEnded(shouldResume: let shouldResume):
+            activate(true)
+        }
+    }
+}

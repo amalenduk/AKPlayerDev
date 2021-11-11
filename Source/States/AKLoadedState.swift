@@ -82,7 +82,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
         }else {
             manager.delegate?.playerManager(didCurrentTimeChange: manager.currentTime)
         }
-        if autoPlay && !manager.audioSessionInterrupted {
+        if autoPlay && !manager.audioSessionService.isInterrupted {
             workItem = DispatchWorkItem(block: { [unowned self] in
                 play()
             })

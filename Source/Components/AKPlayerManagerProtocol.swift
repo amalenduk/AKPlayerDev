@@ -40,7 +40,6 @@ public protocol AKPlayerManagerDelegate: AnyObject {
 }
 
 public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtocol {
-    var audioSessionInterrupted: Bool { get }
     var playingBeforeInterruption: Bool { get }
     var requestedSeekingTime: CMTime? { get }
     

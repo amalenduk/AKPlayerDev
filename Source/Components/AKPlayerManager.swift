@@ -86,8 +86,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return (controller as? AKFailedState)?.error
     }
     
-    private(set) var audioSessionInterrupted: Bool = false
-    
     private(set) var configuration: AKPlayerConfiguration
     
     private(set) var controller: AKPlayerStateControllerProtocol! {
@@ -459,11 +457,19 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     private func startAudioSessionInterruptionObservingService() {
         audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
             playingBeforeInterruption = isPlaying
-            audioSessionInterrupted = true
+            switch controller.state {
+            case .loaded:
+                if (controller as! AKLoadingState).autoPlay {
+                    pause()
+                }
+            case .buffering: pause()
+            case .playing: pause()
+            case .waitingForNetwork: pause()
+            default: break
+            }
         }
         
         audioSessionInterruptionObservingService.onInterruptionEnded = { [unowned self] shouldResume in
-            audioSessionInterrupted = false
             if playingBeforeInterruption
                 && shouldResume
                 && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
@@ -489,7 +495,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         
         managingAudioOutputService.startObserving()
     }
-
+    
     func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         switch command {
         case .pause:

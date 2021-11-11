@@ -34,6 +34,7 @@ public protocol AKPlayerConfiguration {
     var bufferObservingTimeInterval: TimeInterval { get set }
     
     var audioSessionCategory: AVAudioSession.Category { get set }
+    var audioSessionActiveOptions: AVAudioSession.SetActiveOptions { get set }
     var audioSessionMode: AVAudioSession.Mode { get set }
     var audioSessionCategoryOptions: AVAudioSession.CategoryOptions { get set }
     

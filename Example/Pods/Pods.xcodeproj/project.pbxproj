@@ -15,6 +15,7 @@
 		04A998E92637215200895B1C /* AKRemoteCommandController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A998E82637215200895B1C /* AKRemoteCommandController.swift */; };
 		04AF46F22713FDAF000D3521 /* AKMediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04AF46F12713FDAF000D3521 /* AKMediaItem.swift */; };
 		04D0D609DA6CD830266EC28827E3E676 /* AKPlayerPlugin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36951920B914C7CEFCE26DBE2895F4D9 /* AKPlayerPlugin.swift */; };
+		04D69ECC273BE5E200B37196 /* AKEventProducer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D69ECB273BE5E200B37196 /* AKEventProducer.swift */; };
 		105D4562F3585BD8373AC7202400ABDF /* AKDeterminingBufferingStatusService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 249E1A332960C7DECCA24493B41C77D5 /* AKDeterminingBufferingStatusService.swift */; };
 		120D64D3171177301763149CA0AD415F /* AKPausedState.swift in Sources */ = {isa = PBXBuildFile; fileRef = EA0DE00DC075334D0DDE01B9F78625D7 /* AKPausedState.swift */; };
 		1468E0C787FD681825069A9DA56835A7 /* Pods-AKPlayer_Example-dummy.m in Sources */ = {isa = PBXBuildFile; fileRef = 38215A7DA9E3E1123EB301034744D9DF /* Pods-AKPlayer_Example-dummy.m */; };
@@ -109,6 +110,7 @@
 		04A998E82637215200895B1C /* AKRemoteCommandController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKRemoteCommandController.swift; sourceTree = "<group>"; };
 		04AF46F02713E803000D3521 /* Notes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Notes.md; sourceTree = "<group>"; };
 		04AF46F12713FDAF000D3521 /* AKMediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKMediaItem.swift; sourceTree = "<group>"; };
+		04D69ECB273BE5E200B37196 /* AKEventProducer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKEventProducer.swift; sourceTree = "<group>"; };
 		06B3C10689165C65A525E119BA79CD89 /* AKPlayer.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = AKPlayer.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		0BBE325CE21EA3330E89BA1E616C68A6 /* AKPlaybackRate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AKPlaybackRate.swift; sourceTree = "<group>"; };
 		11004A24CFB4BAD2D269C9CBA0CB741F /* AKPlayer.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = AKPlayer.swift; path = Source/AKPlayer.swift; sourceTree = "<group>"; };
@@ -394,6 +396,7 @@
 				04A998E82637215200895B1C /* AKRemoteCommandController.swift */,
 				0416BE3A263D8CF900D2ECA6 /* AKAccessingAssetAndTracksService.swift */,
 				0416BE46263DB45300D2ECA6 /* AKAccessingChapterMetadataService.swift */,
+				04D69ECB273BE5E200B37196 /* AKEventProducer.swift */,
 			);
 			name = Services;
 			path = Source/Services;
@@ -676,6 +679,7 @@
 				55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */,
 				F4AF932226137CD2004BFF11 /* AKPlayerItemAssetKeysObservingService.swift in Sources */,
 				F43B790D261E1D74002E3EE5 /* AKMediaDelegate.swift in Sources */,
+				04D69ECC273BE5E200B37196 /* AKEventProducer.swift in Sources */,
 				B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllerProtocol.swift in Sources */,
 				179E3814B196BCAEC657460244AF42FE /* AKConfiguringAutomaticWaitingBehaviorService.swift in Sources */,
 				1BF74F86408E29DA85EE04B96AD32C2B /* AKObservingPlayerTimeService.swift in Sources */,

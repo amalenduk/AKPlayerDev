@@ -43,6 +43,8 @@ public struct AKPlayerDefaultConfiguration: AKPlayerConfiguration {
     
     public var audioSessionCategory: AVAudioSession.Category = .playback
     
+    public var audioSessionActiveOptions: AVAudioSession.SetActiveOptions = [.notifyOthersOnDeactivation]
+    
     public var audioSessionMode: AVAudioSession.Mode = .moviePlayback
     
     public var audioSessionCategoryOptions: AVAudioSession.CategoryOptions = []
