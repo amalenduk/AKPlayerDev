@@ -40,9 +40,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
-    
-    private var routeChangeObservingService: AKRouteChangeObservingService!
-    
+        
     private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
     
     // MARK: - Init
@@ -64,9 +62,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         
         
         observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
-        
-        routeChangeObservingService = AKRouteChangeObservingService(audioSession: manager.audioSessionService.audioSession)
-        
+                
         setPlaybackInfo()
     }
     
@@ -81,7 +77,6 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         startAudioSessionInterruptionObservingService()
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
-        startRouteChangeObservingService()
         startConfiguringAutomaticWaitingBehaviorService()
     }
     
@@ -297,19 +292,6 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
             setPlaybackInfo()
             manager.delegate?.playerManager(didCurrentTimeChange: time)
-        }
-    }
-    
-    private func startRouteChangeObservingService() {
-        routeChangeObservingService.onChangeRoute = { [unowned self] reason  in
-            switch reason {
-            case .oldDeviceUnavailable, .unknown:
-                if !routeChangeObservingService.hasHeadphones() {
-                    pause()
-                }
-            default:
-                break
-            }
         }
     }
     

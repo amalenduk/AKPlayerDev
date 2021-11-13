@@ -25,6 +25,20 @@
 
 import AVFoundation
 
+public struct AKAudioSessionConfiguration {
+    
+    // MARK: - Properties
+    
+    public var category: AVAudioSession.Category = .playback
+    public var activeOptions: AVAudioSession.SetActiveOptions = [.notifyOthersOnDeactivation]
+    public var mode: AVAudioSession.Mode = .default
+    public var categoryOptions: AVAudioSession.CategoryOptions = [.duckOthers]
+    
+    // MARK: - Init
+    
+    public init() {}
+}
+
 public protocol AKPlayerConfiguration {
     var itemLoadedAssetKeys: [String] { get set }
     var periodicPlayingTimeInSecond: Double { get set }
@@ -33,10 +47,7 @@ public protocol AKPlayerConfiguration {
     var bufferObservingTimeout: TimeInterval { get set }
     var bufferObservingTimeInterval: TimeInterval { get set }
     
-    var audioSessionCategory: AVAudioSession.Category { get set }
-    var audioSessionActiveOptions: AVAudioSession.SetActiveOptions { get set }
-    var audioSessionMode: AVAudioSession.Mode { get set }
-    var audioSessionCategoryOptions: AVAudioSession.CategoryOptions { get set }
+    var audioSession: AKAudioSessionConfiguration { get set }
     
     /// Pauses playback automatically when resigning active.
     var playbackPausesWhenResigningActive: Bool { get set }

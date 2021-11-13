@@ -38,9 +38,7 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
-    
-    private var routeChangeObservingService: AKRouteChangeObservingService!
-    
+        
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
     
     private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
@@ -60,9 +58,7 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
         
         observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
-        
-        routeChangeObservingService = AKRouteChangeObservingService(audioSession: manager.audioSessionService.audioSession)
-        
+                
         configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player, configuration: manager.configuration)
     }
     
@@ -78,7 +74,6 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
         startAudioSessionInterruptionObservingService()
-        startRouteChangeObservingService()
         startConfiguringAutomaticWaitingBehaviorService()
         setPlaybackInfo()
     }
@@ -251,20 +246,6 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
             setPlaybackInfo()
             manager.delegate?.playerManager(didCurrentTimeChange: time)
-        }
-    }
-    
-    private func startRouteChangeObservingService() {
-        routeChangeObservingService.onChangeRoute = { [weak self] reason  in
-            guard let strongSelf = self else { return }
-            switch reason {
-            case .oldDeviceUnavailable, .unknown:
-                if !strongSelf.routeChangeObservingService.hasHeadphones() {
-                    strongSelf.pause()
-                }
-            default:
-                break
-            }
         }
     }
     

@@ -1,5 +1,5 @@
 //
-//  AKRouteChangeObservingService.swift
+//  AKRouteChangeEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,45 +23,82 @@
 //  SOFTWARE.
 //
 
+// Ref: https://developer.apple.com/documentation/avfaudio/avaudiosession/responding_to_audio_session_route_changes
+
 import AVFoundation
 
-final class AKRouteChangeObservingService {
+public protocol AKRouteChangeEventProducible: AKEventProducer {
+    var audioSession: AVAudioSession { get }
+    
+    func hasHeadphonesConnected() -> Bool
+}
+
+open class AKRouteChangeEventProducer: AKRouteChangeEventProducible {
+    
+    public enum RouteChangeEvent: AKEvent {
+        case routeChanged(changeReason: AVAudioSession.RouteChangeReason,
+                          currentRoute: AVAudioSessionRouteDescription,
+                          previousRoute: AVAudioSessionRouteDescription?)
+    }
     
     // MARK: - Properties
     
-    private let audioSession: AVAudioSession
+    open weak var eventListener: AKEventListener?
     
-    var onChangeRoute: ((_ reason: AVAudioSession.RouteChangeReason) -> Void)?
+    public let audioSession: AVAudioSession
+    
+    private var listening = false
     
     // MARK: - Init
     
-    init(audioSession: AVAudioSession) {
+    public init(audioSession: AVAudioSession) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.audioSession = audioSession
+    }
+    
+    deinit {
+        stopProducingEvents()
+        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+    }
+    
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
         /* Observe audio session notifications to ensure that your app responds appropriately to route changes. */
         NotificationCenter.default.addObserver(self,
                                                selector: #selector(handleRouteChange(_ :)),
                                                name: AVAudioSession.routeChangeNotification,
                                                object: audioSession)
+        
+        listening = true
     }
     
-    deinit {
-        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
-        NotificationCenter.default.removeObserver(self, name: AVAudioSession.routeChangeNotification, object: audioSession)
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
+        NotificationCenter.default.removeObserver(self,
+                                                  name: AVAudioSession.routeChangeNotification,
+                                                  object: audioSession)
+        
+        listening = false
     }
     
-    @objc func handleRouteChange(_ notification: Notification) {
+    @objc open func handleRouteChange(_ notification: Notification) {
         guard let userInfo = notification.userInfo,
               let reasonValue = userInfo[AVAudioSessionRouteChangeReasonKey] as? UInt,
               let reason = AVAudioSession.RouteChangeReason(rawValue: reasonValue) else {
-            return
-        }
-        onChangeRoute?(reason)
+                  return
+              }
+        let previousRoute = userInfo[AVAudioSessionRouteChangePreviousRouteKey] as? AVAudioSessionRouteDescription
+        eventListener?.onEvent(RouteChangeEvent.routeChanged(changeReason: reason,
+                                                             currentRoute: audioSession.currentRoute,
+                                                             previousRoute: previousRoute),
+                               generetedBy: self)
     }
     
     // MARK: - Additional Helper Functions
     
-    func hasHeadphones() -> Bool {
+    open func hasHeadphonesConnected() -> Bool {
         // Filter the outputs to only those with a port type of headphones.
         return !audioSession.currentRoute.outputs.filter({$0.portType == .headphones}).isEmpty
     }

@@ -1,5 +1,5 @@
 //
-//  AKManagingAudioOutputEventProducer.swift
+//  AKMediaServicesResetEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,42 +23,33 @@
 //  SOFTWARE.
 //
 
+// Ref: https://developer.apple.com/documentation/avfaudio/avaudiosession/1616540-mediaserviceswereresetnotificati
+
 import AVFoundation
 
-public protocol AKManagingAudioOutputEventProducible: AKEventProducer {
-    var player: AVPlayer { get }
+public protocol AKMediaServicesResetEventProducible: AKEventProducer {
+    var audioSession: AVAudioSession { get }
 }
 
-open class AKManagingAudioOutputEventProducer: AKManagingAudioOutputEventProducible {
+open class AKMediaServicesResetEventProducer: AKMediaServicesResetEventProducible {
     
-    public enum ManagingAudioOutputEvent: AKEvent {
-        case volumeChanged(_ volume: Float)
-        case isMuted(_ isMuted: Bool)
+    public enum MediaServicesResetEvent: AKEvent {
+        case mediaServicesWereReset
     }
     
     // MARK: - Properties
     
-    public let player: AVPlayer
-    
     open weak var eventListener: AKEventListener?
+    
+    public let audioSession: AVAudioSession
     
     private var listening = false
     
-    /**
-     The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.volume`.
-     */
-    private var playerVolumeObserver: NSKeyValueObservation!
-    
-    /**
-     The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.volume`.
-     */
-    private var playerIsMutedObserver: NSKeyValueObservation!
-    
     // MARK: - Init
     
-    public init(with player: AVPlayer) {
+    public init(audioSession: AVAudioSession) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
-        self.player = player
+        self.audioSession = audioSession
     }
     
     deinit {
@@ -69,19 +60,10 @@ open class AKManagingAudioOutputEventProducer: AKManagingAudioOutputEventProduci
     open func startProducingEvents() {
         guard !listening else { return }
         
-        /*
-         Register as an observer of the player's volume property
-         */
-        playerVolumeObserver = player.observe(\.volume, options: [.initial, .new], changeHandler: { [unowned self] (_, change) in
-            eventListener?.onEvent(ManagingAudioOutputEvent.volumeChanged(change.newValue!), generetedBy: self)
-        })
-        
-        /*
-         Register as an observer of the player's isMuted property
-         */
-        playerIsMutedObserver = player.observe(\.isMuted, options: [.initial, .new], changeHandler: { [unowned self] (_, change) in
-            eventListener?.onEvent(ManagingAudioOutputEvent.isMuted(change.newValue!), generetedBy: self)
-        })
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleMediaServicesWereReset(_ :)),
+                                               name: AVAudioSession.mediaServicesWereResetNotification,
+                                               object: audioSession)
         
         listening = true
     }
@@ -89,9 +71,15 @@ open class AKManagingAudioOutputEventProducer: AKManagingAudioOutputEventProduci
     open func stopProducingEvents() {
         guard listening else { return }
         
-        playerVolumeObserver.invalidate()
-        playerIsMutedObserver.invalidate()
+        NotificationCenter.default.removeObserver(self,
+                                                  name: AVAudioSession.mediaServicesWereResetNotification,
+                                                  object: audioSession)
         
         listening = false
+    }
+    
+    @objc open func handleMediaServicesWereReset(_ notification: Notification) {
+        eventListener?.onEvent(MediaServicesResetEvent.mediaServicesWereReset,
+                               generetedBy: self)
     }
 }

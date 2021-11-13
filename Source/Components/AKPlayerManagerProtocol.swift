@@ -41,6 +41,8 @@ public protocol AKPlayerManagerDelegate: AnyObject {
 
 public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtocol {
     var playingBeforeInterruption: Bool { get }
+    var playbackInterruptionReason: AKPlaybackInterruptionReason { get }
+    
     var requestedSeekingTime: CMTime? { get }
     
     var configuration: AKPlayerConfiguration { get }
@@ -54,10 +56,23 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtoc
     var audioSessionService: AKAudioSessionServiceable { get }
     var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable? { get }
     var remoteCommandController: AKRemoteCommandController? { get }
-    var playerRateObservingService: AKPlayerRateObservingService! { get }
-    var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable! { get }
-    var managingAudioOutputService: AKManagingAudioOutputService! { get }
+    var playerRateEventProducer: AKPlayerRateEventProducible! { get }
+    var managingAudioOutputEventProducer: AKManagingAudioOutputEventProducible! { get }
+    
+    var audioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible! { get }
+    var routeChangeEventProducer: AKRouteChangeEventProducible! { get }
+    var mediaServicesResetEventProducer: AKMediaServicesResetEventProducible! { get }
+    var applicationEventProducer: AKApplicationEventProducible! { get }
     
     func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
     func change(_ controller: AKPlayerStateControllerProtocol)
+    func startListeningEvents()
+    func stopListeningEvents()
+}
+
+public enum AKPlaybackInterruptionReason: uint {
+    case none
+    case audioSessionInterrupted
+    case applicationEnteredBackground
+    case applicationResignActive
 }

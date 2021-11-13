@@ -87,7 +87,6 @@ class SimpleVideoViewController: UIViewController {
     @IBOutlet weak var bufferProgressView: UIProgressView!
     
     private lazy var player: AKPlayer = {
-        AKPlayerLogger.setup.domains = []
         var configuration = AKPlayerDefaultConfiguration()
         let rl1 = AVTextStyleRule(textMarkupAttributes: [kCMTextFormatDescriptionRect_Bottom as String: 100, kCMTextMarkupAttribute_BoldStyle as String: kCFBooleanTrue!])
         let rl2 = AVTextStyleRule(textMarkupAttributes: [kCMTextMarkupAttribute_UnderlineStyle as String: kCFBooleanTrue!])
@@ -95,7 +94,7 @@ class SimpleVideoViewController: UIViewController {
         let rl4 = AVTextStyleRule(textMarkupAttributes: [kCMTextMarkupAttribute_RelativeFontSize as String: 180])
         
         configuration.textStyleRules = [rl1!, rl2!, rl3!, rl4!]
-        let player = AKPlayer(plugins: [self], configuration: configuration, remoteCommandController: AKRemoteCommandController())
+        let player = AKPlayer(plugins: [self], configuration: configuration, audioSessionService: audioSession, remoteCommandController: AKRemoteCommandController())
         player.player.appliesMediaSelectionCriteriaAutomatically = true
         player.remoteCommands = AKRemoteCommand.playbackCommands + [.seekForward, .seekBackward, .changePlaybackPosition, .skipForward(preferredIntervals: [15]), .skipBackward(preferredIntervals: [15])]
         return player
@@ -104,15 +103,24 @@ class SimpleVideoViewController: UIViewController {
     var items: [Any] = []
     var reverseItems: [Any] = []
     var isTracking: Bool = false
+    static let session = AVAudioSession.sharedInstance()
+    let audioSession = AKAudioSessionService(audioSession: session)
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        AKPlayerLogger.setup.domains = [.unavailableCommand, .state, .service]
+        AKPlayerLogger.setup.domains = [.unavailableCommand, .state, .service]
         
         navigationItem.title = "Simple Video"
         guard let videoLayer = playerVideoLayer.layer as? AVPlayerLayer else { return }
         videoLayer.player = player.player
         player.delegate = self
         player.prepare()
+        
+        if #available(iOS 14.5, *) {
+            print(audioSession.audioSession.prefersNoInterruptionsFromSystemAlerts)
+        }
         
         NotificationCenter.default.addObserver(self, selector: #selector(didEnterInBackground(_ :)), name: UIApplication.didEnterBackgroundNotification, object: nil)
         
@@ -294,6 +302,30 @@ class SimpleVideoViewController: UIViewController {
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
     
+    @IBAction func testButtonAction(_ sender: Any) {
+//        NotificationCenter.default.post(name: AVAudioSession.interruptionNotification,
+//                                        object: SimpleVideoViewController.session,
+//                                        userInfo: [
+//                                            AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+//                                            AVAudioSessionInterruptionWasSuspendedKey: AVAudioSession.InterruptionReason.default.rawValue
+//                                        ])
+        
+        NotificationCenter.default.post(
+            name: AVAudioSession.routeChangeNotification,
+            object: AVAudioSession.sharedInstance(),
+            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue])
+    }
+    
+    @IBAction func testTwoButtonAction(_ sender: Any) {
+        NotificationCenter.default.post(
+            name: AVAudioSession.interruptionNotification,
+            object: SimpleVideoViewController.session,
+            userInfo: [
+                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue,
+                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
+            ])
+    }
+    
     @IBAction func changeAudioTrackButtonAction(_ sender: Any) {
         
     }
@@ -411,7 +443,7 @@ extension SimpleVideoViewController: AKPlayerDelegate {
 // MARK: - AKPlaybackDelegate
 
 extension SimpleVideoViewController: AKMediaDelegate {
-  
+    
     func akPlayback(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset) {
         print("key is ---- \(key)", asset.duration)
     }

@@ -1,5 +1,5 @@
 //
-//  AKAudioSessionInterruptionObservingService.swift
+//  AKAudioSessionInterruptionEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -103,21 +103,19 @@ public protocol AKAudioSessionInterruptionEventProducible: AKEventProducer {
 open class AKAudioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible {
     
     public enum AudioSessionInterruptionEvent: AKEvent {
-        case interruptionBegan
+        case interruptionBegan(interruptionReason: AVAudioSession.InterruptionReason?)
         case interruptionEnded(shouldResume: Bool)
     }
     
-    public typealias Event = AudioSessionInterruptionEvent
-    
     // MARK: - Properties
     
-    weak public var eventListener: AKEventListener?
+    open weak var eventListener: AKEventListener?
     
     public let audioSession: AVAudioSession
     
     private var listening = false
     
-    public private(set) var isInterrupted: Bool = false
+    open private(set) var isInterrupted: Bool = false
     
     // MARK: - Init
     
@@ -131,17 +129,24 @@ open class AKAudioSessionInterruptionEventProducer: AKAudioSessionInterruptionEv
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
     }
     
-    public func startProducingEvents() {
+    open func startProducingEvents() {
         guard !listening else { return }
         
         /* A notification that’s posted when an audio interruption occurs. */
-        NotificationCenter.default.addObserver(self, selector: #selector(handleInterruption(_ :)), name: AVAudioSession.interruptionNotification, object: audioSession)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(handleInterruption(_ :)),
+                                               name: AVAudioSession.interruptionNotification,
+                                               object: audioSession)
         
         listening = true
     }
     
-    public func stopProducingEvents() {
-        NotificationCenter.default.removeObserver(self, name: AVAudioSession.interruptionNotification, object: audioSession)
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
+        NotificationCenter.default.removeObserver(self,
+                                                  name: AVAudioSession.interruptionNotification,
+                                                  object: audioSession)
         
         listening = false
     }
@@ -159,8 +164,22 @@ open class AKAudioSessionInterruptionEventProducer: AKAudioSessionInterruptionEv
         switch type {
         case .began:
             // An interruption began. Update the UI as needed.
+            var interruptionReason: AVAudioSession.InterruptionReason?
+            if #available(iOS 14.5, *) {
+                if let reasonValue = userInfo[AVAudioSessionInterruptionReasonKey] as? UInt,
+                   let reason = AVAudioSession.InterruptionReason(rawValue: reasonValue) {
+                    interruptionReason = reason
+                }
+            }else {
+                // Ref: https://developer.apple.com/documentation/avfaudio/avaudiosessioninterruptionwassuspendedkey
+                if let reasonValue = userInfo[AVAudioSessionInterruptionWasSuspendedKey] as? NSNumber,
+                   let reason = Bool(exactly: reasonValue) {
+                    /* where the interruption is a direct result of the operating system suspending the app. Its associated value is a Boolean NSNumber, where a true value indicates that the interruption is due to the system suspending the app, rather than being interrupted by another audio session. As AVAudioSessionInterruptionReasonKey only available above iOS 14.5 we are checking the value for AVAudioSessionInterruptionWasSuspendedKey and tracking the reason.*/
+                    interruptionReason = reason ? .appWasSuspended : .default
+                }
+            }
             isInterrupted = true
-            eventListener?.onEvent(AudioSessionInterruptionEvent.interruptionBegan, generetedBy: self)
+            eventListener?.onEvent(AudioSessionInterruptionEvent.interruptionBegan(interruptionReason: interruptionReason), generetedBy: self)
         case .ended:
             // An interruption ended. Resume playback, if appropriate.
             guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else { return }

@@ -1,5 +1,5 @@
 //
-//  AKSteppingThroughMediaService.swift
+//  AKSteppingThroughMediaEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,21 +25,31 @@
 
 import AVFoundation
 
-final class AKSteppingThroughMediaService {
+public protocol AKSteppingThroughMediaEventProducible: AKEventProducer {
+    var playerItem: AVPlayerItem { get }
+}
+
+open class AKSteppingThroughMediaEventProducer: AKSteppingThroughMediaEventProducible {
+    
+    public enum SteppingThroughMediaEvent: AKEvent {
+        case canStepForward(Bool)
+        case canStepBackward(Bool)
+    }
     
     // MARK: - Properties
     
-    private unowned var playerItem: AVPlayerItem
-
-    var onChangecanStepForwardCallback: ((Bool) -> Void)?
-    var onChangecanStepBackwardCallback: ((Bool) -> Void)?
-
+    public var playerItem: AVPlayerItem
+    
+    open weak var eventListener: AKEventListener?
+    
+    private var listening = false
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canStepForward`.
      */
     private var playerItemCanStepForwardObserver: NSKeyValueObservation?
-
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canStepBackward`.
@@ -48,18 +58,19 @@ final class AKSteppingThroughMediaService {
     
     // MARK: - Init
     
-    init(with playerItem: AVPlayerItem) {
+    public init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.playerItem = playerItem
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+        stopProducingEvents()
     }
     
     // MARK: - Additional Helper Functions
     
-    func canStep(byCount stepCount: Int) -> (canStep: Bool, reason: AKPlayerUnavailableActionReason?) {
+    open func canStep(byCount stepCount: Int) -> (canStep: Bool, reason: AKPlayerUnavailableActionReason?) {
         var isForward: Bool {
             return stepCount.signum() == 1
         }
@@ -77,14 +88,28 @@ final class AKSteppingThroughMediaService {
             }
         }
     }
-
-    func startObserving() {
-        playerItemCanStepForwardObserver = playerItem.observe(\AVPlayerItem.canStepForward, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangecanStepForwardCallback?(item.canStepForward)
+    
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
+        playerItemCanStepForwardObserver = playerItem.observe(\AVPlayerItem.canStepForward, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(SteppingThroughMediaEvent.canStepForward(change.newValue!), generetedBy: self)
         }
-
-        playerItemCanStepBackwardObserver = playerItem.observe(\AVPlayerItem.canStepBackward, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangecanStepBackwardCallback?(item.canStepBackward)
+        
+        playerItemCanStepBackwardObserver = playerItem.observe(\AVPlayerItem.canStepBackward, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(SteppingThroughMediaEvent.canStepBackward(change.newValue!), generetedBy: self)
         }
+        
+        listening = true
     }
+    
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
+        playerItemCanStepForwardObserver?.invalidate()
+        playerItemCanStepBackwardObserver?.invalidate()
+        
+        listening = false
+    }
+    
 }

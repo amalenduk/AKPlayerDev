@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPlayerItemAssetKeysObservingService {
+open class AKPlayerItemAssetKeysObservingService {
     
     // MARK: - Properties
     
@@ -33,11 +33,11 @@ final class AKPlayerItemAssetKeysObservingService {
     
     private let media: AKPlayable
     
-    private var determiningPlaybackCapabilitiesService: AKDeterminingPlaybackCapabilitiesService!
+    private var determiningPlaybackCapabilitiesEventProducer: AKDeterminingPlaybackCapabilitiesEventProducible!
     
-    private var steppingThroughMediaService: AKSteppingThroughMediaService!
+    private var steppingThroughMediaEventProducer: AKSteppingThroughMediaEventProducible!
     
-    private var accessingTimingInformationService: AKAccessingTimingInformationService!
+    private var accessingTimingInformationEventProducer: AKAccessingTimingInformationEventProducible!
     
     private var determiningAvailableTimeRangesService: AKDeterminingAvailableTimeRangesService!
     
@@ -45,56 +45,40 @@ final class AKPlayerItemAssetKeysObservingService {
     
     // MARK: - Init
     
-    init(with playerItem: AVPlayerItem,
-         media: AKPlayable) {
+    public init(with playerItem: AVPlayerItem,
+                media: AKPlayable) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleService)
         self.playerItem = playerItem
         self.media = media
+        
+        steppingThroughMediaEventProducer = AKSteppingThroughMediaEventProducer(with: playerItem)
+        determiningPlaybackCapabilitiesEventProducer = AKDeterminingPlaybackCapabilitiesEventProducer(with: playerItem)
+        accessingTimingInformationEventProducer = AKAccessingTimingInformationEventProducer(with: playerItem)
+        
+        steppingThroughMediaEventProducer.eventListener = self
+        determiningPlaybackCapabilitiesEventProducer.eventListener = self
+        accessingTimingInformationEventProducer.eventListener = self
     }
     
     deinit {
+        stopListeningEvents()
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleService)
     }
     
     // MARK: - Additional Helper Functions
     
-    private func setupDeterminingPlaybackCapabilitiesService() {
-        determiningPlaybackCapabilitiesService = AKDeterminingPlaybackCapabilitiesService(with: playerItem)
-        
-        determiningPlaybackCapabilitiesService.onChangeCanPlayReverseCallback = { [unowned self] canPlayReverse in
-            media.delegate?.akMedia(media, didChangeCanPlayReverseStatus: canPlayReverse)
-        }
-        
-        determiningPlaybackCapabilitiesService.onChangeCanPlayFastForwardCallback = { [unowned self] canPlayFastForward in
-            media.delegate?.akMedia(media, didChangeCanPlayFastForwardStatus: canPlayFastForward)
-            
-        }
-        
-        determiningPlaybackCapabilitiesService.onChangeCanPlayFastReverseCallback = { [unowned self] canPlayFastReverse in
-            media.delegate?.akMedia(media, didChangeCanPlayFastReverseStatus: canPlayFastReverse)
-        }
-        
-        determiningPlaybackCapabilitiesService.onChangeCanPlaySlowForwardCallback = { [unowned self] canPlaySlowForward in
-            media.delegate?.akMedia(media, didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
-        }
-        
-        determiningPlaybackCapabilitiesService.onChangeCanPlaySlowReverseCallback = { [unowned self] canPlaySlowReverse in
-            media.delegate?.akMedia(media, didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
-        }
+    open func startListeningEvents() {
+        steppingThroughMediaEventProducer.startProducingEvents()
+        determiningPlaybackCapabilitiesEventProducer.startProducingEvents()
+        accessingTimingInformationEventProducer.startProducingEvents()
     }
     
-    private func setupSteppingThroughMediaService() {
-        steppingThroughMediaService = AKSteppingThroughMediaService(with: playerItem)
-        
-        steppingThroughMediaService.onChangecanStepForwardCallback = { [unowned self] canStepForward in
-            media.delegate?.akMedia(media, didChangeCanStepForwardStatus: canStepForward)
-        }
-        
-        steppingThroughMediaService.onChangecanStepBackwardCallback = { [unowned self] canStepBackward in
-            media.delegate?.akMedia(media, didChangeCanStepBackwardStatus: canStepBackward)
-        }
+    open func stopListeningEvents() {
+        steppingThroughMediaEventProducer.stopProducingEvents()
+        determiningPlaybackCapabilitiesEventProducer.stopProducingEvents()
+        accessingTimingInformationEventProducer.stopProducingEvents()
     }
     
     private func setupDeterminingAvailableTimeRangesService() {
@@ -102,14 +86,6 @@ final class AKPlayerItemAssetKeysObservingService {
         
         determiningAvailableTimeRangesService.onChangeLoadedTimeRangesCallback = { [unowned self] loadedTimeRanges in
             media.delegate?.akMedia(media, didChangeLoadedTimeRanges: loadedTimeRanges)
-        }
-    }
-    
-    private func setupAccessingTimingInformationService() {
-        accessingTimingInformationService = AKAccessingTimingInformationService(with: playerItem)
-        
-        accessingTimingInformationService.onChangeDurationCallback = { [unowned self] duration in
-            media.delegate?.akMedia(media, didChangeItemDuration: duration)
         }
     }
     
@@ -122,16 +98,45 @@ final class AKPlayerItemAssetKeysObservingService {
     }
     
     func startObserving() {
-        setupDeterminingPlaybackCapabilitiesService()
-        setupSteppingThroughMediaService()
-        setupAccessingTimingInformationService()
         setupDeterminingAvailableTimeRangesService()
         setupAccessingAssetAndTracksService()
-        
-        accessingTimingInformationService.startObserving()
-        steppingThroughMediaService.startObserving()
-        determiningPlaybackCapabilitiesService.startObserving()
         determiningAvailableTimeRangesService.startObserving()
         accessingAssetAndTracks.startObserving()
+    }
+}
+
+// MARK: - AKEventListener
+
+extension AKPlayerItemAssetKeysObservingService: AKEventListener {
+    
+    public func onEvent(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        if let event = event as? AKSteppingThroughMediaEventProducer.SteppingThroughMediaEvent {
+            switch event {
+            case .canStepForward(let canStepForward):
+                media.delegate?.akMedia(media, didChangeCanStepForwardStatus: canStepForward)
+            case .canStepBackward(let canStepBackward):
+                media.delegate?.akMedia(media, didChangeCanStepBackwardStatus: canStepBackward)
+            }
+        }else if let event = event as? AKDeterminingPlaybackCapabilitiesEventProducer.DeterminingPlaybackCapabilitiesEvent {
+            switch event {
+            case .canPlayReverse(let canPlayReverse):
+                media.delegate?.akMedia(media, didChangeCanPlayReverseStatus: canPlayReverse)
+            case .canPlayFastForward(let canPlayFastForward):
+                media.delegate?.akMedia(media, didChangeCanPlayFastForwardStatus: canPlayFastForward)
+            case .canPlayFastReverse(let canPlayFastReverse):
+                media.delegate?.akMedia(media, didChangeCanPlayFastReverseStatus: canPlayFastReverse)
+            case .canPlaySlowForward(let canPlaySlowForward):
+                media.delegate?.akMedia(media, didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
+            case .canPlaySlowReverse(let canPlaySlowReverse):
+                media.delegate?.akMedia(media, didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
+            }
+        }else if let event = event as? AKAccessingTimingInformationEventProducer.AccessingTimingInformationEvent {
+            switch event {
+            case .durationChanged(let duration):
+                media.delegate?.akMedia(media, didChangeItemDuration: duration)
+            }
+        } else {
+            fatalError()
+        }
     }
 }

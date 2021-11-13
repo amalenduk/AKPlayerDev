@@ -42,9 +42,7 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
     
     private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-    
-    private var routeChangeObservingService: AKRouteChangeObservingService!
-    
+        
     private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
     
     // MARK: - Init
@@ -71,9 +69,7 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
         
         audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession:
                                                                                                 manager.audioSessionService.audioSession)
-        
-        routeChangeObservingService = AKRouteChangeObservingService(audioSession: manager.audioSessionService.audioSession)
-    }
+        }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
@@ -88,7 +84,6 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
         startAudioSessionInterruptionObservingService()
-        startRouteChangeObservingService()
         setPlaybackInfo()
     }
     
@@ -328,7 +323,7 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     
     func playCommand() {
         guard let currentItem = manager.currentItem else { assertionFailure("Current item should available"); return }
-        AKDeterminingPlaybackCapabilitiesService.itemCanBePlayed(at: manager.rate,
+        AKDeterminingPlaybackCapabilitiesEventProducer.itemCanBePlayed(at: manager.rate,
                                                                  for: currentItem) ? (manager.player.rate = manager.rate.rate) : (manager.rate = .normal)
     }
     
@@ -342,19 +337,6 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     private func startAudioSessionInterruptionObservingService() {
         audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
             pause()
-        }
-    }
-    
-    private func startRouteChangeObservingService() {
-        routeChangeObservingService.onChangeRoute = { [unowned self] reason  in
-            switch reason {
-            case .oldDeviceUnavailable, .unknown:
-                if !routeChangeObservingService.hasHeadphones() {
-                    pause()
-                }
-            default:
-                break
-            }
         }
     }
     

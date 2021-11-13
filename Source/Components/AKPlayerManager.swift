@@ -108,6 +108,8 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private(set) var playingBeforeInterruption: Bool = false
     
+    private(set) var playbackInterruptionReason: AKPlaybackInterruptionReason = .none
+    
     var remoteCommands: [AKRemoteCommand] = []
     
     private(set) var requestedSeekingTime: CMTime?
@@ -126,11 +128,17 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private(set) var remoteCommandController: AKRemoteCommandController?
     
-    private(set) var playerRateObservingService: AKPlayerRateObservingService!
+    private(set) var audioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible!
     
-    private(set) var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
+    private(set) var playerRateEventProducer: AKPlayerRateEventProducible!
     
-    private(set) var managingAudioOutputService: AKManagingAudioOutputService!
+    private(set) var managingAudioOutputEventProducer: AKManagingAudioOutputEventProducible!
+    
+    private(set) var routeChangeEventProducer: AKRouteChangeEventProducible!
+    
+    private(set) var mediaServicesResetEventProducer: AKMediaServicesResetEventProducible!
+    
+    private(set) var applicationEventProducer: AKApplicationEventProducible!
     
     // MARK: - Init
     
@@ -147,13 +155,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         
         plugins.forEach({self._plugins.add($0)})
         
-        playerRateObservingService = AKPlayerRateObservingService(with: player)
-        
-        managingAudioOutputService = AKManagingAudioOutputService(with: player)
-        
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession:
-                                                                                                audioSessionService.audioSession)
-        
         if configuration.isNowPlayingEnabled {
             playerNowPlayingMetadataService = AKPlayerNowPlayingMetadataService()
             remoteCommandController.manager = self
@@ -162,24 +163,32 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     deinit {
         _plugins.removeAllObjects()
-        NotificationCenter.default.removeObserver(self,
-                                                  name: UIApplication.didEnterBackgroundNotification,
-                                                  object: nil)
         playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
         remoteCommandController?.disable(commands: AKRemoteCommand.all())
     }
     
     func prepare() {
-        setAudioSessionActivate(true)
-        setAudioSessionCategory()
-        startAudioSessionInterruptionObservingService()
-        startPlaybackRateObservingService()
-        startManagingAudioOutputService()
+        audioSessionInterruptionEventProducer = AKAudioSessionInterruptionEventProducer(audioSession: audioSessionService.audioSession)
+        playerRateEventProducer = AKPlayerRateEventProducer(with: player)
+        managingAudioOutputEventProducer = AKManagingAudioOutputEventProducer(with: player)
+        routeChangeEventProducer = AKRouteChangeEventProducer(audioSession: audioSessionService.audioSession)
+        mediaServicesResetEventProducer = AKMediaServicesResetEventProducer(audioSession: audioSessionService.audioSession)
+        applicationEventProducer = AKApplicationEventProducer()
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(didEnterInBackground(_ :)),
-                                               name: UIApplication.didEnterBackgroundNotification,
-                                               object: nil)
+        audioSessionInterruptionEventProducer.eventListener = self
+        playerRateEventProducer.eventListener = self
+        managingAudioOutputEventProducer.eventListener = self
+        routeChangeEventProducer.eventListener = self
+        mediaServicesResetEventProducer.eventListener = self
+        applicationEventProducer.eventListener = self
+        
+        audioSessionService.activate(true,
+                                     options: configuration.audioSession.activeOptions)
+        audioSessionService.setCategory(configuration.audioSession.category,
+                                        mode: configuration.audioSession.mode,
+                                        options: configuration.audioSession.categoryOptions)
+        
+        startListeningEvents()
         controller = AKIdleState(manager: self)
     }
     
@@ -187,11 +196,22 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         self.controller = controller
     }
     
-    // MARK: - Observers
+    func startListeningEvents() {
+        audioSessionInterruptionEventProducer.startProducingEvents()
+        playerRateEventProducer.startProducingEvents()
+        managingAudioOutputEventProducer.startProducingEvents()
+        routeChangeEventProducer.startProducingEvents()
+        mediaServicesResetEventProducer.startProducingEvents()
+        applicationEventProducer.startProducingEvents()
+    }
     
-    @objc func didEnterInBackground(_ notification: Notification) {
-        if configuration.playbackPausesWhenBackgrounded
-            && isPlaying { pause() }
+    func stopListeningEvents() {
+        audioSessionInterruptionEventProducer.stopProducingEvents()
+        playerRateEventProducer.stopProducingEvents()
+        managingAudioOutputEventProducer.stopProducingEvents()
+        routeChangeEventProducer.stopProducingEvents()
+        mediaServicesResetEventProducer.stopProducingEvents()
+        applicationEventProducer.stopProducingEvents()
     }
     
     // MARK: - Commands
@@ -303,7 +323,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     func step(byCount stepCount: Int) {
         guard let item = currentItem else { unaivalableCommand(reason: .loadMediaFirst); return }
         
-        let stepService = AKSteppingThroughMediaService(with: item)
+        let stepService = AKSteppingThroughMediaEventProducer(with: item)
         
         let result = stepService.canStep(byCount: stepCount)
         
@@ -356,14 +376,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         }
     }
     
-    private func startPlaybackRateObservingService() {
-        playerRateObservingService?.onChangePlaybackRate = { [unowned self] playbackRate in
-            AKPlayerLogger.shared.log(message: "Rate changed \(playbackRate.rate)",
-                                      domain: .service)
-            setNowPlayingPlaybackInfo()
-        }
-    }
-    
     @discardableResult private func changePlaybackRate(with rate: AKPlaybackRate) -> Bool {
         if rate == _rate { return true }
         defer {
@@ -374,7 +386,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             _rate = .normal
         }else {
             guard let item = currentItem else { _rate = rate; return  false }
-            if AKDeterminingPlaybackCapabilitiesService.itemCanBePlayed(at: rate, for: item) {
+            if AKDeterminingPlaybackCapabilitiesEventProducer.itemCanBePlayed(at: rate, for: item) {
                 _rate = rate
                 if controller.state == .buffering
                     || controller.state == .playing
@@ -390,16 +402,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         delegate?.playerManager(unavailableAction: reason)
         AKPlayerLogger.shared.log(message: reason.description,
                                   domain: .unavailableCommand)
-    }
-    
-    private func setAudioSessionActivate(_ active: Bool) {
-        audioSessionService.activate(active)
-    }
-    
-    private func setAudioSessionCategory() {
-        audioSessionService.setCategory(configuration.audioSessionCategory,
-                                        mode: configuration.audioSessionMode,
-                                        options: configuration.audioSessionCategoryOptions)
     }
     
     public func setNowPlayingMetadata() {
@@ -452,48 +454,6 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                                                     currentLanguageOptions: [],
                                                     availableLanguageOptionGroups: [])
         playerNowPlayingMetadataService.setNowPlayingPlaybackInfo(metadata)
-    }
-    
-    private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
-            playingBeforeInterruption = isPlaying
-            switch controller.state {
-            case .loaded:
-                if (controller as! AKLoadingState).autoPlay {
-                    pause()
-                }
-            case .buffering: pause()
-            case .playing: pause()
-            case .waitingForNetwork: pause()
-            default: break
-            }
-        }
-        
-        audioSessionInterruptionObservingService.onInterruptionEnded = { [unowned self] shouldResume in
-            if playingBeforeInterruption
-                && shouldResume
-                && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
-                play()
-            }
-        }
-    }
-    
-    private func startManagingAudioOutputService() {
-        managingAudioOutputService.onChangeVolume = { [unowned self] volume in
-            delegate?.playerManager(didVolumeChange: volume,
-                                    isMuted: isMuted)
-            plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
-                                              isMuted: isMuted)})
-        }
-        
-        managingAudioOutputService.onChangePlayerIsMuted = { [unowned self] isMuted in
-            delegate?.playerManager(didVolumeChange: volume,
-                                    isMuted: isMuted)
-            plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
-                                              isMuted: isMuted)})
-        }
-        
-        managingAudioOutputService.startObserving()
     }
     
     func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
@@ -572,5 +532,99 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             return .commandFailed
         }
         return .success
+    }
+}
+
+// MARK: - AKEventListener
+
+extension AKPlayerManager: AKEventListener {
+    
+    func onEvent(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        if let event = event as? AKAudioSessionInterruptionEventProducer.AudioSessionInterruptionEvent {
+            switch event {
+            case .interruptionBegan(_):
+                playingBeforeInterruption = isPlaying
+                switch controller.state {
+                case .loaded:
+                    if (controller as! AKLoadingState).autoPlay {
+                        pause()
+                    }
+                case .buffering: pause()
+                case .playing: pause()
+                case .waitingForNetwork: pause()
+                default: break
+                }
+            case .interruptionEnded(shouldResume: let shouldResume):
+                if shouldResume
+                    && playingBeforeInterruption
+                    && .audioSessionInterrupted == playbackInterruptionReason
+                    && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
+                    play()
+                }
+            }
+        } else if let event = event as? AKRouteChangeEventProducer.RouteChangeEvent {
+            switch event {
+            case .routeChanged(changeReason: let changeReason, currentRoute: _, previousRoute: _):
+                print("Change reason : ", changeReason.rawValue)
+            }
+        } else if let _ = event as? AKMediaServicesResetEventProducer.MediaServicesResetEvent {
+            
+        } else if let event = event as? AKApplicationEventProducer.ApplicationEvent {
+            switch event {
+            case .willResignActive:
+                if configuration.playbackPausesWhenResigningActive
+                    && isPlaying {
+                    playbackInterruptionReason = .applicationResignActive
+                    playingBeforeInterruption = isPlaying
+                    pause()
+                }
+            case .didBecomeActive:
+                if configuration.playbackResumesWhenBecameActive
+                    && !isPlaying
+                    && .applicationResignActive == playbackInterruptionReason
+                    && playingBeforeInterruption {
+                    playbackInterruptionReason = .none
+                    playingBeforeInterruption = false
+                    play()
+                }
+            case .didEnterBackground:
+                if configuration.playbackPausesWhenBackgrounded
+                    && isPlaying {
+                    playbackInterruptionReason = .applicationEnteredBackground
+                    playingBeforeInterruption = isPlaying
+                    pause()
+                }
+            case .willEnterForeground:
+                if configuration.playbackResumesWhenEnteringForeground
+                    && !isPlaying
+                    && .applicationEnteredBackground == playbackInterruptionReason
+                    && playingBeforeInterruption {
+                    playbackInterruptionReason = .none
+                    playingBeforeInterruption = false
+                    play()
+                }
+            }
+        } else if let event = event as? AKPlayerRateEventProducer.PlayerRateEvent {
+            switch event {
+            case .rateChanged(to: let newRate, from: let oldRate):
+                AKPlayerLogger.shared.log(message: "Rate changed to \(newRate.rate) from \(oldRate.rate)",
+                                          domain: .service)
+                setNowPlayingPlaybackInfo()
+            }
+        } else if let event = event as? AKManagingAudioOutputEventProducer.ManagingAudioOutputEvent {
+            switch event {
+            case .volumeChanged(let volume):
+                delegate?.playerManager(didVolumeChange: volume,
+                                        isMuted: isMuted)
+                plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
+                                                  isMuted: isMuted)})
+            case .isMuted(let isMuted):
+                delegate?.playerManager(didVolumeChange: volume,
+                                        isMuted: isMuted)
+                plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
+                                                  isMuted: isMuted)})
+            }
+        }
+        
     }
 }

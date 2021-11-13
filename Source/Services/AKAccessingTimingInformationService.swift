@@ -25,37 +25,59 @@
 
 import AVFoundation
 
-final class AKAccessingTimingInformationService {
+public protocol AKAccessingTimingInformationEventProducible: AKEventProducer {
+    var playerItem: AVPlayerItem { get }
+}
 
+open class AKAccessingTimingInformationEventProducer: AKAccessingTimingInformationEventProducible {
+    
+    public enum AccessingTimingInformationEvent: AKEvent {
+        case durationChanged(CMTime)
+    }
+    
     // MARK: - Properties
-
-    private let playerItem: AVPlayerItem
-
-    var onChangeDurationCallback: ((_ duration: CMTime) -> Void)?
-
+    
+    public let playerItem: AVPlayerItem
+    
+    open weak var eventListener: AKEventListener?
+    
+    private var listening = false
+    
     /**
      The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.duration`.
      */
     private var playerItemDurationObserver: NSKeyValueObservation!
-
+    
     // MARK: - Init
-
-    init(with playerItem: AVPlayerItem) {
+    
+    public init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.playerItem = playerItem
     }
-
-    func startObserving() {
+    
+    deinit {
+        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
+        stopProducingEvents()
+    }
+    
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
         /*
          Register as an observer of the player item's duration property.
          */
-        playerItemDurationObserver = playerItem.observe(\.duration, options: [.initial, .new], changeHandler: { [unowned self] (player, change) in
-            onChangeDurationCallback?(playerItem.duration)
+        playerItemDurationObserver = playerItem.observe(\.duration, options: [.initial, .new], changeHandler: { [unowned self] (_, change) in
+            eventListener?.onEvent(AccessingTimingInformationEvent.durationChanged(change.newValue!), generetedBy: self)
         })
+        
+        listening = true
     }
-
-    deinit {
-        AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
-        playerItemDurationObserver.invalidate()
+    
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
+        playerItemDurationObserver?.invalidate()
+        
+        listening = false
     }
 }

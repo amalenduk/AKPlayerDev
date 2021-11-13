@@ -41,13 +41,7 @@ public struct AKPlayerDefaultConfiguration: AKPlayerConfiguration {
     
     public var bufferObservingTimeInterval: TimeInterval = 0.3
     
-    public var audioSessionCategory: AVAudioSession.Category = .playback
-    
-    public var audioSessionActiveOptions: AVAudioSession.SetActiveOptions = [.notifyOthersOnDeactivation]
-    
-    public var audioSessionMode: AVAudioSession.Mode = .moviePlayback
-    
-    public var audioSessionCategoryOptions: AVAudioSession.CategoryOptions = []
+    public var audioSession: AKAudioSessionConfiguration = AKAudioSessionConfiguration()
     
     public var isNowPlayingEnabled: Bool = true
     
@@ -55,9 +49,9 @@ public struct AKPlayerDefaultConfiguration: AKPlayerConfiguration {
                                                               AKPlayerState.playing]
     public var textStyleRules: [AVTextStyleRule]? = nil
     
-    public var playbackPausesWhenResigningActive: Bool = true
+    public var playbackPausesWhenResigningActive: Bool = false
     
-    public var playbackPausesWhenBackgrounded: Bool = true
+    public var playbackPausesWhenBackgrounded: Bool = false
     
     public var playbackResumesWhenBecameActive: Bool = true
     

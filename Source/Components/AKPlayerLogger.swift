@@ -43,7 +43,7 @@ final public class AKPlayerLogger {
     // MARK: - Init
     
     private init() {
-        self.domains = AKPlayerLogger.setup.domains ?? []
+        self.domains = AKPlayerLogger.setup.domains ?? AKPlayerLoggerDomain.allCases
         setupDateFormatter()
     }
     

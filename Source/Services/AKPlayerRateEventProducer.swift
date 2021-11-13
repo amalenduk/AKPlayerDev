@@ -1,5 +1,5 @@
 //
-//  AKPlayerRateObservingService.swift
+//  AKPlayerRateEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,13 +25,23 @@
 
 import AVFoundation
 
-public final class AKPlayerRateObservingService {
+public protocol AKPlayerRateEventProducible: AKEventProducer {
+    var player: AVPlayer { get }
+}
+
+open class AKPlayerRateEventProducer: AKPlayerRateEventProducible {
+    
+    public enum PlayerRateEvent: AKEvent {
+        case rateChanged(to: AKPlaybackRate, from: AKPlaybackRate)
+    }
     
     // MARK: - Properties
     
-    private let player: AVPlayer
+    public let player: AVPlayer
     
-    var onChangePlaybackRate: ((_ playbackRate: AKPlaybackRate) -> Void)?
+    open weak var eventListener: AKEventListener?
+    
+    private var listening = false
     
     /**
      The `NSKeyValueObservation` for the KVO on `\AVPlayer.rate`.
@@ -40,24 +50,29 @@ public final class AKPlayerRateObservingService {
     
     // MARK: - Init
     
-    init(with player: AVPlayer) {
+    public init(with player: AVPlayer) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.player = player
-        addPlayerRateObserver(player: player)
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
-        playbackRateObserver?.invalidate()
+        stopProducingEvents()
     }
     
-    // MARK: - Additional Helper Functions
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
+        playbackRateObserver = player.observe(\AVPlayer.rate, options: [.old, .new], changeHandler: { [unowned self] _, change in
+            eventListener?.onEvent(PlayerRateEvent.rateChanged(to: AKPlaybackRate(rate: player.rate), from: AKPlaybackRate(rate: change.oldValue ?? 0)), generetedBy: self)
+        })
+        
+        listening = true
+    }
     
-    private func addPlayerRateObserver(player: AVPlayer) {
-        playbackRateObserver = player.observe(\AVPlayer.rate,
-                                              options: [.new]) {
-            [unowned self] _, _ in
-            onChangePlaybackRate?(AKPlaybackRate(rate: player.rate))
-        }
+    open func stopProducingEvents() {
+        guard listening else { return }
+        playbackRateObserver?.invalidate()
+        listening = false
     }
 }

@@ -1,5 +1,5 @@
 //
-//  AKDeterminingPlaybackCapabilitiesService.swift
+//  AKDeterminingPlaybackCapabilitiesEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,41 +25,52 @@
 
 import AVFoundation
 
-final class AKDeterminingPlaybackCapabilitiesService {
+public protocol AKDeterminingPlaybackCapabilitiesEventProducible: AKEventProducer {
+    var playerItem: AVPlayerItem { get }
+}
+
+open class AKDeterminingPlaybackCapabilitiesEventProducer: AKDeterminingPlaybackCapabilitiesEventProducible {
+    
+    public enum DeterminingPlaybackCapabilitiesEvent: AKEvent {
+        case canPlayReverse(Bool)
+        case canPlayFastForward(Bool)
+        case canPlayFastReverse(Bool)
+        case canPlaySlowForward(Bool)
+        case canPlaySlowReverse(Bool)
+    }
     
     // MARK: - Properties
     
-    private let playerItem: AVPlayerItem
-    var onChangeCanPlayReverseCallback: ((Bool) -> Void)?
-    var onChangeCanPlayFastForwardCallback: ((Bool) -> Void)?
-    var onChangeCanPlayFastReverseCallback: ((Bool) -> Void)?
-    var onChangeCanPlaySlowForwardCallback: ((Bool) -> Void)?
-    var onChangeCanPlaySlowReverseCallback: ((Bool) -> Void)?
-
+    public let playerItem: AVPlayerItem
+    
+    open weak var eventListener: AKEventListener?
+    
+    private var listening = false
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canPlayReverse`.
      */
     private var playerItemCanPlayReverseObserver: NSKeyValueObservation?
-
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canPlayFastForward`.
      */
     private var playerItemCanPlayFastForwardObserver: NSKeyValueObservation?
-
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canPlayFastReverse`.
      */
     private var playerItemCanPlayFastReverseObserver: NSKeyValueObservation?
-
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canPlaySlowForward`.
      */
     private var playerItemCanPlaySlowForwardObserver: NSKeyValueObservation?
-
+    
     /**
      The `NSKeyValueObservation` for the KVO on
      `\AVPlayerItem.canPlaySlowReverse`.
@@ -68,24 +79,73 @@ final class AKDeterminingPlaybackCapabilitiesService {
     
     // MARK: - Init
     
-    init(with playerItem: AVPlayerItem) {
+    public init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleService)
         self.playerItem = playerItem
     }
     
     deinit {
+        stopProducingEvents()
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleService)
+    }
+    
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
+        /*
+         Register as an observer of the player item's canPlayReverse property
+         */
+        playerItemCanPlayReverseObserver = playerItem.observe(\AVPlayerItem.canPlayReverse, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(DeterminingPlaybackCapabilitiesEvent.canPlayReverse(change.newValue!), generetedBy: self)
+        }
+        
+        /*
+         Register as an observer of the player item's canPlayFastForward property
+         */
+        playerItemCanPlayFastForwardObserver = playerItem.observe(\AVPlayerItem.canPlayFastForward, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(DeterminingPlaybackCapabilitiesEvent.canPlayFastForward(change.newValue!), generetedBy: self)
+        }
+        
+        /*
+         Register as an observer of the player item's canPlayFastReverse property
+         */
+        playerItemCanPlayFastReverseObserver = playerItem.observe(\AVPlayerItem.canPlayFastReverse, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(DeterminingPlaybackCapabilitiesEvent.canPlayFastReverse(change.newValue!), generetedBy: self)
+        }
+        
+        /*
+         Register as an observer of the player item's canPlaySlowForward property
+         */
+        playerItemCanPlaySlowForwardObserver = playerItem.observe(\AVPlayerItem.canPlaySlowForward, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(DeterminingPlaybackCapabilitiesEvent.canPlaySlowForward(change.newValue!), generetedBy: self)
+        }
+        
+        /*
+         Register as an observer of the player item's canPlaySlowReverse property
+         */
+        playerItemCanPlaySlowReverseObserver = playerItem.observe(\AVPlayerItem.canPlaySlowReverse, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(DeterminingPlaybackCapabilitiesEvent.canPlaySlowReverse(change.newValue!), generetedBy: self)
+        }
+        
+        listening = true
+    }
+    
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
         playerItemCanPlayReverseObserver?.invalidate()
         playerItemCanPlayFastForwardObserver?.invalidate()
         playerItemCanPlayFastReverseObserver?.invalidate()
         playerItemCanPlaySlowForwardObserver?.invalidate()
         playerItemCanPlaySlowReverseObserver?.invalidate()
+        
+        listening = false
     }
-
+    
     // MARK: - Additional Helper Functions
-
+    
     class func itemCanBePlayed(at rate: AKPlaybackRate, for playerItem: AVPlayerItem) -> Bool {
         switch rate.rate {
         case 0.0...:
@@ -115,42 +175,5 @@ final class AKDeterminingPlaybackCapabilitiesService {
         }
         assertionFailure("Implement condition")
         return false
-    }
-
-    func startObserving() {
-        /*
-         Register as an observer of the player item's canPlayReverse property
-         */
-        playerItemCanPlayReverseObserver = playerItem.observe(\AVPlayerItem.canPlayReverse, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeCanPlayReverseCallback?(item.canPlayReverse)
-        }
-
-        /*
-         Register as an observer of the player item's canPlayFastForward property
-         */
-        playerItemCanPlayFastForwardObserver = playerItem.observe(\AVPlayerItem.canPlayFastForward, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeCanPlayFastForwardCallback?(item.canPlayFastForward)
-        }
-
-        /*
-         Register as an observer of the player item's canPlayFastReverse property
-         */
-        playerItemCanPlayFastReverseObserver = playerItem.observe(\AVPlayerItem.canPlayFastReverse, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeCanPlayFastReverseCallback?(item.canPlayFastReverse)
-        }
-
-        /*
-         Register as an observer of the player item's canPlaySlowForward property
-         */
-        playerItemCanPlaySlowForwardObserver = playerItem.observe(\AVPlayerItem.canPlaySlowForward, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeCanPlaySlowForwardCallback?(item.canPlaySlowForward)
-        }
-
-        /*
-         Register as an observer of the player item's canPlaySlowReverse property
-         */
-        playerItemCanPlaySlowReverseObserver = playerItem.observe(\AVPlayerItem.canPlaySlowReverse, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeCanPlaySlowReverseCallback?(item.canPlaySlowReverse)
-        }
     }
 }
