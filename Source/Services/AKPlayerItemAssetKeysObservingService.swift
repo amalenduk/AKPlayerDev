@@ -25,13 +25,21 @@
 
 import AVFoundation
 
-open class AKPlayerItemAssetKeysObservingService {
+public protocol AKPlayerItemAssetKeysObservingServiceable {
+    var media: AKPlayable { get }
+    var playerItem: AVPlayerItem { get }
+    
+    func startListeningEvents()
+    func stopListeningEvents()
+}
+
+open class AKPlayerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable {
     
     // MARK: - Properties
     
-    private let playerItem: AVPlayerItem
+    public let playerItem: AVPlayerItem
     
-    private let media: AKPlayable
+    public let media: AKPlayable
     
     private var determiningPlaybackCapabilitiesEventProducer: AKDeterminingPlaybackCapabilitiesEventProducible!
     
@@ -39,9 +47,9 @@ open class AKPlayerItemAssetKeysObservingService {
     
     private var accessingTimingInformationEventProducer: AKAccessingTimingInformationEventProducible!
     
-    private var determiningAvailableTimeRangesService: AKDeterminingAvailableTimeRangesService!
+    private var determiningAvailableTimeRangesEventProducer: AKDeterminingAvailableTimeRangesEventProducible!
     
-    private var accessingAssetAndTracks: AKAccessingAssetAndTracksService!
+    private var accessingAssetAndTracksEventProducer: AKAccessingAssetAndTracksEventProducible!
     
     // MARK: - Init
     
@@ -55,10 +63,14 @@ open class AKPlayerItemAssetKeysObservingService {
         steppingThroughMediaEventProducer = AKSteppingThroughMediaEventProducer(with: playerItem)
         determiningPlaybackCapabilitiesEventProducer = AKDeterminingPlaybackCapabilitiesEventProducer(with: playerItem)
         accessingTimingInformationEventProducer = AKAccessingTimingInformationEventProducer(with: playerItem)
+        determiningAvailableTimeRangesEventProducer = AKDeterminingAvailableTimeRangesEventProducer(with: playerItem)
+        accessingAssetAndTracksEventProducer = AKAccessingAssetAndTracksEventProducer(with: playerItem)
         
         steppingThroughMediaEventProducer.eventListener = self
         determiningPlaybackCapabilitiesEventProducer.eventListener = self
         accessingTimingInformationEventProducer.eventListener = self
+        determiningAvailableTimeRangesEventProducer.eventListener = self
+        accessingAssetAndTracksEventProducer.eventListener = self
     }
     
     deinit {
@@ -73,35 +85,16 @@ open class AKPlayerItemAssetKeysObservingService {
         steppingThroughMediaEventProducer.startProducingEvents()
         determiningPlaybackCapabilitiesEventProducer.startProducingEvents()
         accessingTimingInformationEventProducer.startProducingEvents()
+        determiningAvailableTimeRangesEventProducer.startProducingEvents()
+        accessingAssetAndTracksEventProducer.startProducingEvents()
     }
     
     open func stopListeningEvents() {
         steppingThroughMediaEventProducer.stopProducingEvents()
         determiningPlaybackCapabilitiesEventProducer.stopProducingEvents()
         accessingTimingInformationEventProducer.stopProducingEvents()
-    }
-    
-    private func setupDeterminingAvailableTimeRangesService() {
-        determiningAvailableTimeRangesService = AKDeterminingAvailableTimeRangesService(with: playerItem)
-        
-        determiningAvailableTimeRangesService.onChangeLoadedTimeRangesCallback = { [unowned self] loadedTimeRanges in
-            media.delegate?.akMedia(media, didChangeLoadedTimeRanges: loadedTimeRanges)
-        }
-    }
-    
-    private func setupAccessingAssetAndTracksService() {
-        accessingAssetAndTracks = AKAccessingAssetAndTracksService(with: playerItem)
-        
-        accessingAssetAndTracks.onChangeTracks = { [unowned self] tracks in
-            media.delegate?.akMedia(media, didChangeTracks: tracks)
-        }
-    }
-    
-    func startObserving() {
-        setupDeterminingAvailableTimeRangesService()
-        setupAccessingAssetAndTracksService()
-        determiningAvailableTimeRangesService.startObserving()
-        accessingAssetAndTracks.startObserving()
+        determiningAvailableTimeRangesEventProducer.stopProducingEvents()
+        accessingAssetAndTracksEventProducer.stopProducingEvents()
     }
 }
 
@@ -134,6 +127,18 @@ extension AKPlayerItemAssetKeysObservingService: AKEventListener {
             switch event {
             case .durationChanged(let duration):
                 media.delegate?.akMedia(media, didChangeItemDuration: duration)
+            }
+        }else if let event = event as? AKDeterminingAvailableTimeRangesEventProducer.DeterminingAvailableTimeRangesEvent {
+            switch event {
+            case .loadedTimeRanges(let loadedTimeRanges):
+                media.delegate?.akMedia(media, didChangeLoadedTimeRanges: loadedTimeRanges)
+            case .seekableTimeRanges(let seekableTimeRanges):
+                media.delegate?.akMedia(media, didChangeSeekableTimeRanges: seekableTimeRanges)
+            }
+        }else if let event = event as? AKAccessingAssetAndTracksEventProducer.AccessingAssetAndTracksEvent {
+            switch event {
+            case .tracks(let tracks):
+                media.delegate?.akMedia(media, didChangeTracks: tracks)
             }
         } else {
             fatalError()

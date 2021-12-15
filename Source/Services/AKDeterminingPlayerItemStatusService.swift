@@ -25,12 +25,23 @@
 
 import AVFoundation
 
-final class AKDeterminingPlayerItemStatusService {
+public protocol AKDeterminingPlayerItemStatusServiceable {
+    var playerItem: AVPlayerItem { get }
+    var callback: ((AVPlayerItem.Status) -> Void)? { get }
+    
+    func startObservingStaus()
+    func stopObservingStaus()
+}
+
+open class AKDeterminingPlayerItemStatusService: AKDeterminingPlayerItemStatusServiceable {
     
     // MARK: - Properties
     
-    private let playerItem: AVPlayerItem
-    private let itemStatusCallback: ((AVPlayerItem.Status) -> Void)
+    public let playerItem: AVPlayerItem
+    
+    public var callback: ((AVPlayerItem.Status) -> Void)?
+    
+    private var listening = false
     
     /**
      The `NSKeyValueObservation` for the KVO on `\AVPlayerItem.status`.
@@ -39,25 +50,35 @@ final class AKDeterminingPlayerItemStatusService {
     
     // MARK: - Init
     
-    init(playerItem: AVPlayerItem, callback: @escaping (AVPlayerItem.Status) -> Void) {
+    public init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init", domain: .lifecycleService)
         self.playerItem = playerItem
-        self.itemStatusCallback = callback
-        /*
-         Register as an observer of the player item's status property
-         Observe the player item "status" key to determine when it is ready to play.
-         */
-        playerItemStatusObserver = playerItem.observe(\.status, options: [.new, .initial], changeHandler: { [unowned self] (playerItem, change) in
-            itemStatusCallback(playerItem.status)
-        })
     }
     
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit", domain: .lifecycleService)
-        playerItemStatusObserver.invalidate()
+        stopObservingStaus()
     }
     
-    func stop() {
+    open func startObservingStaus() {
+        guard !listening else { return }
+        
+        /*
+         Register as an observer of the player item's status property
+         Observe the player item "status" key to determine when it is ready to play.
+         */
+        playerItemStatusObserver = playerItem.observe(\.status, options: [.new, .initial], changeHandler: { [unowned self] (item, _) in
+            callback?(item.status)
+        })
+        
+        listening = true
+    }
+    
+    open func stopObservingStaus() {
+        guard listening else { return }
+        
         playerItemStatusObserver.invalidate()
+        
+        listening = false
     }
 }

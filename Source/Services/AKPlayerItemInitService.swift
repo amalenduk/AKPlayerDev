@@ -31,20 +31,31 @@
 
 import AVFoundation
 
-final class AKPlayerItemInitService {
+public protocol AKPlayerItemInitServiceable {
+    var media: AKPlayable { get }
+    var configuration: AKPlayerConfiguration { get }
+    var callback: ((Result<AVPlayerItem, AKPlayerError>) -> Void)? { get }
+    
+    func startInitialization()
+    func cancelLoading(clearCallBacks: Bool)
+}
+
+open class AKPlayerItemInitService: AKPlayerItemInitServiceable {
     
     // MARK: - Properties
     
-    private let media: AKPlayable
-    private let configuration: AKPlayerConfiguration
+    public let media: AKPlayable
+    
+    public let configuration: AKPlayerConfiguration
+    
     private var asset: AVURLAsset?
     
-    var onCompletedCreatingPlayerItem: ((Result<AVPlayerItem, AKPlayerError>) -> Void)?
+    public var callback: ((Result<AVPlayerItem, AKPlayerError>) -> Void)?
     
     // MARK: - Init
     
-    init(with media: AKPlayable,
-         configuration: AKPlayerConfiguration) {
+    public init(with media: AKPlayable,
+                configuration: AKPlayerConfiguration) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleService)
         self.media = media
@@ -58,12 +69,12 @@ final class AKPlayerItemInitService {
     
     // MARK: - Additional Helper Functions
     
-    func startInitialization() {
+    open func startInitialization() {
         set(media: media)
     }
     
-    func cancelLoading(clearCallBacks: Bool) {
-        if clearCallBacks { onCompletedCreatingPlayerItem = nil }
+    open func cancelLoading(clearCallBacks: Bool) {
+        if clearCallBacks { callback = nil }
         asset?.cancelLoading()
     }
     
@@ -107,10 +118,16 @@ final class AKPlayerItemInitService {
             switch status {
             case .loaded:
                 // Sucessfully loaded. Continue processing.
-                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: nil, forAsset: asset)
+                media.delegate?.akMedia(media,
+                                        didLoadedAssetKey: key,
+                                        with: nil,
+                                        forAsset: asset)
                 continue
             case .failed:
-                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: error!, forAsset: asset)
+                media.delegate?.akMedia(media,
+                                        didLoadedAssetKey: key,
+                                        with: error!,
+                                        forAsset: asset)
                 return assetFailedToPrepareForPlayback(with: .failedLoadKey(forKey: key,
                                                                             error: error!))
             case .unknown:
@@ -118,7 +135,10 @@ final class AKPlayerItemInitService {
             case .loading:
                 assertionFailure("Calling the getter for any key should be avoided befor the -loadValuesAsynchronouslyForKeys:completionHandler:")
             case .cancelled:
-                media.delegate?.akMedia(media, didLoadedAssetKey: key, with: AKPlayerError.loadingCancelled, forAsset: asset)
+                media.delegate?.akMedia(media,
+                                        didLoadedAssetKey: key,
+                                        with: AKPlayerError.loadingCancelled,
+                                        forAsset: asset)
                 return assetFailedToPrepareForPlayback(with: .loadingCancelled)
             @unknown default:
                 assertionFailure()
@@ -144,7 +164,7 @@ final class AKPlayerItemInitService {
         let playerItem = AVPlayerItem(asset: asset,
                                       automaticallyLoadedAssetKeys: assetKeys)
         media.playerItem = playerItem
-        onCompletedCreatingPlayerItem?(.success(playerItem))
+        callback?(.success(playerItem))
     }
     
     // MARK: - Error Handling - Preparing Assets for Playback Failed
@@ -161,6 +181,6 @@ final class AKPlayerItemInitService {
     private func assetFailedToPrepareForPlayback(with error: AKPlayerError) {
         AKPlayerLogger.shared.log(message: error.localizedDescription,
                                   domain: .error)
-        onCompletedCreatingPlayerItem?(.failure(error))
+        callback?(.failure(error))
     }
 }

@@ -31,3 +31,7 @@ public protocol AKPlayerStateControllerProtocol: AKPlayerCommandProtocol {
     
     func stateDidChange()
 }
+
+extension AKPlayerStateControllerProtocol {
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) { }
+}

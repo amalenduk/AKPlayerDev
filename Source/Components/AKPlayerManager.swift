@@ -73,7 +73,11 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         get { return state == .buffering
             || state == .playing
             || state == .waitingForNetwork
-            || state == .loading && (controller as? AKLoadingState)?.autoPlay ?? false
+        }
+    }
+    
+    var isAutoPlay: Bool {
+        get { return state == .loading && (controller as? AKLoadingState)?.autoPlay ?? false
             || state == .loaded && (controller as? AKLoadedState)?.autoPlay ?? false
         }
     }
@@ -542,23 +546,23 @@ extension AKPlayerManager: AKEventListener {
     func onEvent(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
         if let event = event as? AKAudioSessionInterruptionEventProducer.AudioSessionInterruptionEvent {
             switch event {
-            case .interruptionBegan(_):
+            case .interruptionBegan:
                 playingBeforeInterruption = isPlaying
                 switch controller.state {
-                case .loaded:
-                    if (controller as! AKLoadingState).autoPlay {
-                        pause()
-                    }
+                case .idle: break
+                case .loading: pause()
+                case .loaded: pause()
                 case .buffering: pause()
                 case .playing: pause()
                 case .waitingForNetwork: pause()
-                default: break
+                case .paused: break
+                case .stopped: break
+                case .failed: break
                 }
             case .interruptionEnded(shouldResume: let shouldResume):
                 if shouldResume
                     && playingBeforeInterruption
-                    && .audioSessionInterrupted == playbackInterruptionReason
-                    && !audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
+                    && .audioSessionInterrupted == playbackInterruptionReason {
                     play()
                 }
             }

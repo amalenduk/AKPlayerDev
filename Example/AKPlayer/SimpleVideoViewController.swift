@@ -295,7 +295,7 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func load(_ sender: Any) {
-        let url =  URL(string: "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")!
+        let url =  URL(string: "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
         let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: "Akplayer", artist: "Gualm habib, nazim amal kar || darun gaan", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
         let media = AKMedia(url: url, type: .clip, staticMetadata: staticMetadata)
         media.delegate = self

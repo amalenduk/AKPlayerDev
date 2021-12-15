@@ -35,18 +35,16 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     private var playerItemObservingNotificationsService: AKPlayerItemObservingNotificationsService!
     
-    private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-    
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
-        
+    
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
     
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     // MARK: - Init
     
     init(manager: AKPlayerManagerProtocol,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService) {
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
@@ -55,10 +53,8 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
         playerItemObservingNotificationsService = AKPlayerItemObservingNotificationsService(playerItem: playerItem)
         
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
-        
         observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player, configuration: manager.configuration)
-                
+        
         configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player, configuration: manager.configuration)
     }
     
@@ -73,7 +69,6 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
                                                   at: manager.currentTime)})
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
-        startAudioSessionInterruptionObservingService()
         startConfiguringAutomaticWaitingBehaviorService()
         setPlaybackInfo()
     }
@@ -236,12 +231,6 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         }
     }
     
-    private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
-            pause()
-        }
-    }
-    
     private func startObservingPlayerTimeService() {
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
             setPlaybackInfo()
@@ -278,5 +267,12 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
+    }
+}
+
+extension AKPlayingState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
     }
 }

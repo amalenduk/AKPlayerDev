@@ -37,13 +37,13 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
     
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     // MARK: - Init
     
     init(manager: AKPlayerManagerProtocol,
          playerItemDidPlayToEndTime flag: Bool = false,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!) {
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
@@ -220,4 +220,9 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
     }
 }
 
-
+extension AKStoppedState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
+    }
+}

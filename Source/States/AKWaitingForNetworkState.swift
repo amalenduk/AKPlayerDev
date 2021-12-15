@@ -33,29 +33,25 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     let state: AKPlayerState = .waitingForNetwork
     
-    private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-    
     private var playerItemObservingNotificationsService: AKPlayerItemObservingNotificationsService!
     
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
         
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     // MARK: - Init
     
     init(manager: AKPlayerManagerProtocol,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService) {
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
         self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
         
         guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
-        
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
-        
+
         playerItemObservingNotificationsService = AKPlayerItemObservingNotificationsService(playerItem: playerItem)
         
         configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player, configuration: manager.configuration)
@@ -74,7 +70,6 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     func stateDidChange() {
         guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
         manager.plugins?.forEach({$0.playerPlugin(didStartWaitingForNetwork: media)})
-        startAudioSessionInterruptionObservingService()
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
         startConfiguringAutomaticWaitingBehaviorService()
@@ -281,13 +276,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         manager.change(controller)
     }
-    
-    private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
-            pause()
-        }
-    }
-    
+
     private func startObservingPlayerTimeService() {
         observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
             setPlaybackInfo()
@@ -306,5 +295,12 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
+    }
+}
+
+extension AKWaitingForNetworkState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
     }
 }

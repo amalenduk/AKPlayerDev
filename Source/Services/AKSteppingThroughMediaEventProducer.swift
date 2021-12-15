@@ -38,9 +38,9 @@ open class AKSteppingThroughMediaEventProducer: AKSteppingThroughMediaEventProdu
     
     // MARK: - Properties
     
-    public var playerItem: AVPlayerItem
-    
     open weak var eventListener: AKEventListener?
+    
+    public var playerItem: AVPlayerItem
     
     private var listening = false
     

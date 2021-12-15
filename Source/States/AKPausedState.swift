@@ -33,25 +33,21 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
     
     let state: AKPlayerState = .paused
     
-    private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-    
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
     
     private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
     
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     // MARK: - Init
     
     init(manager: AKPlayerManagerProtocol,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!) {
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
         self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
         manager.player.pause()
-        
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession: manager.audioSessionService.audioSession)
     }
     
     deinit {
@@ -64,7 +60,6 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
         manager.plugins?.forEach({$0.playerPlugin(didPaused: media,
                                                   at: manager.currentTime)})
         startObservingPlayerTimeService()
-        startAudioSessionInterruptionObservingService()
         startConfiguringAutomaticWaitingBehaviorService()
         setPlaybackInfo()
     }
@@ -209,16 +204,6 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
         manager.change(controller)
     }
     
-    private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService.onInterruptionEnded = { [unowned self] shouldResume in
-            if manager.playingBeforeInterruption
-                && shouldResume
-                && !manager.audioSessionService.audioSession.secondaryAudioShouldBeSilencedHint {
-                play()
-            }
-        }
-    }
-    
     private func startObservingPlayerTimeService() {
         /*
          Check before start observing boundaryTime becuase if current item is nil no need to start observing,
@@ -265,5 +250,12 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
     
     private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
+    }
+}
+
+extension AKPausedState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
     }
 }

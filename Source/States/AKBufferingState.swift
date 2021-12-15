@@ -40,15 +40,13 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     private var playerItemObservingNotificationsService: AKPlayerItemObservingNotificationsService!
     
     private var observingPlayerTimeService: AKObservingPlayerTimeService!
-    
-    private var audioSessionInterruptionObservingService: AKAudioSessionInterruptionObservingServiceable!
-        
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+            
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     // MARK: - Init
     
     init(manager: AKPlayerManagerProtocol,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService) {
+         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleState)
         self.manager = manager
@@ -66,9 +64,6 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
         
         observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player,
                                                                   configuration: manager.configuration)
-        
-        audioSessionInterruptionObservingService = AKAudioSessionInterruptionObservingService(audioSession:
-                                                                                                manager.audioSessionService.audioSession)
         }
     
     deinit {
@@ -83,7 +78,6 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
         startDeterminingBufferingStatusService()
         startPlayerItemObservingNotificationsService()
         startObservingPlayerTimeService()
-        startAudioSessionInterruptionObservingService()
         setPlaybackInfo()
     }
     
@@ -334,12 +328,6 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
         }
     }
     
-    private func startAudioSessionInterruptionObservingService() {
-        audioSessionInterruptionObservingService.onInterruptionBegan = { [unowned self] in
-            pause()
-        }
-    }
-    
     private func clearCallBacks() {
         /* It is necessary to remove the callbacks for time control status before change state to paused state,
          Eighter it will cause an infinite loop between paused state and the time control staus to call on waiting
@@ -351,5 +339,12 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     
     private func setPlaybackInfo() {
         manager.setNowPlayingPlaybackInfo()
+    }
+}
+
+extension AKBufferingState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
     }
 }

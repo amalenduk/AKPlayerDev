@@ -212,3 +212,10 @@ final class AKFailedState: AKPlayerStateControllerProtocol {
         manager.setNowPlayingPlaybackInfo()
     }
 }
+
+extension AKFailedState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
+    }
+}

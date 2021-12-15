@@ -1,5 +1,5 @@
 //
-//  AKAccessingAssetAndTracksService.swift
+//  AKAccessingAssetAndTracksEventProducer.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,13 +25,23 @@
 
 import AVFoundation
 
-final class AKAccessingAssetAndTracksService {
+public protocol AKAccessingAssetAndTracksEventProducible: AKEventProducer {
+    var playerItem: AVPlayerItem { get }
+}
+
+open class AKAccessingAssetAndTracksEventProducer: AKAccessingAssetAndTracksEventProducible {
+    
+    public enum AccessingAssetAndTracksEvent: AKEvent {
+        case tracks([AVPlayerItemTrack])
+    }
     
     // MARK: - Properties
     
-    private let playerItem: AVPlayerItem
+    public let playerItem: AVPlayerItem
     
-    var onChangeTracks: (([AVPlayerItemTrack]) -> Void)?
+    open weak var eventListener: AKEventListener?
+    
+    private var listening = false
     
     /**
      The `NSKeyValueObservation` for the KVO on
@@ -41,7 +51,7 @@ final class AKAccessingAssetAndTracksService {
     
     // MARK: - Init
     
-    init(with playerItem: AVPlayerItem) {
+    public init(with playerItem: AVPlayerItem) {
         AKPlayerLogger.shared.log(message: "Init",
                                   domain: .lifecycleService)
         self.playerItem = playerItem
@@ -50,17 +60,27 @@ final class AKAccessingAssetAndTracksService {
     deinit {
         AKPlayerLogger.shared.log(message: "DeInit",
                                   domain: .lifecycleService)
-        playerItemTracksObserver?.invalidate()
+        stopProducingEvents()
     }
     
-    // MARK: - Additional Helper Functions
-    
-    func startObserving() {
+    open func startProducingEvents() {
+        guard !listening else { return }
+        
         /*
          Register as an observer of the player item's canPlayReverse property
          */
-        playerItemTracksObserver = playerItem.observe(\AVPlayerItem.tracks, options: [.initial, .new]) { [unowned self] (item, _) in
-            onChangeTracks?(item.tracks)
+        playerItemTracksObserver = playerItem.observe(\AVPlayerItem.tracks, options: [.initial, .new]) { [unowned self] (_, change) in
+            eventListener?.onEvent(AccessingAssetAndTracksEvent.tracks(change.newValue!), generetedBy: self)
         }
+        
+        listening = true
+    }
+    
+    open func stopProducingEvents() {
+        guard listening else { return }
+        
+        playerItemTracksObserver?.invalidate()
+        
+        listening = false
     }
 }

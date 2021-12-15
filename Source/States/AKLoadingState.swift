@@ -41,7 +41,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private var playerItemInitService: AKPlayerItemInitService!
     
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingService!
+    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
     
     private var determiningPlayerItemStatusService: AKDeterminingPlayerItemStatusService!
     
@@ -230,7 +230,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     private func createPlayerItem(with media: AKPlayable) {
         playerItemInitService = AKPlayerItemInitService(with: media,
                                                         configuration: manager.configuration)
-        playerItemInitService.onCompletedCreatingPlayerItem = { [unowned self] result in
+        playerItemInitService.callback = { [unowned self] result in
             switch result {
             case .success(let item):
                 /*
@@ -255,11 +255,12 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     private func startPlayerItemAssetKeysObservingService(with item: AVPlayerItem) {
         playerItemAssetKeysObservingService = AKPlayerItemAssetKeysObservingService(with: item,
                                                                                     media: media)
-        playerItemAssetKeysObservingService.startObserving()
+        playerItemAssetKeysObservingService.startListeningEvents()
     }
     
     private func startObservingStatus(for item: AVPlayerItem) {
-        determiningPlayerItemStatusService = AKDeterminingPlayerItemStatusService(playerItem: item) { [unowned self] (status) in
+        determiningPlayerItemStatusService = AKDeterminingPlayerItemStatusService(with: item)
+        determiningPlayerItemStatusService.callback = { [unowned self] (status) in
             switch status {
             case .unknown:
                 AKPlayerLogger.shared.log(message: "AVPlayerItem.status: 'unknown'",
@@ -272,6 +273,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
                 assertionFailure()
             }
         }
+        determiningPlayerItemStatusService.startObservingStaus()
     }
     
     private func becameReadyToPlay() {
@@ -282,12 +284,9 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func cancelLoading() {
-        if let playerItemInitService = playerItemInitService {
-            playerItemInitService.cancelLoading(clearCallBacks: true)
-        }
-        if let determiningPlayerItemStatusService = determiningPlayerItemStatusService {
-            determiningPlayerItemStatusService.stop()
-        }
+        determiningPlayerItemStatusService?.stopObservingStaus()
+        playerItemInitService?.cancelLoading(clearCallBacks: true)
+        playerItemAssetKeysObservingService?.stopListeningEvents()
         manager.currentItem?.cancelPendingSeeks()
         manager.player.replaceCurrentItem(with: nil)
     }
@@ -330,5 +329,12 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
         let controller = AKFailedState(manager: manager,
                                        error: error)
         manager.change(controller)
+    }
+}
+
+extension AKLoadingState {
+    
+    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+        
     }
 }
