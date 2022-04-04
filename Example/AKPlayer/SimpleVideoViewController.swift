@@ -303,12 +303,12 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func testButtonAction(_ sender: Any) {
-//        NotificationCenter.default.post(name: AVAudioSession.interruptionNotification,
-//                                        object: SimpleVideoViewController.session,
-//                                        userInfo: [
-//                                            AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
-//                                            AVAudioSessionInterruptionWasSuspendedKey: AVAudioSession.InterruptionReason.default.rawValue
-//                                        ])
+        //        NotificationCenter.default.post(name: AVAudioSession.interruptionNotification,
+        //                                        object: SimpleVideoViewController.session,
+        //                                        userInfo: [
+        //                                            AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+        //                                            AVAudioSessionInterruptionWasSuspendedKey: AVAudioSession.InterruptionReason.default.rawValue
+        //                                        ])
         
         NotificationCenter.default.post(
             name: AVAudioSession.routeChangeNotification,
@@ -402,13 +402,6 @@ extension SimpleVideoViewController: AKPlayerDelegate {
         }
     }
     
-    func akPlayback(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) {
-        print("Duration change,", itemDuration.seconds)
-        DispatchQueue.main.async {
-            self.durationLabel.text = "Duration: " + String(format: "%.2f", itemDuration.seconds)
-        }
-    }
-    
     func akPlayer(_ player: AKPlayer, unavailableAction reason: AKPlayerUnavailableActionReason) {
         DispatchQueue.main.async {
             self.setDebugMessage(reason.description)
@@ -444,26 +437,26 @@ extension SimpleVideoViewController: AKPlayerDelegate {
 
 extension SimpleVideoViewController: AKMediaDelegate {
     
-    func akPlayback(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset) {
+    func akMedia(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset) {
         print("key is ---- \(key)", asset.duration)
     }
     
-    func akPlayer(_ player: AKPlayer, didChangeItemDuration itemDuration: CMTime) {
+    func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) {
         print("Duration change,", itemDuration.seconds)
         DispatchQueue.main.async {
             self.durationLabel.text = "Duration: " + String(format: "%.2f", itemDuration.seconds)
         }
     }
     
-    func akPlayback(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) {
+    func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) {
         stepForwardButton.isEnabled = canStepForward
     }
     
-    func akPlayback(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) {
+    func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) {
         stepBackwardButton.isEnabled = canStepBackward
     }
     
-    func akPlayback(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) {
+    func akMedia(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) {
         var availableDuration: Double {
             guard let timeRange = player.currentItem?.loadedTimeRanges.first?.timeRangeValue else {
                 return 0.0

@@ -39,7 +39,7 @@ open class AKMedia: AKPlayable {
         return _staticMetadata
     }
     
-    public var delegate: AKMediaDelegate?
+    public weak var delegate: AKMediaDelegate?
     
     private var _staticMetadata: AKPlayableStaticMetadata?
     

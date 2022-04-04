@@ -166,6 +166,7 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     }
     
     deinit {
+        print("AKPLayerManager: Deinit called from the AKPLayerManager ✌🏼")
         _plugins.removeAllObjects()
         playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
         remoteCommandController?.disable(commands: AKRemoteCommand.all())

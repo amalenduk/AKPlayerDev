@@ -35,7 +35,6 @@ public protocol AKPlayable: AnyObject {
     var options: [String: Any]? { get }
     var type: AKMediaType { get }
     var staticMetadata: AKPlayableStaticMetadata? { get }
-    
     var delegate: AKMediaDelegate? { get set }
     
     func isLive() -> Bool
