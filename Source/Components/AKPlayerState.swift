@@ -80,6 +80,19 @@ public enum AKPlayerState: String, CustomStringConvertible {
     var isFailed: Bool {
         return self == .failed
     }
+    
+    var isPlaybackActive: Bool {
+        return isBuffering || isPlaying || isWaitingForNetwork
+    }
+    
+    var isLoadingStateActive: Bool {
+        return isLoading || isLoaded
+    }
+    
+    /// Cheks `isIdle || isPaused || isStopped || isFailed`
+    var isPlaybackInactive: Bool {
+        return isIdle || isPaused || isStopped || isFailed
+    }
 }
 
 extension AKPlayerState: Equatable {}

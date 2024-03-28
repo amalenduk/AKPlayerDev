@@ -24,6 +24,7 @@
 //
 
 import Foundation
+import AVFoundation
 
 open class AKMedia: AKPlayable {
     
@@ -31,31 +32,35 @@ open class AKMedia: AKPlayable {
     
     public let url: URL
     
-    public let options: [String : Any]?
-    
     public let type: AKMediaType
     
-    public var staticMetadata: AKPlayableStaticMetadata? {
-        return _staticMetadata
-    }
+    public let assetInitializationOptions: [String : Any]?
+    
+    public let automaticallyLoadedAssetKeys: [AVPartialAsyncProperty<AVAsset>]?
+    
+    public private(set) var staticMetadata: AKNowPlayableStaticMetadataProtocol?
     
     public weak var delegate: AKMediaDelegate?
-    
-    private var _staticMetadata: AKPlayableStaticMetadata?
     
     // MARK: - Init
     
     public init(url: URL,
                 type: AKMediaType,
-                options: [String : Any]? = nil,
-                staticMetadata: AKPlayableStaticMetadata? = nil) {
+                assetInitializationOptions: [String : Any]? = nil,
+                automaticallyLoadedAssetKeys: [AVPartialAsyncProperty<AVAsset>]? = [.duration, .isPlayable, .hasProtectedContent],
+                staticMetadata: AKNowPlayableStaticMetadataProtocol? = nil) {
         self.url = url
         self.type = type
-        self.options = options
-        self._staticMetadata = staticMetadata
+        self.assetInitializationOptions = assetInitializationOptions
+        self.automaticallyLoadedAssetKeys = automaticallyLoadedAssetKeys
+        self.staticMetadata = staticMetadata
     }
     
-    open func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata) {
-        self._staticMetadata = staticMetadata
+    deinit {
+        print("Deinit called from AKMedia 👌🏼")
+    }
+    
+    open func updateMetadata(_ staticMetadata: AKNowPlayableStaticMetadataProtocol) {
+        self.staticMetadata = staticMetadata
     }
 }

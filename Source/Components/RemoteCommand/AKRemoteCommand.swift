@@ -28,15 +28,14 @@ import MediaPlayer
 
 public typealias AKRemoteCommandHandler = (MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
 
-public protocol AKRemoteCommandProtocol {
-    associatedtype RemoteCommand: MPRemoteCommand
-    var id: String { get }
-    var commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand> { get }
-    var handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler> { get }
+public protocol AKRemoteCommandRegistrable {
+    associatedtype Command: MPRemoteCommand
+    
+    var command: KeyPath<MPRemoteCommandCenter, Command> { get }
+    var handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler> { get }
 }
 
 public enum AKRemoteCommand {
-    
     case play,
          pause,
          stop,
@@ -96,10 +95,6 @@ public enum AKRemoteCommand {
                 .disableLanguageOption]
     }
     
-    /**
-     All values in an array for convenience.
-     Don't use for associated values.
-     */
     static internal func all() -> [AKRemoteCommand] {
         return [
             .play,
@@ -126,158 +121,165 @@ public enum AKRemoteCommand {
     }
 }
 
-public struct AKPlaybackRemoteCommand: AKRemoteCommandProtocol {
+public extension AKRemoteCommand {
     
-    public static let play = AKPlaybackRemoteCommand(id: "Play", commandKeyPath: \MPRemoteCommandCenter.playCommand, handlerKeyPath: \AKRemoteCommandController.handlePlayCommand)
-    
-    public static let pause = AKPlaybackRemoteCommand(id: "Pause", commandKeyPath: \MPRemoteCommandCenter.pauseCommand, handlerKeyPath: \AKRemoteCommandController.handlePauseCommand)
-    
-    public static let stop = AKPlaybackRemoteCommand(id: "Stop", commandKeyPath: \MPRemoteCommandCenter.stopCommand, handlerKeyPath: \AKRemoteCommandController.handleStopCommand)
-    
-    public static let togglePlayPause = AKPlaybackRemoteCommand(id: "TogglePlayPause", commandKeyPath: \MPRemoteCommandCenter.togglePlayPauseCommand, handlerKeyPath: \AKRemoteCommandController.handleTogglePlayPauseCommand)
-    
-    public typealias RemoteCommand = MPRemoteCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
-}
-
-public struct AKNavigatingBetweenTracksCommand: AKRemoteCommandProtocol {
-    
-    public static let nextTrack = AKNavigatingBetweenTracksCommand(id: "Next", commandKeyPath: \MPRemoteCommandCenter.nextTrackCommand, handlerKeyPath: \AKRemoteCommandController.handleNextTrackCommand)
-    
-    public static let previousTrack = AKNavigatingBetweenTracksCommand(id: "Previous", commandKeyPath: \MPRemoteCommandCenter.previousTrackCommand, handlerKeyPath: \AKRemoteCommandController.handlePreviousTrackCommand)
-    
-    public typealias RemoteCommand = MPRemoteCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
-}
-
-public struct AKNavigatingTrackContentsCommand: AKRemoteCommandProtocol {
-    
-    public static let seekBackward = AKNavigatingTrackContentsCommand(id: "Seek Backward", commandKeyPath: \MPRemoteCommandCenter.seekBackwardCommand, handlerKeyPath: \AKRemoteCommandController.handleSeekBackwardCommand)
-    
-    public static let seekForward = AKNavigatingTrackContentsCommand(id: "Seek Forward", commandKeyPath: \MPRemoteCommandCenter.seekForwardCommand, handlerKeyPath: \AKRemoteCommandController.handleSeekForwardCommand)
-    
-    public typealias RemoteCommand = MPRemoteCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
-}
-
-public struct AKSkipIntervalCommand: AKRemoteCommandProtocol {
-    
-    public static let skipBackward = AKSkipIntervalCommand(id: "Skip Backward", commandKeyPath: \MPRemoteCommandCenter.skipBackwardCommand, handlerKeyPath: \AKRemoteCommandController.handleSkipBackwardCommand)
-    
-    public static let skipForward = AKSkipIntervalCommand(id: "Skip Forward", commandKeyPath: \MPRemoteCommandCenter.skipForwardCommand, handlerKeyPath: \AKRemoteCommandController.handleSkipForwardCommand)
-    
-    public typealias RemoteCommand = MPSkipIntervalCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
-    
-    func set(preferredIntervals: [NSNumber]) -> AKSkipIntervalCommand {
-        MPRemoteCommandCenter.shared()[keyPath: commandKeyPath].preferredIntervals = preferredIntervals
-        return self
+    var registration: any AKRemoteCommandRegistrable {
+        switch self {
+        case .play: return AKPlaybackRemoteCommand.play
+        case .pause: return AKPlaybackRemoteCommand.pause
+        case .stop: return AKPlaybackRemoteCommand.stop
+        case .togglePlayPause: return AKPlaybackRemoteCommand.togglePlayPause
+        case .nextTrack: return AKNavigatingBetweenTracksCommand.nextTrack
+        case .previousTrack: return AKNavigatingBetweenTracksCommand.previousTrack
+        case .changeRepeatMode: return AKChangeRepeatModeCommand.changeRepeatMode
+        case .changeShuffleMode: return AKChangeShuffleModeCommand.changeShuffleMode
+        case .changePlaybackRate: return AKChangePlaybackRateCommand.changePlaybackRate
+        case .seekBackward: return AKNavigatingTrackContentsCommand.seekBackward
+        case .seekForward: return AKNavigatingTrackContentsCommand.seekForward
+        case .skipBackward: return AKSkipIntervalCommand.skipBackward
+        case .skipForward: return AKSkipIntervalCommand.skipForward
+        case .changePlaybackPosition: return AKChangePlaybackPositionCommand.changePlaybackPosition
+        case .rating: return AKChangePlaybackPositionCommand.changePlaybackPosition
+        case .like: return AKRatingMediaItemsCommand.like
+        case .dislike: return AKRatingMediaItemsCommand.dislike
+        case .bookmark: return AKRatingMediaItemsCommand.bookmark
+        case .enableLanguageOption: return AKRatingMediaItemsCommand.bookmark
+        case .disableLanguageOption: return AKRatingMediaItemsCommand.bookmark
+        }
     }
 }
 
-public struct AKChangePlaybackRateCommand: AKRemoteCommandProtocol {
+public struct AKPlaybackRemoteCommand: AKRemoteCommandRegistrable {
     
-    public static let changePlaybackRate = AKChangePlaybackRateCommand(id: "Playback Rate", commandKeyPath: \MPRemoteCommandCenter.changePlaybackRateCommand, handlerKeyPath: \AKRemoteCommandController.handleChangePlaybackRateCommand)
+    public typealias Command = MPRemoteCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public typealias RemoteCommand = MPChangePlaybackRateCommand
+    public static let play = AKPlaybackRemoteCommand(command: \MPRemoteCommandCenter.playCommand,
+                                                     handler: \AKNowPlayingSessionController.playCommandHandler)
+    public static let pause = AKPlaybackRemoteCommand(command: \MPRemoteCommandCenter.pauseCommand,
+                                                      handler: \AKNowPlayingSessionController.pauseCommandHandler)
+    public static let stop = AKPlaybackRemoteCommand(command: \MPRemoteCommandCenter.stopCommand,
+                                                     handler: \AKNowPlayingSessionController.stopCommandHandler)
+    public static let togglePlayPause = AKPlaybackRemoteCommand(command: \MPRemoteCommandCenter.togglePlayPauseCommand,
+                                                                handler: \AKNowPlayingSessionController.togglePlayPauseCommandHandler)
+}
+
+public struct AKNavigatingBetweenTracksCommand: AKRemoteCommandRegistrable {
     
-    public let id: String
+    public typealias Command = MPRemoteCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
+    public static let nextTrack = AKNavigatingBetweenTracksCommand(command: \MPRemoteCommandCenter.nextTrackCommand,
+                                                                   handler: \AKNowPlayingSessionController.nextTrackCommandHandler)
+    public static let previousTrack = AKNavigatingBetweenTracksCommand(command: \MPRemoteCommandCenter.previousTrackCommand,
+                                                                       handler: \AKNowPlayingSessionController.previousTrackCommandHandler)
     
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+}
+
+public struct AKNavigatingTrackContentsCommand: AKRemoteCommandRegistrable {
     
-    func set(supportedPlaybackRates: [NSNumber]) -> AKChangePlaybackRateCommand {
-        MPRemoteCommandCenter.shared().changePlaybackRateCommand.supportedPlaybackRates = supportedPlaybackRates
-        return self
+    public typealias Command = MPRemoteCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
+    
+    public static let seekBackward = AKNavigatingTrackContentsCommand(command: \MPRemoteCommandCenter.seekBackwardCommand,
+                                                                      handler: \AKNowPlayingSessionController.seekBackwardCommandHandler)
+    
+    public static let seekForward = AKNavigatingTrackContentsCommand(command: \MPRemoteCommandCenter.seekForwardCommand,
+                                                                     handler: \AKNowPlayingSessionController.seekForwardCommandHandler)
+}
+
+public struct AKSkipIntervalCommand: AKRemoteCommandRegistrable {
+    
+    public typealias Command = MPSkipIntervalCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
+    
+    public static let skipBackward = AKSkipIntervalCommand(command: \MPRemoteCommandCenter.skipBackwardCommand,
+                                                           handler: \AKNowPlayingSessionController.skipBackwardCommandHandler)
+    
+    public static let skipForward = AKSkipIntervalCommand(command: \MPRemoteCommandCenter.skipForwardCommand,
+                                                          handler: \AKNowPlayingSessionController.skipForwardCommandHandler)
+    
+    func set(preferredIntervals: [NSNumber]) {
+        MPRemoteCommandCenter.shared()[keyPath: command].preferredIntervals = preferredIntervals
     }
 }
 
-public struct AKChangePlaybackPositionCommand: AKRemoteCommandProtocol {
+public struct AKChangePlaybackRateCommand: AKRemoteCommandRegistrable {
     
-    public static let changePlaybackPosition = AKChangePlaybackPositionCommand(id: "Change Playback Position", commandKeyPath: \MPRemoteCommandCenter.changePlaybackPositionCommand, handlerKeyPath: \AKRemoteCommandController.handleChangePlaybackPositionCommand)
+    public typealias Command = MPChangePlaybackRateCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public typealias RemoteCommand = MPChangePlaybackPositionCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+    public static let changePlaybackRate = AKChangePlaybackRateCommand(command: \MPRemoteCommandCenter.changePlaybackRateCommand,
+                                                                       handler: \AKNowPlayingSessionController.changePlaybackRateCommandHandler)
 }
 
-public struct AKRatingCommand: AKRemoteCommandProtocol {
+public struct AKChangePlaybackPositionCommand: AKRemoteCommandRegistrable {
     
-    public static let rating = AKRatingCommand(id: "Rating", commandKeyPath: \MPRemoteCommandCenter.ratingCommand, handlerKeyPath: \AKRemoteCommandController.handleRatingCommand)
+    public typealias Command = MPChangePlaybackPositionCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public typealias RemoteCommand = MPRatingCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+    public static let changePlaybackPosition = AKChangePlaybackPositionCommand(command: \MPRemoteCommandCenter.changePlaybackPositionCommand,
+                                                                               handler: \AKNowPlayingSessionController.changePlaybackPositionCommandHandler)
 }
 
-public struct AKRatingMediaItemsCommand: AKRemoteCommandProtocol {
+public struct AKRatingCommand: AKRemoteCommandRegistrable {
     
-    public static let like = AKRatingMediaItemsCommand(id: "Like", commandKeyPath: \MPRemoteCommandCenter.likeCommand, handlerKeyPath: \AKRemoteCommandController.handleLikeCommand)
+    public typealias Command = MPRatingCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public static let dislike = AKRatingMediaItemsCommand(id: "Dislike", commandKeyPath: \MPRemoteCommandCenter.dislikeCommand, handlerKeyPath: \AKRemoteCommandController.handleDislikeCommand)
-    
-    public static let bookmark = AKRatingMediaItemsCommand(id: "Bookmark", commandKeyPath: \MPRemoteCommandCenter.bookmarkCommand, handlerKeyPath: \AKRemoteCommandController.handleSeekBackwardCommand)
-    
-    public typealias RemoteCommand = MPFeedbackCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+    public static let rating = AKRatingCommand(command: \MPRemoteCommandCenter.ratingCommand,
+                                               handler: \AKNowPlayingSessionController.ratingCommandHandler)
 }
 
-public struct AKChangeRepeatModeCommand: AKRemoteCommandProtocol {
+public struct AKRatingMediaItemsCommand: AKRemoteCommandRegistrable {
     
-    public static let changeRepeatMode = AKChangeRepeatModeCommand(id: "ChangeRepeatMode", commandKeyPath: \MPRemoteCommandCenter.changeRepeatModeCommand, handlerKeyPath: \AKRemoteCommandController.handleChangeRepeatModeCommand)
+    public typealias Command = MPFeedbackCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public typealias RemoteCommand = MPChangeRepeatModeCommand
-    
-    public let id: String
-    
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
-    
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+    public static let like = AKRatingMediaItemsCommand(command: \MPRemoteCommandCenter.likeCommand,
+                                                       handler: \AKNowPlayingSessionController.likeCommandHandler)
+    public static let dislike = AKRatingMediaItemsCommand(command: \MPRemoteCommandCenter.dislikeCommand,
+                                                          handler: \AKNowPlayingSessionController.dislikeCommandHandler)
+    public static let bookmark = AKRatingMediaItemsCommand(command: \MPRemoteCommandCenter.bookmarkCommand,
+                                                           handler: \AKNowPlayingSessionController.seekBackwardCommandHandler)
 }
 
-public struct AKChangeShuffleModeCommand: AKRemoteCommandProtocol {
+public struct AKChangeRepeatModeCommand: AKRemoteCommandRegistrable {
     
-    public static let changeShuffleMode = AKChangeShuffleModeCommand(id: "ChangeShuffleMode", commandKeyPath: \MPRemoteCommandCenter.changeShuffleModeCommand, handlerKeyPath: \AKRemoteCommandController.handleChangeShuffleModeCommand)
+    public typealias Command = MPChangeRepeatModeCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public typealias RemoteCommand = MPChangeShuffleModeCommand
+    public static let changeRepeatMode = AKChangeRepeatModeCommand(command: \MPRemoteCommandCenter.changeRepeatModeCommand,
+                                                                   handler: \AKNowPlayingSessionController.changeRepeatModeCommandHandler)
+}
+
+public struct AKChangeShuffleModeCommand: AKRemoteCommandRegistrable {
     
-    public let id: String
+    public typealias Command = MPChangeShuffleModeCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
     
-    public let commandKeyPath: KeyPath<MPRemoteCommandCenter, RemoteCommand>
+    public static let changeShuffleMode = AKChangeShuffleModeCommand(command: \MPRemoteCommandCenter.changeShuffleModeCommand,
+                                                                     handler: \AKNowPlayingSessionController.changeShuffleModeCommandHandler)
+}
+
+public struct AKLanguageOptionCommand: AKRemoteCommandRegistrable {
     
-    public let handlerKeyPath: KeyPath<AKRemoteCommandController, AKRemoteCommandHandler>
+    public typealias Command = MPRemoteCommand
+    public let command: KeyPath<MPRemoteCommandCenter, Command>
+    public let handler: KeyPath<AKNowPlayingSessionController, AKRemoteCommandHandler>
+    
+    public static let enableLanguageOption = AKLanguageOptionCommand(command: \MPRemoteCommandCenter.enableLanguageOptionCommand,
+                                                                     handler: \AKNowPlayingSessionController.changeShuffleModeCommandHandler)
+    public static let disableLanguageOption = AKLanguageOptionCommand(command: \MPRemoteCommandCenter.disableLanguageOptionCommand,
+                                                                      handler: \AKNowPlayingSessionController.changeShuffleModeCommandHandler)
 }

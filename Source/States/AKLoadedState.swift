@@ -29,7 +29,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
-    unowned let manager: AKPlayerManagerProtocol
+    unowned let playerController: AKPlayerControllerProtocol
     
     let state: AKPlayerState = .loaded
     
@@ -37,66 +37,48 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     private let position: CMTime?
     
-    private var observingPlayerTimeService: AKObservingPlayerTimeService!
-    
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
-    
     private var workItem: DispatchWorkItem?
     
     // MARK: - Init
     
-    init(manager: AKPlayerManagerProtocol,
+    init(playerController: AKPlayerControllerProtocol,
          autoPlay: Bool = false,
-         at position: CMTime? = nil,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable) {
-        AKPlayerLogger.shared.log(message: "Init",
-                                  domain: .lifecycleState)
-        self.manager = manager
+         position: CMTime? = nil) {
+        self.playerController = playerController
         self.autoPlay = autoPlay
         self.position = position
-        
-        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player,
-                                                                  configuration: manager.configuration)
-        self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
     }
     
-    deinit {
-        AKPlayerLogger.shared.log(message: "DeInit",
-                                  domain: .lifecycleState)
-    }
+    deinit { }
     
-    func stateDidChange() {
-        guard let media = manager.currentMedia,
-              let currentItem = manager.currentItem else { assertionFailure("Media and Current item should available"); return }
-        manager.delegate?.playerManager(didItemDurationChange: currentItem.duration)
-        manager.plugins?.forEach({$0.playerPlugin(didLoad: media,
-                                                  with: currentItem.duration)})
-        startObservingPlayerTimeService()
+    func didChangeState() {
         if let position = position {
             seek(to: position)
-        }else {
-            manager.delegate?.playerManager(didCurrentTimeChange: manager.currentTime)
+        } else {
+            playerController.delegate?.playerController(playerController,
+                                                        didChangeCurrentTimeTo: playerController.currentTime,
+                                                        for: playerController.currentMedia!)
         }
-        if autoPlay && !manager.audioSessionService.isInterrupted {
+        if autoPlay {
             workItem = DispatchWorkItem(block: { [unowned self] in
                 play()
             })
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5, execute: workItem!)
+            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5,
+                                          execute: workItem!)
         }
-        setMetadata()
     }
     
     // MARK: - Commands
     
     func load(media: AKPlayable) {
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media)
         change(controller)
     }
     
     func load(media: AKPlayable,
               autoPlay: Bool) {
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay)
         change(controller)
@@ -105,132 +87,152 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     func load(media: AKPlayable,
               autoPlay: Bool,
               at position: CMTime) {
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        at: position)
+                                        position: position)
         change(controller)
     }
     
     func load(media: AKPlayable,
               autoPlay: Bool,
               at position: Double) {
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        at: CMTime(seconds: position,
-                                                   preferredTimescale: manager.configuration.preferredTimescale))
+                                        position: CMTime(seconds: position,
+                                                         preferredTimescale: playerController.configuration.preferredTimeScale))
         change(controller)
     }
     
     func play() {
-        let controller = AKBufferingState(manager: manager,
-                                          playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+        let controller = AKBufferingState(playerController: playerController)
         change(controller)
-        controller.playCommand()
+    }
+    
+    func play(at rate: AKPlaybackRate) {
+        guard playerController.currentMedia!.canPlay(at: rate) else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate);
+            fatalError() }
+        let controller = AKBufferingState(playerController: playerController,
+                                          rate: rate)
+        change(controller)
     }
     
     func pause() {
-        let controller = AKPausedState(manager: manager,
-                                       playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+        let controller = AKPausedState(playerController: playerController)
         change(controller)
     }
     
     func togglePlayPause() {
-        play()
+        if autoPlay {
+            pause()
+        } else {
+            play()
+        }
     }
     
     func stop() {
-        let controller = AKStoppedState(manager: manager,
-                                        playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    func seek(to time: CMTime,
+              toleranceBefore: CMTime,
+              toleranceAfter: CMTime,
+              completionHandler: @escaping (Bool) -> Void) {
+        playerController.player.seek(to: time,
+                                     toleranceBefore: toleranceBefore,
+                                     toleranceAfter: toleranceAfter,
+                                     completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
-        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    func seek(to time: CMTime,
+              toleranceBefore: CMTime,
+              toleranceAfter: CMTime) {
+        playerController.player.seek(to: time,
+                                     toleranceBefore: toleranceBefore,
+                                     toleranceAfter: toleranceAfter)
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: time,
-                            completionHandler: completionHandler)
+        playerController.player.seek(to: time,
+                                     completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        manager.player.seek(to: time)
+        playerController.player.seek(to: time)
     }
     
     func seek(to time: Double,
               completionHandler: @escaping (Bool) -> Void) {
         seek(to: CMTime(seconds: time,
-                        preferredTimescale: manager.configuration.preferredTimescale),
+                        preferredTimescale: playerController.configuration.preferredTimeScale),
              completionHandler: completionHandler)
     }
     
     func seek(to time: Double) {
         seek(to: CMTime(seconds: time,
-                        preferredTimescale: manager.configuration.preferredTimescale))
+                        preferredTimescale: playerController.configuration.preferredTimeScale))
     }
     
-    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: date, completionHandler: completionHandler)
+    func seek(to date: Date,
+              completionHandler: @escaping (Bool) -> Void) {
+        playerController.player.seek(to: date,
+                                     completionHandler: completionHandler)
+        
     }
     
     func seek(to date: Date) {
-        manager.player.seek(to: date)
+        playerController.player.seek(to: date)
     }
     
-    func seek(offset: Double) {
-        seek(to: manager.currentTime.seconds + offset)
+    func seek(toOffset offset: Double) {
+        seek(to: playerController.currentTime.seconds + offset)
     }
     
-    func seek(offset: Double,
+    func seek(toOffset offset: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: manager.currentTime.seconds + offset,
+        seek(to: playerController.currentTime.seconds + offset,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage value: Double,
+    func seek(toPercentage percentage: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (manager.duration?.seconds ?? 0) / value,
+        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100),
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage value: Double) {
-        seek(to: (manager.duration?.seconds ?? 0) / value)
+    func seek(toPercentage percentage: Double) {
+        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100))
     }
     
-    func step(byCount stepCount: Int) {
-        guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
-        playerItem.step(byCount: stepCount)
+    func step(by count: Int) {
+        playerController.currentItem!.step(byCount: count)
+    }
+    
+    func fastForward() {
+        play(at: playerController.configuration.fastForwardRate)
+    }
+    
+    func fastForward(at rate: AKPlaybackRate) {
+        play(at: rate)
+    }
+    
+    func rewind() {
+        play(at: playerController.configuration.rewindRate)
+    }
+    
+    func rewind(at rate: AKPlaybackRate) {
+        play(at: rate)
     }
     
     // MARK: - Additional Helper Functions
     
-    private func startObservingPlayerTimeService() {
-        observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
-            manager.setNowPlayingPlaybackInfo()
-            manager.delegate?.playerManager(didCurrentTimeChange: time)
-        }
-    }
-    
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         workItem?.cancel()
-        manager.change(controller)
-    }
-    
-    private func setMetadata() {
-        manager.setNowPlayingMetadata()
-    }
-}
-
-extension AKLoadedState {
-    
-    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
-        
+        playerController.change(controller)
     }
 }

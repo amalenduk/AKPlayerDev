@@ -1,5 +1,5 @@
 //
-//  AKPlayerConfiguration.swift
+//  AKPlayerDefaultConfiguration.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -25,62 +25,49 @@
 
 import AVFoundation
 
-public struct AKAudioSessionConfiguration {
+public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     // MARK: - Properties
     
-    public var category: AVAudioSession.Category = .playback
-    public var activeOptions: AVAudioSession.SetActiveOptions = [.notifyOthersOnDeactivation]
-    public var mode: AVAudioSession.Mode = .default
-    public var categoryOptions: AVAudioSession.CategoryOptions = [.duckOthers]
+    public var periodicTimeInterval: AKTimeEventFrequency = .everyHalfSecond
+    
+    public var preferredTimeScale: CMTimeScale = CMTimeScale(NSEC_PER_SEC)
+    
+    public var boundaryTimeObserverMultiplier: Double = 0.20
+    
+    public var bufferObservingTimeout: TimeInterval = 30
+    
+    public var bufferObservingTimeInterval: TimeInterval = 1
+    
+    public var audioSession: AKAudioSessionConfiguration = AKAudioSessionConfiguration()
+    
+    public var isNowPlayingEnabled: Bool = false
+    
+    public var idleTimerDisabledForStates: [AKPlayerState] = [AKPlayerState.buffering,
+                                                              AKPlayerState.playing]
+    public var textStyleRules: [AVTextStyleRule]? = nil
+    
+    public var playbackPausesWhenResigningActive: Bool = true
+    
+    public var playbackPausesWhenBackgrounded: Bool = true
+    
+    public var playbackResumesWhenBecameActive: Bool = true
+    
+    public var playbackResumesWhenEnteringForeground: Bool = true
+    
+    public var playbackResumesWhenAudioSessionInterruptionEnded: Bool = true
+    
+    public var playbackFreezesAtEnd: Bool = true
+    
+    public var fastForwardRate: AKPlaybackRate = .superfast
+    
+    public var rewindRate: AKPlaybackRate = .slowest
+    
+    /// Default Configuration
+    public static var `default` = AKPlayerConfiguration()
     
     // MARK: - Init
     
     public init() {}
-}
-
-public protocol AKPlayerConfiguration {
-    var itemLoadedAssetKeys: [String] { get set }
-    var periodicPlayingTimeInSecond: Double { get set }
-    var boundaryTimeObserverMultiplier: Double { get set }
-    var preferredTimescale: CMTimeScale { get set }
-    var bufferObservingTimeout: TimeInterval { get set }
-    var bufferObservingTimeInterval: TimeInterval { get set }
     
-    var audioSession: AKAudioSessionConfiguration { get set }
-    
-    /// Pauses playback automatically when resigning active.
-    var playbackPausesWhenResigningActive: Bool { get set }
-    
-    /// Pauses playback automatically when backgrounded.
-    var playbackPausesWhenBackgrounded: Bool { get set }
-    
-    /// Resumes playback when became active.
-    var playbackResumesWhenBecameActive: Bool { get set }
-    
-    /// Resumes playback when entering foreground.
-    var playbackResumesWhenEnteringForeground: Bool { get set }
-    
-    /// Playback freezes on last frame frame when true and does not reset seek position timestamp..
-    var playbackFreezesAtEnd: Bool { get set }
-    
-    
-    var isNowPlayingEnabled: Bool { get set }
-    var idleTimerDisabledForStates: [AKPlayerState] { get set }
-}
-
-public enum AKTimeEventFrequency {
-    case everySecond
-    case everyHalfSecond
-    case everyQuarterSecond
-    case custom(time: CMTime)
-    
-    func getTime() -> CMTime {
-        switch self {
-        case .everySecond: return CMTime(value: 1, timescale: 1)
-        case .everyHalfSecond: return CMTime(value: 1, timescale: 2)
-        case .everyQuarterSecond: return CMTime(value: 1, timescale: 4)
-        case .custom(let time): return time
-        }
-    }
 }

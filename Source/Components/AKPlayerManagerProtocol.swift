@@ -28,51 +28,66 @@ import AVFoundation
 import MediaPlayer
 
 public protocol AKPlayerManagerDelegate: AnyObject {
-    func playerManager(didStateChange state: AKPlayerState)
-    func playerManager(didCurrentMediaChange media: AKPlayable)
-    func playerManager(didPlaybackRateChange playbackRate: AKPlaybackRate)
-    func playerManager(didCurrentTimeChange currentTime: CMTime)
-    func playerManager(didItemDurationChange itemDuration: CMTime)
-    func playerManager(didItemPlayToEndTime endTime: CMTime)
-    func playerManager(didVolumeChange volume: Float, isMuted: Bool)
-    func playerManager(unavailableAction reason: AKPlayerUnavailableActionReason)
-    func playerManager(didFailedWith error: AKPlayerError)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangeStateTo state: AKPlayerState)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangeMediaTo media: AKPlayable)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangePlaybackRateTo newRate: AKPlaybackRate,
+                       from oldRate: AKPlaybackRate)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangeCurrentTimeTo currentTime: CMTime,
+                       for media: AKPlayable)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       playerItemDidReachEnd endTime: CMTime,
+                       for media: AKPlayable)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangeVolumeTo volume: Float)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didChangeMutedStatusTo isMuted: Bool)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       unavailableActionWith reason: AKPlayerUnavailableCommandReason)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didFailWith error: AKPlayerError)
 }
 
-public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandProtocol {
-    var playingBeforeInterruption: Bool { get }
-    var playbackInterruptionReason: AKPlaybackInterruptionReason { get }
-    
-    var requestedSeekingTime: CMTime? { get }
-    
-    var configuration: AKPlayerConfiguration { get }
-    var controller: AKPlayerStateControllerProtocol! { get }
-    
+public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProtocol {
+    var playerController: AKPlayerControllerProtocol { get }
+    var configuration: AKPlayerConfigurationProtocol { get }
     var delegate: AKPlayerManagerDelegate? { get }
-    var plugins: [AKPlayerPlugin]? { get }
-    
+    var playerStateSnapshot: AKPlayerStateSnapshot? { get }
     var remoteCommands: [AKRemoteCommand] { get }
     
-    var audioSessionService: AKAudioSessionServiceable { get }
-    var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable? { get }
-    var remoteCommandController: AKRemoteCommandController? { get }
-    var playerRateEventProducer: AKPlayerRateEventProducible! { get }
-    var managingAudioOutputEventProducer: AKManagingAudioOutputEventProducible! { get }
+    var audioSessionService: AKAudioSessionServiceProtocol { get }
+    var audioSessionInterruptionObserver: AKAudioSessionInterruptionObserverProtocol! { get }
+    var audioSessionRouteChangesObserver: AKAudioSessionRouteChangesObserverProtocol! { get }
+    var audioSessionMediaServicesWereResetObserver: AKAudioSessionMediaServicesWereResetObserverProtocol! { get }
+    var audioSessionSilenceSecondaryAudioHintObserver: AKAudioSessionSilenceSecondaryAudioHintObserverProtocol! { get }
+    var audioSessionMediaServicesLostObserver: AKAudioSessionMediaServicesLostObserverProtocol! { get }
+    var audioSessionSpatialPlaybackCapabilitiesObserver: AKAudioSessionSpatialPlaybackCapabilitiesObserverProtocol! { get }
+    var applicationLifeCycleEventsObserver: AKApplicationLifeCycleEventsObserverProtocol! { get }
+    var nowPlayingSessionController: AKNowPlayingSessionController! { get }
     
-    var audioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible! { get }
-    var routeChangeEventProducer: AKRouteChangeEventProducible! { get }
-    var mediaServicesResetEventProducer: AKMediaServicesResetEventProducible! { get }
-    var applicationEventProducer: AKApplicationEventProducible! { get }
-    
-    func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
-    func change(_ controller: AKPlayerStateControllerProtocol)
-    func startListeningEvents()
-    func stopListeningEvents()
+    func prepare() throws
+    func canPlay() -> Bool
+    func updateNowPlayingControl()
+    func setNowPlayingInfo()
+    func handleRemoteCommand(_ command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
+}
+
+public struct AKPlayerStateSnapshot {
+    var state: AKPlayerState
+    var shouldResume: Bool
+    var playbackInterruptionReason: AKPlaybackInterruptionReason
 }
 
 public enum AKPlaybackInterruptionReason: uint {
-    case none
-    case audioSessionInterrupted
+    case audioSessionInterruption
     case applicationEnteredBackground
     case applicationResignActive
+    case audioSessionRouteChange
+    
+    var isLifeCycleEvent: Bool {
+        return self == .applicationEnteredBackground || self == .applicationResignActive
+    }
 }

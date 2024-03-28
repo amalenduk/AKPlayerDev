@@ -26,23 +26,17 @@
 import AVFoundation
 
 public protocol AKPlayerProtocol: AnyObject {
-    var currentMedia: AKPlayable? { get }
-    var currentItem: AVPlayerItem? { get }
-    var currentTime: CMTime { get }
-    var duration: CMTime? { get }
     var player: AVPlayer { get }
     var state: AKPlayerState { get }
+    var defaultRate: AKPlaybackRate { get set }
     var rate: AKPlaybackRate { get set }
+    var currentMedia: AKPlayable? { get }
+    var currentItem: AVPlayerItem? { get }
+    var currentItemDuration: CMTime? { get }
+    var currentTime: CMTime { get }
+    var remainingTime: CMTime? { get }
+    var autoPlay: Bool { get }
     var volume: Float { get set }
     var isMuted: Bool { get set }
-    var isPlaying: Bool { get }
-    var isSeeking: Bool { get }
-    var error: Error? { get }
-    
-    // TODO: - Fixit
-    func prepare()
-    
-    // TODO: - Find a better way to manage the now playable information
-    func setNowPlayingMetadata()
-    func setNowPlayingPlaybackInfo()
+    var error: AKPlayerError? { get }
 }

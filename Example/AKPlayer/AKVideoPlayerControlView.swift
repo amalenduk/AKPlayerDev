@@ -56,6 +56,8 @@ class AKVideoPlayerControlView: UIView {
     
     weak var delegate: AKVideoPlayerControlViewDelegate?
     
+    private var timar: Timer?
+    
     // MARK: Lifecycle
     
     // Custom initializers go here
@@ -93,7 +95,7 @@ class AKVideoPlayerControlView: UIView {
         totalDurationLabel.text = "/ 00:00"
         progressSlider.value = 0
         progressSlider.minimumValue = 0
-        progressSlider.maximumValue = 1
+        progressSlider.maximumValue = 100
         progressSlider.isEnabled = false
         progressSlider.layer.zPosition = CGFloat(1)
     }
@@ -148,23 +150,23 @@ class AKVideoPlayerControlView: UIView {
     
     open func setCurrentTime(_ time: CMTime) {
         if time.isValid && time.isNumeric {
-            currentTimeLabel.text = time.positionalTime
+            currentTimeLabel.text = time.stringValue
         }
     }
     
     open func setSliderProgress(_ currentTime: CMTime, itemDuration: CMTime?) {
         if let itemDuration = itemDuration, itemDuration.isValid && itemDuration.isNumeric, !progressSlider.isTracking {
-            progressSlider.value = Float(currentTime.seconds / itemDuration.seconds)
+            progressSlider.value = Float((Double(currentTime.seconds) / Double(itemDuration.seconds)) * 100)
         }
     }
     
     open func setDuration(_ duration: CMTime) {
         if duration.isValid && duration.isNumeric {
-            totalDurationLabel.text = duration.positionalTime
+            totalDurationLabel.text = duration.stringValue
         }
     }
     
-    open func setPlaybackState(_ state: AKPlaybackButton.AKPlaybackState) {
+    open func setPlaybackState(_ state: AKPlaybackButton.PlaybackState) {
         playbackButton.changePlayback(state)
     }
     
@@ -208,8 +210,18 @@ class AKVideoPlayerControlView: UIView {
     }
 }
 
-// MARK: - AKPlayerPlugin
 
-extension AKVideoPlayerControlView: AKPlayerPlugin {
+extension AKVideoPlayerControlView {
     
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        [playbackButton, progressSlider, topToolBar].forEach({$0?.isHidden = false})
+        timar?.invalidate()
+        timar = nil
+    }
+    
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        Timer.scheduledTimer(withTimeInterval: 5, repeats: false) { timer in
+            [self.playbackButton, self.progressSlider, self.topToolBar].forEach({$0?.isHidden = true})
+        }
+    }
 }

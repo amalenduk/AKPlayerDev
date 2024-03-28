@@ -26,17 +26,66 @@
 import AVFoundation
 
 public extension CMTime {
-    var roundedSeconds: TimeInterval {
-        return seconds.rounded()
+    
+    var stringValue: String {
+        guard isValid && isNumeric else {
+            return "--:--"
+        }
+        
+        let duration = lrint(seconds)
+        
+        let positiveDuration = abs(duration)
+        if positiveDuration > 3600 {
+            return String(format: "%@%01ld:%02ld:%02ld",
+                          duration < 0 ? "-" : "",
+                          positiveDuration / 3600,
+                          (positiveDuration / 60) % 60,
+                          positiveDuration % 60)
+        } else {
+            return String(format: "%@%02ld:%02ld",
+                          duration < 0 ? "-" : "",
+                          (positiveDuration / 60) % 60,
+                          positiveDuration % 60)
+        }
     }
-    var hours:  Int { return Int(roundedSeconds / 3600) }
-    var minute: Int { return Int(roundedSeconds.truncatingRemainder(dividingBy: 3600) / 60) }
-    var second: Int { return Int(roundedSeconds.truncatingRemainder(dividingBy: 60)) }
-    var positionalTime: String {
-        return hours > 0 ?
-            String(format: "%d:%02d:%02d",
-                   hours, minute, second) :
-            String(format: "%02d:%02d",
-                   minute, second)
+    
+    func subSecondStringValue() -> String {
+        if isValid && isNumeric {
+            let duration = lrint(seconds)
+            let positiveDuration = abs(duration)
+            let hours = positiveDuration / 3600
+            let minutes = (positiveDuration / 60) % 60
+            let seconds = positiveDuration % 60
+            let milliseconds = positiveDuration - ((hours * 3600 + minutes * 60 + seconds) * 1000)
+            if hours > 1 {
+                return String(format: "%@%01ld:%02ld:%02ld.%03ld", duration < 0 ? "-" : "", hours, minutes, seconds, milliseconds)
+            } else {
+                return String(format: "%@%02ld:%02ld.%03ld", duration < 0 ? "-" : "", minutes, seconds, milliseconds)
+            }
+        } else {
+            return "--:--.---"
+        }
+    }
+    
+    func verboseStringValue() -> String {
+        guard isValid && isNumeric else {
+            return ""
+        }
+        
+        let duration = lrint(seconds)
+        let positiveDuration = abs(duration)
+        let hours = positiveDuration / 3600
+        let mins = (positiveDuration / 60) % 60
+        let seconds = positiveDuration % 60
+        let remaining = duration < 0
+        
+        var components = DateComponents()
+        components.hour = Int(hours)
+        components.minute = Int(mins)
+        components.second = Int(seconds)
+        
+        var verboseString = DateComponentsFormatter.localizedString(from: components, unitsStyle: .full)
+        verboseString = remaining ? String(format: "%@ remaining", verboseString!) : verboseString
+        return verboseString!.replacingOccurrences(of: ",", with: "")
     }
 }

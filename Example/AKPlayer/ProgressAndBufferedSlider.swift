@@ -25,54 +25,113 @@
 
 import Foundation
 import UIKit
+import AVKit
 
 @IBDesignable class AKProgressAndTimeRangesSlider: UISlider {
-
-    var timerangesProgressView: UIProgressView!
-
+    
+    private var thumbHideTimer: Timer?
+    
+    private var isThumbHidden: Bool = true
+    
+    var loadedTimeRanges: [CMTimeRange] = [] {
+        didSet {
+            setNeedsDisplay()
+        }
+    }
+    
+    var itemDuration: CMTime = .zero {
+        didSet {
+            setNeedsDisplay()
+        }
+    }
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
     }
-
+    
     required init?(coder: NSCoder) {
         super.init(coder: coder)
         commonInit()
     }
-
+    
+    override func draw(_ rect: CGRect) {
+        super.draw(rect)
+        
+        guard let context = UIGraphicsGetCurrentContext() else { return }
+        
+        // Clear the existing context
+        context.clear(rect)
+        context.setFillColor(UIColor.clear.cgColor)
+        
+        // Draw the loaded time ranges
+        for range in loadedTimeRanges {
+            let startValue = Float(range.start.seconds)
+            let durationValue = Float(range.duration.seconds)
+            let startX = (startValue / Float(itemDuration.seconds)) * Float(rect.width)
+            let width = (durationValue / Float(itemDuration.seconds)) * Float(rect.width)
+            
+            let centerY = rect.midY
+            let height = trackRect(forBounds: rect).height
+            
+            let rangeRect = CGRect(x: CGFloat(startX), y: centerY - height / 2, width: CGFloat(width), height: height)
+            context.setFillColor(UIColor.darkGray.withAlphaComponent(0.5).cgColor)
+            context.fill(rangeRect)
+        }
+    }
+    
     open func commonInit() {
-        setupUI()
         applyDesigns()
         resetControls()
-        addUIElements()
-        makeViewConstraints()
+        hideThumb()
     }
-
+    
+    override func awakeFromNib() {
+        super.awakeFromNib()
+        
+        commonInit()
+    }
+    
     open func setupUI() {
-        timerangesProgressView = UIProgressView()
+        
     }
-
+    
     open func applyDesigns() {
-        setThumbImage(UIImage(named: "ic.track.thumb"), for: .normal)
         minimumTrackTintColor = .red
-        maximumTrackTintColor = .darkGray
-
-        timerangesProgressView.tintColor = .white
-        timerangesProgressView.progressTintColor = .white
+        maximumTrackTintColor = .lightGray
     }
-
+    
     open func resetControls() {
         minimumValue = 0
         maximumValue = 1
         value = 0
-        timerangesProgressView.progress = 0.8
     }
-
-    open func addUIElements() {
-        addSubview(timerangesProgressView)
+    
+    private func showThumb() {
+        isThumbHidden = false
+        thumbTintColor = UIColor.white
     }
-
-    open func makeViewConstraints() {
-        
+    
+    private func hideThumb() {
+        isThumbHidden = true
+        thumbTintColor = UIColor.white.withAlphaComponent(0.0)
+    }
+    
+    override func beginTracking(_ touch: UITouch, with event: UIEvent?) -> Bool {
+        if isThumbHidden {
+            thumbHideTimer?.invalidate()
+            showThumb()
+        }
+        return super.beginTracking(touch, with: event)
+    }
+    
+    override func endTracking(_ touch: UITouch?, with event: UIEvent?) {
+        super.endTracking(touch, with: event)
+        if !isThumbHidden {
+            thumbHideTimer?.invalidate()
+            thumbHideTimer = Timer.scheduledTimer(withTimeInterval: 3.0, repeats: false, block: { [weak self] _ in
+                self?.hideThumb()
+            })
+        }
     }
 }

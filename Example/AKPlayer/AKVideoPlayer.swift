@@ -38,12 +38,15 @@ open class AKVideoPlayer: UIView {
     // MARK:- Variables
     
     open private(set) var player: AKPlayer!
-    public let configuration = AKPlayerDefaultConfiguration()
+    
+    public let configuration = AKPlayerConfiguration()
     
     open var playbackRate: AKPlaybackRate {
         get { player.rate }
         set { player.rate = newValue }
     }
+    
+    open var hasPendingSeeks: Bool = false
     
     weak var delegate: AKPlayerDelegate? {
         didSet {
@@ -76,6 +79,8 @@ open class AKVideoPlayer: UIView {
     
     // MARK: Layout
     
+    let avplayer = AVPlayer()
+    
     // MARK: Additional Helpers
     
     /// Called by both `init(frame: CGRect)` and `init?(coder: NSCoder)`,
@@ -90,10 +95,10 @@ open class AKVideoPlayer: UIView {
     }
     
     private func setupPlayer() {
-        AKPlayerLogger.setup.domains = AKPlayerLoggerDomain.allCases
-        player = AKPlayer(plugins: [self], configuration: configuration)
-        player.delegate = self
+        player = AKPlayer(player: avplayer, configuration: configuration)
         playerView.playerLayer.player = player.player
+        player.delegate = self
+        try? player.prepare()
     }
     
     private func addObserbers() {
@@ -112,13 +117,9 @@ open class AKVideoPlayer: UIView {
     }
 }
 
-// MARK: - AKPlayerPlugin
-
-extension AKVideoPlayer: AKPlayerPlugin { }
-
 // MARK: - AKPlayerCommand
 
-extension AKVideoPlayer: AKPlayerCommandProtocol {
+extension AKVideoPlayer: AKPlayerCommandsProtocol {
     
     public func load(media: AKPlayable) {
         player.load(media: media)
@@ -138,6 +139,10 @@ extension AKVideoPlayer: AKPlayerCommandProtocol {
     
     public func play() {
         player.play()
+    }
+    
+    public func play(at rate: AKPlaybackRate) {
+        
     }
     
     public func pause() {
@@ -184,95 +189,44 @@ extension AKVideoPlayer: AKPlayerCommandProtocol {
         player.seek(to: date)
     }
     
-    public func seek(offset: Double) {
+    public func seek(toOffset offset: Double) {
         player.seek(to: offset)
     }
     
-    public func seek(offset: Double, completionHandler: @escaping (Bool) -> Void) {
+    public func seek(toOffset offset: Double, completionHandler: @escaping (Bool) -> Void) {
         player.seek(to: offset, completionHandler: completionHandler)
     }
     
-    public func seek(toPercentage value: Double, completionHandler: @escaping (Bool) -> Void) {
-        player.seek(toPercentage: value, completionHandler: completionHandler)
+    public func seek(toPercentage percentage: Double, completionHandler: @escaping (Bool) -> Void) {
+        player.seek(toPercentage: percentage, completionHandler: completionHandler)
     }
     
-    public func seek(toPercentage value: Double) {
-        player.seek(toPercentage: value)
+    public func seek(toPercentage percentage: Double) {
+        player.seek(toPercentage: percentage)
     }
     
-    public func step(byCount stepCount: Int) {
-        player.step(byCount: stepCount)
+    public func step(by count: Int) {
+        player.step(by: count)
+    }
+    
+    public func fastForward() {
+        player.fastForward()
+    }
+    
+    public func fastForward(at rate: AKPlaybackRate) {
+        player.fastForward(at: rate)
+    }
+    
+    public func rewind() {
+        player.rewind()
+    }
+    
+    public func rewind(at rate: AKPlaybackRate) {
+        player.rewind(at: rate)
     }
 }
 
 // MARK: - AKPlayerDelegate
-
-extension AKVideoPlayer: AKPlayerDelegate {
-    
-    public func akPlayer(_ player: AKPlayer, didStateChange state: AKPlayerState) {
-        controlView.changedPlayerState(state)
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCurrentMediaChange media: AKPlayable) {
-        DispatchQueue.main.async {
-            self.controlView.resetControlls()
-            self.controlView.progressSlider(!media.isLive())
-        }
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCurrentTimeChange currentTime: CMTime) {
-        DispatchQueue.main.async {
-            self.controlView.setCurrentTime(currentTime)
-            self.controlView.setSliderProgress(currentTime, itemDuration: player.duration)
-        }
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didItemDurationChange itemDuration: CMTime) {
-        DispatchQueue.main.async {
-            self.controlView.setDuration(itemDuration)
-        }
-    }
-    
-    public func akPlayer(_ player: AKPlayer, unavailableAction reason: AKPlayerUnavailableActionReason) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didItemPlayToEndTime endTime: CMTime) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didChangeVolume volume: Float, isMuted: Bool) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didFailedWith error: AKPlayerError) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didPlaybackRateChange playbackRate: AKPlaybackRate) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCanPlayReverseStatusChange canPlayReverse: Bool, for media: AKPlayable) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCanPlayFastForwardStatusChange canPlayFastForward: Bool, for media: AKPlayable) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCanPlayFastReverseStatusChange canPlayFastReverse: Bool, for media: AKPlayable) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCanPlaySlowForwardStatusChange canPlaySlowForward: Bool, for media: AKPlayable) {
-        
-    }
-    
-    public func akPlayer(_ player: AKPlayer, didCanPlaySlowReverseStatusChange canPlaySlowReverse: Bool, for media: AKPlayable) {
-        
-    }
-}
 
 // MARK: - AKVideoPlayerControlViewDelegate
 
@@ -290,14 +244,78 @@ extension AKVideoPlayer: AKVideoPlayerControlViewDelegate {
     }
     
     func controlView(_ view: AKVideoPlayerControlView, progressSlider slider: UISlider, didChanged value: Float) {
-        if let duration = player.duration, duration.isValid, duration.isNumeric {
-            controlView.setCurrentTime(CMTime(seconds: (duration.seconds * Double(slider.value)), preferredTimescale: configuration.preferredTimescale))
+        if let duration = player.currentItem?.duration, duration.isValid, duration.isNumeric {
+            controlView.setCurrentTime(CMTime(seconds: ((duration.seconds * Double(slider.value)) / 100), preferredTimescale: configuration.preferredTimeScale))
         }
     }
     
     func controlView(_ view: AKVideoPlayerControlView, progressSlider slider: UISlider, didStartTrackingWith value: Float) { }
     
     func controlView(_ view: AKVideoPlayerControlView, progressSlider slider: UISlider, didEndTrackingWith value: Float) {
-        seek(toPercentage: Double(slider.value))
+        hasPendingSeeks = true
+        seek(toPercentage: Double(slider.value)) { _ in
+            self.hasPendingSeeks = false
+        }
     }
+}
+
+// MARK: - AKPlayerDelegate
+
+extension AKVideoPlayer: AKPlayerDelegate {
+    
+    public func akPlayer(_ player: AKPlayer, didChangeStateTo state: AKPlayerState) {
+        switch state {
+        case .idle:
+            controlView.progressSlider(false)
+            controlView.setPlaybackState(.paused)
+        case .loading:
+            controlView.progressSlider(false)
+            controlView.setPlaybackState(.playing)
+        case .loaded:
+            controlView.progressSlider(true)
+            if let currentItemDuration = player.currentItemDuration {
+                controlView.setDuration(currentItemDuration)
+            }
+            controlView.setPlaybackState(.paused)
+        case .buffering:
+            controlView.progressSlider(true)
+            controlView.setPlaybackState(.playing)
+        case .paused:
+            controlView.progressSlider(true)
+            controlView.setPlaybackState(.paused)
+        case .playing:
+            controlView.progressSlider(true)
+            controlView.setPlaybackState(.playing)
+        case .stopped:
+            controlView.progressSlider(true)
+            controlView.setPlaybackState(.stopped)
+        case .waitingForNetwork:
+            controlView.progressSlider(true)
+            controlView.setPlaybackState(.playing)
+        case .failed:
+            controlView.progressSlider(false)
+            controlView.setPlaybackState(.failed)
+        }
+        
+        controlView.changedPlayerState(state)
+    }
+    
+    public func akPlayer(_ player: AKPlayer, didChangeMediaTo media: AKPlayable) {
+        controlView.resetControlls()
+    }
+    
+    public func akPlayer(_ player: AKPlayer, didChangePlaybackRateTo newRate: AKPlaybackRate, from oldRate: AKPlaybackRate) {}
+    public func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
+        if !hasPendingSeeks {
+            if !controlView.progressSlider.isTracking {
+                controlView.setCurrentTime(currentTime)
+            }
+            controlView.setSliderProgress(currentTime, itemDuration: player.currentItemDuration)
+        }
+    }
+    public func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) {}
+    public func akPlayer(_ player: AKPlayer, didChangeVolumeTo volume: Float) {}
+    public func akPlayer(_ player: AKPlayer, didChangeMutedStatusTo isMuted: Bool) {}
+    public func akPlayer(_ player: AKPlayer, unavailableActionWith reason: AKPlayerUnavailableCommandReason) {}
+    public func akPlayer(_ player: AKPlayer, didFailWith error: AKPlayerError) {}
 }

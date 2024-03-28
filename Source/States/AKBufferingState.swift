@@ -25,75 +25,49 @@
 
 import AVFoundation
 
-final class AKBufferingState: AKPlayerStateControllerProtocol {
+final class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     // MARK: - Properties
     
-    unowned let manager: AKPlayerManagerProtocol
+    unowned let playerController: AKPlayerControllerProtocol
     
     let state: AKPlayerState = .buffering
     
-    private var configuringAutomaticWaitingBehaviorService: AKConfiguringAutomaticWaitingBehaviorService!
+    private var rate: AKPlaybackRate?
     
-    private var determiningBufferingStatusService: AKDeterminingBufferingStatusService!
+    private var playerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObserverProtocol!
     
-    private var playerItemObservingNotificationsService: AKPlayerItemObservingNotificationsService!
-    
-    private var observingPlayerTimeService: AKObservingPlayerTimeService!
-            
-    private var playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable!
+    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
     
     // MARK: - Init
     
-    init(manager: AKPlayerManagerProtocol,
-         playerItemAssetKeysObservingService: AKPlayerItemAssetKeysObservingServiceable) {
-        AKPlayerLogger.shared.log(message: "Init",
-                                  domain: .lifecycleState)
-        self.manager = manager
-        self.playerItemAssetKeysObservingService = playerItemAssetKeysObservingService
+    init(playerController: AKPlayerControllerProtocol,
+         rate: AKPlaybackRate? = nil) {
+        self.playerController = playerController
+        self.rate = rate
         
-        guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
-        
-        configuringAutomaticWaitingBehaviorService = AKConfiguringAutomaticWaitingBehaviorService(with: manager.player,
-                                                                                                  configuration: manager.configuration)
-        
-        determiningBufferingStatusService = AKDeterminingBufferingStatusService(with: playerItem,
-                                                                                configuration: manager.configuration)
-        
-        playerItemObservingNotificationsService = AKPlayerItemObservingNotificationsService(playerItem: playerItem)
-        
-        observingPlayerTimeService = AKObservingPlayerTimeService(with: manager.player,
-                                                                  configuration: manager.configuration)
-        }
-    
-    deinit {
-        AKPlayerLogger.shared.log(message: "DeInit",
-                                  domain: .lifecycleState)
+        playerItemBufferingStatusObserver = AKPlayerItemBufferingStatusObserver(with: playerController.currentItem!)
+        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
-    func stateDidChange() {
-        guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
-        manager.plugins?.forEach({$0.playerPlugin(didStartBuffering: media)})
-        startConfiguringAutomaticWaitingBehaviorService()
-        startDeterminingBufferingStatusService()
-        startPlayerItemObservingNotificationsService()
-        startObservingPlayerTimeService()
-        setPlaybackInfo()
+    deinit { }
+    
+    func didChangeState() {
+        startPlayerItemBufferingStatusObserver()
+        startPlayerItemNotificationsObserver()
     }
     
     // MARK: - Commands
     
     func load(media: AKPlayable) {
-        clearCallBacks()
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media)
         change(controller)
     }
     
     func load(media: AKPlayable,
               autoPlay: Bool) {
-        clearCallBacks()
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay)
         change(controller)
@@ -102,36 +76,35 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     func load(media: AKPlayable,
               autoPlay: Bool,
               at position: CMTime) {
-        clearCallBacks()
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        at: position)
+                                        position: position)
         change(controller)
     }
     
     func load(media: AKPlayable,
               autoPlay: Bool,
               at position: Double) {
-        clearCallBacks()
-        let controller = AKLoadingState(manager: manager,
+        let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        at: CMTime(seconds: position,
-                                                   preferredTimescale: manager.configuration.preferredTimescale))
+                                        position: CMTime(seconds: position,
+                                                         preferredTimescale: playerController.configuration.preferredTimeScale))
         change(controller)
     }
     
     func play() {
-        AKPlayerLogger.shared.log(message: AKPlayerUnavailableActionReason.alreadyTryingToPlay.description,
-                                  domain: .unavailableCommand)
-        manager.delegate?.playerManager(unavailableAction: .alreadyTryingToPlay)
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .alreadyTryingToPlay)
+    }
+    
+    func play(at rate: AKPlaybackRate) {
+        self.rate = rate
     }
     
     func pause() {
-        clearCallBacks()
-        let controller = AKPausedState(manager: manager,
-                                       playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+        let controller = AKPausedState(playerController: playerController)
         change(controller)
     }
     
@@ -140,211 +113,216 @@ final class AKBufferingState: AKPlayerStateControllerProtocol {
     }
     
     func stop() {
-        clearCallBacks()
-        let controller = AKStoppedState(manager: manager,
-                                        playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    func seek(to time: CMTime,
+              toleranceBefore: CMTime,
+              toleranceAfter: CMTime,
+              completionHandler: @escaping (Bool) -> Void) {
+        playerController.player.seek(to: time,
+                                     toleranceBefore: toleranceBefore,
+                                     toleranceAfter: toleranceAfter,
+                                     completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
-        manager.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    func seek(to time: CMTime,
+              toleranceBefore: CMTime,
+              toleranceAfter: CMTime) {
+        playerController.player.seek(to: time,
+                                     toleranceBefore: toleranceBefore,
+                                     toleranceAfter: toleranceAfter)
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: time,
-                            completionHandler: completionHandler)
+        playerController.player.seek(to: time,
+                                     completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        manager.player.seek(to: time)
+        playerController.player.seek(to: time)
     }
     
     func seek(to time: Double,
               completionHandler: @escaping (Bool) -> Void) {
         seek(to: CMTime(seconds: time,
-                        preferredTimescale: manager.configuration.preferredTimescale),
+                        preferredTimescale: playerController.configuration.preferredTimeScale),
              completionHandler: completionHandler)
     }
     
     func seek(to time: Double) {
         seek(to: CMTime(seconds: time,
-                        preferredTimescale: manager.configuration.preferredTimescale))
+                        preferredTimescale: playerController.configuration.preferredTimeScale))
     }
     
-    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        manager.player.seek(to: date, completionHandler: completionHandler)
+    func seek(to date: Date,
+              completionHandler: @escaping (Bool) -> Void) {
+        playerController.player.seek(to: date,
+                                     completionHandler: completionHandler)
     }
     
     func seek(to date: Date) {
-        manager.player.seek(to: date)
+        playerController.player.seek(to: date)
     }
     
-    func seek(offset: Double) {
-        seek(to: manager.currentTime.seconds + offset)
+    func seek(toOffset offset: Double) {
+        seek(to: playerController.currentTime.seconds + offset)
     }
     
-    func seek(offset: Double,
+    func seek(toOffset offset: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: manager.currentTime.seconds + offset,
+        seek(to: playerController.currentTime.seconds + offset,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage value: Double,
+    func seek(toPercentage percentage: Double,
               completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (manager.duration?.seconds ?? 0) / value,
+        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100),
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage value: Double) {
-        seek(to: (manager.duration?.seconds ?? 0) / value)
+    func seek(toPercentage percentage: Double) {
+        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100))
     }
     
-    func step(byCount stepCount: Int) {
-        guard let playerItem = manager.currentItem else { assertionFailure("Player item should available"); return }
-        playerItem.step(byCount: stepCount)
+    func step(by count: Int) {
+        playerController.currentItem!.step(byCount: count)
+    }
+    
+    func fastForward() {
+        play(at: playerController.configuration.fastForwardRate)
+    }
+    
+    func fastForward(at rate: AKPlaybackRate) {
+        play(at: rate)
+    }
+    
+    func rewind(){
+        play(at: playerController.configuration.rewindRate)
+    }
+    
+    func rewind(at rate: AKPlaybackRate) {
+        play(at: rate)
     }
     
     // MARK: - Additional Helper Functions
     
-    private func startConfiguringAutomaticWaitingBehaviorService() {
-        configuringAutomaticWaitingBehaviorService.onChangeTimeControlStatus = { [unowned self] status in
-            guard status == .waitingToPlayAtSpecifiedRate,
-                  let reasonForWaitingToPlay = manager.player.reasonForWaitingToPlay,
-                  reasonForWaitingToPlay == .noItemToPlay else { return }
-            stop()
-        }
+    private func startPlayerItemNotificationsObserver() {
+        playerItemNotificationsObserver.delegate = self
+        playerItemNotificationsObserver.startObserving()
     }
     
-    private func startPlayerItemObservingNotificationsService() {
-        playerItemObservingNotificationsService.onPlayerItemDidPlayToEndTime = { [unowned self] in
-            manager.delegate?.playerManager(didItemPlayToEndTime: manager.currentTime)
-            guard let media = manager.currentMedia else { assertionFailure("Media should available"); return }
-            manager.plugins?.forEach({$0.playerPlugin(didPlayToEnd: media,
-                                                      at: manager.currentTime)})
-            clearCallBacks()
-            let controller = AKStoppedState(manager: manager,
-                                            playerItemDidPlayToEndTime: true,
-                                            playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-            change(controller)
-        }
-        
-        playerItemObservingNotificationsService.onPlayerItemFailedToPlayToEndTime = { [unowned self] in
-            guard manager.player.timeControlStatus == .waitingToPlayAtSpecifiedRate,
-                  let reasonForWaitingToPlay = manager.player.reasonForWaitingToPlay else {
-                clearCallBacks()
-                let controller = AKFailedState(manager: manager,
-                                               error: .itemFailedToPlayToEndTime)
-                return change(controller)
-            }
-            
-            switch reasonForWaitingToPlay {
-            case .evaluatingBufferingRate, .toMinimizeStalls:
-                clearCallBacks()
-                let controller = AKWaitingForNetworkState(manager: manager,
-                                                          playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            case .noItemToPlay:
-                stop()
-            default:
-                assertionFailure("Sould be not here \(reasonForWaitingToPlay.rawValue)")
-            }
-        }
-        
-        playerItemObservingNotificationsService.onPlayerItemPlaybackStalled = { [unowned self] in
-            clearCallBacks()
-            let controller = AKWaitingForNetworkState(manager: manager,
-                                                      playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-            change(controller)
-        }
-    }
-    
-    private func startDeterminingBufferingStatusService() {
-        determiningBufferingStatusService.startObservationWithTimeInterval()
-        determiningBufferingStatusService.onChangePlaybackBufferEmptyStatus = { [unowned self] flag in
-            if flag {
-                clearCallBacks()
-                let controller = AKWaitingForNetworkState(manager: manager,
-                                                          playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            }
-        }
-        
-        determiningBufferingStatusService.onChangePlaybackBufferFullStatus = { [unowned self] flag in
-            if flag {
-                clearCallBacks()
-                let controller = AKPlayingState(manager: manager,
-                                                playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            }
-        }
-        
-        determiningBufferingStatusService.onChangePlaybackLikelyToKeepUpStatus = { [unowned self] flag in
-            if flag {
-                clearCallBacks()
-                let controller = AKPlayingState(manager: manager,
-                                                playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            }
-        }
-        
-        determiningBufferingStatusService.onChangePlaybackBufferStatus = { [unowned self] flag in
-            if flag {
-                clearCallBacks()
-                let controller = AKPlayingState(manager: manager,
-                                                playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            }else {
-                clearCallBacks()
-                let controller = AKWaitingForNetworkState(manager: manager,
-                                                          playerItemAssetKeysObservingService: playerItemAssetKeysObservingService)
-                change(controller)
-            }
-        }
+    private func startPlayerItemBufferingStatusObserver() {
+        playerItemBufferingStatusObserver.delegate = self
+        playerItemBufferingStatusObserver.startObserving(with: playerController.configuration.bufferObservingTimeout,
+                                                         bufferObservingTimeInterval: playerController.configuration.bufferObservingTimeInterval)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        determiningBufferingStatusService.stop(clearCallBacks: true)
-        guard let media = manager.currentMedia else { assertionFailure("Media and Current item should available"); return }
-        if controller is AKPlayingState { manager.plugins?.forEach({$0.playerPlugin(didStartPlaying: media,
-                                                                                    at: manager.currentTime)})}
-        manager.change(controller)
-    }
-    
-    func playCommand() {
-        guard let currentItem = manager.currentItem else { assertionFailure("Current item should available"); return }
-        AKDeterminingPlaybackCapabilitiesEventProducer.itemCanBePlayed(at: manager.rate,
-                                                                 for: currentItem) ? (manager.player.rate = manager.rate.rate) : (manager.rate = .normal)
-    }
-    
-    private func startObservingPlayerTimeService() {
-        observingPlayerTimeService.onChangePeriodicTime = { [unowned self] time in
-            setPlaybackInfo()
-            manager.delegate?.playerManager(didCurrentTimeChange: time)
-        }
-    }
-    
-    private func clearCallBacks() {
-        /* It is necessary to remove the callbacks for time control status before change state to paused state,
-         Eighter it will cause an infinite loop between paused state and the time control staus to call on waiting
-         for the network state. */
-        if let configuringAutomaticWaitingBehaviorService = configuringAutomaticWaitingBehaviorService {
-            configuringAutomaticWaitingBehaviorService.stop(clearCallBacks: true)
-        }
-    }
-    
-    private func setPlaybackInfo() {
-        manager.setNowPlayingPlaybackInfo()
+        playerItemBufferingStatusObserver.stopObserving()
+        playerController.change(controller)
     }
 }
 
-extension AKBufferingState {
+// MARK: - AKPlayerItemBufferingStatusObserverDelegate
+
+extension AKBufferingState: AKPlayerItemBufferingStatusObserverDelegate {
+    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
+                                           didChangePlaybackLikelyToKeepUpStatusTo isPlaybackLikelyToKeepUp: Bool,
+                                           for playerItem: AVPlayerItem) {
+        if isPlaybackLikelyToKeepUp {
+            let controller = AKPlayingState(playerController: playerController)
+            change(controller)
+        }
+    }
     
-    func handle(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
+    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
+                                           didChangePlaybackBufferFullStatusTo isPlaybackBufferFull: Bool,
+                                           for playerItem: AVPlayerItem) {
+        if isPlaybackBufferFull {
+            let controller = AKPlayingState(playerController: playerController)
+            change(controller)
+        }
+    }
+    
+    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
+                                           didChangePlaybackBufferEmptyStatusTo isPlaybackBufferEmpty: Bool,
+                                           for playerItem: AVPlayerItem) {
+        if isPlaybackBufferEmpty {
+            let controller = AKWaitingForNetworkState(playerController: playerController)
+            change(controller)
+        }
+    }
+    
+    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
+                                           didChangeMediaPlaybackContinuationStatusTo shouldContinuePlayback: Bool,
+                                           for playerItem: AVPlayerItem) {
+        guard shouldContinuePlayback else {
+            let controller = AKWaitingForNetworkState(playerController: playerController)
+            return change(controller)
+        }
         
+        switch playerController.player.status {
+        case .readyToPlay:
+            if playerController.player.timeControlStatus == .paused {
+                playerController.player.play()
+            }
+            if let rate = rate,
+               playerItem.canPlay(at: rate)
+                && !(playerController.player.rate == rate.rate) {
+                playerController.player.rate = rate.rate
+            }
+            let controller = AKPlayingState(playerController: playerController)
+            change(controller)
+        case .failed:
+            let controller = AKFailedState(playerController: playerController,
+                                           error: .playerCanNoLongerPlay(error: playerController.player.error))
+            return change(controller)
+        default: break
+        }
+    }
+}
+
+// MARK: - AKPlayerItemNotificationsObserverDelegate
+
+extension AKBufferingState: AKPlayerItemNotificationsObserverDelegate {
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didPlayToEndTimeAt time: CMTime,
+                                         for playerItem: AVPlayerItem) {
+        playerController.delegate?.playerController(playerController,
+                                                    playerItemDidReachEnd: playerController.currentTime,
+                                                    for: playerController.currentMedia!)
+        let controller = AKStoppedState(playerController: playerController,
+                                        playerItemDidPlayToEndTime: true)
+        change(controller)
+    }
+    
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didFailToPlayToEndTimeWith error: AKPlayerError,
+                                         for playerItem: AVPlayerItem) {
+        guard playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate,
+              let reasonForWaitingToPlay = playerController.player.reasonForWaitingToPlay else {
+            // TODO: Should navigate to pause state if automaticallyWaitsToMinimizeStalling id NO
+            let controller = AKFailedState(playerController: playerController,
+                                           error: .itemFailedToPlayToEndTime)
+            return change(controller)
+        }
+        
+        switch reasonForWaitingToPlay {
+        case .evaluatingBufferingRate, .toMinimizeStalls:
+            let controller = AKWaitingForNetworkState(playerController: playerController)
+            change(controller)
+        case .noItemToPlay: stop()
+        default:
+            assertionFailure("Sould be not here \(reasonForWaitingToPlay.rawValue)")
+        }
+    }
+    
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didStallPlaybackFor playerItem: AVPlayerItem) {
+        let controller = AKWaitingForNetworkState(playerController: playerController)
+        change(controller)
     }
 }

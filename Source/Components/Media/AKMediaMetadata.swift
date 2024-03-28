@@ -24,6 +24,7 @@
 //
 
 // https://developer.apple.com/documentation/avfoundation/avmetadataidentifier
+
 import AVFoundation
 
 public struct AKMediaMetadata {
@@ -60,52 +61,6 @@ public struct AKMediaMetadata {
     
     public init(with commonMetadata: [AVMetadataItem]) {
         self.commonMetadata = commonMetadata
-        if #available(iOS 14.0, *) {
-            accessibilityDescription = AVMetadataItem.metadataItems(from: commonMetadata, filteredByIdentifier: .commonIdentifierAccessibilityDescription).first?.value as? String
-        }
-        albumName = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                 filteredByIdentifier: .commonIdentifierAlbumName).first?.value as? String
-        artist = AVMetadataItem.metadataItems(from: commonMetadata,
-                                              filteredByIdentifier: .commonIdentifierArtist).first?.value as? String
-        artwork = AVMetadataItem.metadataItems(from: commonMetadata,
-                                               filteredByIdentifier: .commonIdentifierArtwork).first?.value as? Data
-        author = AVMetadataItem.metadataItems(from: commonMetadata,
-                                              filteredByIdentifier: .commonIdentifierAuthor).first?.value as? String
-        contributor = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                   filteredByIdentifier: .commonIdentifierContributor).first?.value as? String
-        copyrights = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                  filteredByIdentifier: .commonIdentifierCopyrights).first?.value as? String
-        creationDate = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                    filteredByIdentifier: .commonIdentifierCreationDate).first?.value as? String
-        creator = AVMetadataItem.metadataItems(from: commonMetadata,
-                                               filteredByIdentifier: .commonIdentifierCreator).first?.value as? String
-        description = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                   filteredByIdentifier: .commonIdentifierDescription).first?.value as? String
-        format = AVMetadataItem.metadataItems(from: commonMetadata,
-                                              filteredByIdentifier: .commonIdentifierFormat).first?.value as? String
-        language = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                filteredByIdentifier: .commonIdentifierLanguage).first?.value as? String
-        lastModifiedDate = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                        filteredByIdentifier: .commonIdentifierLastModifiedDate).first?.value as? String
-        location = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                filteredByIdentifier: .commonIdentifierLocation).first?.value as? String
-        make = AVMetadataItem.metadataItems(from: commonMetadata,
-                                            filteredByIdentifier: .commonIdentifierMake).first?.value as? String
-        model = AVMetadataItem.metadataItems(from: commonMetadata,
-                                             filteredByIdentifier: .commonIdentifierModel).first?.value as? String
-        publisher = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                 filteredByIdentifier: .commonIdentifierPublisher).first?.value as? String
-        relation = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                filteredByIdentifier: .commonIdentifierRelation).first?.value as? String
-        software = AVMetadataItem.metadataItems(from: commonMetadata,
-                                                filteredByIdentifier: .commonIdentifierSoftware).first?.value as? String
-        source = AVMetadataItem.metadataItems(from: commonMetadata,
-                                              filteredByIdentifier: .commonIdentifierSource).first?.value as? String
-        subject = AVMetadataItem.metadataItems(from: commonMetadata,
-                                               filteredByIdentifier: .commonIdentifierSubject).first?.value as? String
-        title = AVMetadataItem.metadataItems(from: commonMetadata,
-                                             filteredByIdentifier: .commonIdentifierTitle).first?.value as? String
-        type = AVMetadataItem.metadataItems(from: commonMetadata,
-                                            filteredByIdentifier: .commonIdentifierType).first?.value as? String
+        
     }
 }

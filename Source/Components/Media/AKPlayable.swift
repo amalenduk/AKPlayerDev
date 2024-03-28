@@ -24,21 +24,23 @@
 //
 
 /*
- https://stackoverflow.com/questions/24133058/is-there-a-way-to-set-associated-objects-in-swift
+ https://developer.apple.com/documentation/avfoundation/avurlasset
  */
 
 import Foundation
 import AVFoundation
+import MediaPlayer
 
 public protocol AKPlayable: AnyObject {
     var url: URL { get }
-    var options: [String: Any]? { get }
     var type: AKMediaType { get }
-    var staticMetadata: AKPlayableStaticMetadata? { get }
-    var delegate: AKMediaDelegate? { get set }
+    var assetInitializationOptions: [String: Any]? { get }
+    var automaticallyLoadedAssetKeys: [AVPartialAsyncProperty<AVAsset>]? { get }
+    var staticMetadata: AKNowPlayableStaticMetadataProtocol? { get }
+    var delegate: AKMediaDelegate? { get }
     
     func isLive() -> Bool
-    func updateMetadata(_ staticMetadata: AKPlayableStaticMetadata)
+    func updateMetadata(_ staticMetadata: AKNowPlayableStaticMetadataProtocol)
 }
 
 public extension AKPlayable {

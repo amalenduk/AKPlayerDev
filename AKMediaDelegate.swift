@@ -28,6 +28,7 @@ import AVFoundation
 public protocol AKMediaDelegate: AnyObject {
     func akMedia(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset)
     func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime)
+    func akMedia(_ media: AKPlayable, didChangeTimebase timebase: CMTimebase?)
     func akMedia(_ media: AKPlayable, didChangeCanPlayReverseStatus canPlayReverse: Bool)
     func akMedia(_ media: AKPlayable, didChangeCanPlayFastForwardStatus canPlayFastForward: Bool)
     func akMedia(_ media: AKPlayable, didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool)
@@ -38,11 +39,13 @@ public protocol AKMediaDelegate: AnyObject {
     func akMedia(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue])
     func akMedia(_ media: AKPlayable, didChangeSeekableTimeRanges seekableTimeRanges: [NSValue])
     func akMedia(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack])
+    func akMedia(_ media: AKPlayable, didChangePresentationSize size: CGSize)
 }
 
 public extension AKMediaDelegate {
     func akMedia(_ media: AKPlayable, didLoadedAssetKey key: String, with error: Error?, forAsset asset: AVURLAsset) { }
     func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) { }
+    func akMedia(_ media: AKPlayable, didChangeTimebase timebase: CMTimebase?) { }
     func akMedia(_ media: AKPlayable, didChangeCanPlayReverseStatus canPlayReverse: Bool) { }
     func akMedia(_ media: AKPlayable, didChangeCanPlayFastForwardStatus canPlayFastForward: Bool) { }
     func akMedia(_ media: AKPlayable, didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool) { }
@@ -53,4 +56,5 @@ public extension AKMediaDelegate {
     func akMedia(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) { }
     func akMedia(_ media: AKPlayable, didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) { }
     func akMedia(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) { }
+    func akMedia(_ media: AKPlayable, didChangePresentationSize size: CGSize) { }
 }

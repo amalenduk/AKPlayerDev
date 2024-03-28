@@ -45,7 +45,7 @@ class PlayerWithUIControlViewController: UIViewController {
         
         navigationItem.title = "Controlled Player"
         
-        url = URL(string: "https://www.radiantmediaplayer.com/media/big-buck-bunny-360p.mp4")!
+        url = URL(string: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")!
         metadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: "Some title", artist: "Amalendu Kar", artwork: nil, albumArtist: "Amalendu Kar", albumTitle: "Amalendu Kar")
         media = AKMedia(url: url, type: .clip, staticMetadata: metadata)
         view.bringSubviewToFront(videoPlayer)

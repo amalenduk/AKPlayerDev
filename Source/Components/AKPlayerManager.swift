@@ -1,7 +1,7 @@
 //
 //  AKPlayerManager.swift
 //  AKPlayer
-//
+///Users/amal/Desktop/MyProjects/Akplayer/AKPod/AKPlayer/Source/Components
 //  Copyright (c) 2020 Amalendu Kar
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -27,487 +27,213 @@ import AVFoundation
 import Foundation
 import MediaPlayer
 
-final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
+public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     // MARK: - Properties
     
-    private(set) var currentMedia: AKPlayable? {
-        didSet {
-            guard let media = currentMedia else { assertionFailure("Media should available"); return }
-            plugins?.forEach({$0.playerPlugin(didChanged: media)})
-        }
+    public var player: AVPlayer {
+        return playerController.player
     }
     
-    var currentItem: AVPlayerItem? {
-        return currentMedia?.playerItem
+    public var state: AKPlayerState {
+        return playerController.state
     }
     
-    var currentTime: CMTime {
-        return player.currentTime()
+    public var defaultRate: AKPlaybackRate {
+        get { return playerController.defaultRate }
+        set { playerController.defaultRate = newValue }
     }
     
-    var duration: CMTime? {
-        return currentItem?.duration
+    public var rate: AKPlaybackRate {
+        get { return playerController.rate }
+        set { playerController.rate = newValue }
     }
     
-    var state: AKPlayerState {
-        return controller.state
+    public var currentMedia: AKPlayable? {
+        playerController.currentMedia
     }
     
-    var rate: AKPlaybackRate {
-        get { return _rate }
-        set { changePlaybackRate(with: newValue) }
+    public var currentItem: AVPlayerItem? {
+        return playerController.currentItem
     }
     
-    var volume: Float {
-        get { return player.volume }
-        set { player.volume = newValue }
+    public var currentItemDuration: CMTime? {
+        return playerController.currentItemDuration
     }
     
-    var isMuted: Bool {
-        get { return player.isMuted }
-        set { player.isMuted = newValue }
+    public var currentTime: CMTime {
+        return playerController.currentTime
     }
     
-    var isPlaying: Bool {
-        get { return state == .buffering
-            || state == .playing
-            || state == .waitingForNetwork
-        }
+    public var remainingTime: CMTime? {
+        return playerController.remainingTime
     }
     
-    var isAutoPlay: Bool {
-        get { return state == .loading && (controller as? AKLoadingState)?.autoPlay ?? false
-            || state == .loaded && (controller as? AKLoadedState)?.autoPlay ?? false
-        }
+    public var autoPlay: Bool {
+        return playerController.autoPlay
     }
     
-    var isSeeking: Bool {
-        return !(requestedSeekingTime == nil)
+    public var volume: Float {
+        get { return playerController.volume }
+        set { playerController.volume = newValue }
     }
     
-    var error: Error? {
-        return (controller as? AKFailedState)?.error
+    public var isMuted: Bool {
+        get { return playerController.isMuted }
+        set { playerController.isMuted = newValue }
     }
     
-    private(set) var configuration: AKPlayerConfiguration
+    public var error: AKPlayerError? { playerController.error }
     
-    private(set) var controller: AKPlayerStateControllerProtocol! {
-        get {
-            guard let controller = _controller else { preconditionFailure("Call `prepare` before performing any action") }
-            return controller
-        }set {
-            _controller = newValue
-            controller.stateDidChange()
-            delegate?.playerManager(didStateChange: controller.state)
-            UIApplication.shared.isIdleTimerDisabled = configuration.idleTimerDisabledForStates.contains(controller.state)
-        }
-    }
+    public let playerController: AKPlayerControllerProtocol
     
-    weak var delegate: AKPlayerManagerDelegate?
+    public var remoteCommands: [AKRemoteCommand] = []
     
-    var plugins: [AKPlayerPlugin]? {
-        return _plugins.allObjects.compactMap({($0 as? AKPlayerPlugin)})
-    }
+    public var configuration: AKPlayerConfigurationProtocol { playerController.configuration }
     
-    private(set) var playingBeforeInterruption: Bool = false
+    public weak var delegate: AKPlayerManagerDelegate?
     
-    private(set) var playbackInterruptionReason: AKPlaybackInterruptionReason = .none
+    public private(set) var playerStateSnapshot: AKPlayerStateSnapshot?
     
-    var remoteCommands: [AKRemoteCommand] = []
+    public var audioSession: AVAudioSession { audioSessionService.audioSession }
     
-    private(set) var requestedSeekingTime: CMTime?
+    private var isExternalAudioPlaybackDeviceConnected: Bool = false
     
-    let player: AVPlayer
+    public let audioSessionService: AKAudioSessionServiceProtocol
     
-    private var _controller: AKPlayerStateControllerProtocol!
+    public private(set) var audioSessionInterruptionObserver: AKAudioSessionInterruptionObserverProtocol!
     
-    private var _rate: AKPlaybackRate = .normal
+    public private(set) var audioSessionRouteChangesObserver: AKAudioSessionRouteChangesObserverProtocol!
     
-    private var _plugins = NSHashTable<AnyObject>.weakObjects()
+    public private(set) var audioSessionMediaServicesWereResetObserver: AKAudioSessionMediaServicesWereResetObserverProtocol!
     
-    let audioSessionService: AKAudioSessionServiceable
+    public private(set) var audioSessionSilenceSecondaryAudioHintObserver: AKAudioSessionSilenceSecondaryAudioHintObserverProtocol!
     
-    private(set) var playerNowPlayingMetadataService: AKPlayerNowPlayingMetadataServiceable?
+    public private(set) var audioSessionMediaServicesLostObserver: AKAudioSessionMediaServicesLostObserverProtocol!
     
-    private(set) var remoteCommandController: AKRemoteCommandController?
+    public private(set) var audioSessionSpatialPlaybackCapabilitiesObserver: AKAudioSessionSpatialPlaybackCapabilitiesObserverProtocol!
     
-    private(set) var audioSessionInterruptionEventProducer: AKAudioSessionInterruptionEventProducible!
+    public private(set) var applicationLifeCycleEventsObserver: AKApplicationLifeCycleEventsObserverProtocol!
     
-    private(set) var playerRateEventProducer: AKPlayerRateEventProducible!
-    
-    private(set) var managingAudioOutputEventProducer: AKManagingAudioOutputEventProducible!
-    
-    private(set) var routeChangeEventProducer: AKRouteChangeEventProducible!
-    
-    private(set) var mediaServicesResetEventProducer: AKMediaServicesResetEventProducible!
-    
-    private(set) var applicationEventProducer: AKApplicationEventProducible!
+    public private(set) var nowPlayingSessionController: AKNowPlayingSessionController!
     
     // MARK: - Init
     
-    init(player: AVPlayer,
-         plugins: [AKPlayerPlugin],
-         configuration: AKPlayerConfiguration,
-         audioSessionService: AKAudioSessionServiceable = AKAudioSessionService(),
-         remoteCommandController: AKRemoteCommandController = AKRemoteCommandController()) {
-        self.player = player
-        self.configuration = configuration
+    public init(player: AVPlayer,
+                configuration: AKPlayerConfigurationProtocol,
+                audioSessionService: AKAudioSessionServiceProtocol = AKAudioSessionService()) {
+        self.playerController = AKPlayerController(player: player,
+                                                   configuration: configuration)
         self.audioSessionService = audioSessionService
-        self.remoteCommandController = remoteCommandController
         super.init()
         
-        plugins.forEach({self._plugins.add($0)})
+        audioSessionInterruptionObserver = AKAudioSessionInterruptionObserver(audioSession: audioSession)
+        audioSessionRouteChangesObserver = AKAudioSessionRouteChangesObserver(audioSession: audioSession)
+        audioSessionMediaServicesWereResetObserver = AKAudioSessionMediaServicesWereResetObserver(audioSession: audioSession)
+        applicationLifeCycleEventsObserver = AKApplicationLifeCycleEventsObserver()
+        nowPlayingSessionController = AKNowPlayingSessionController(players: [player])
         
-        if configuration.isNowPlayingEnabled {
-            playerNowPlayingMetadataService = AKPlayerNowPlayingMetadataService()
-            remoteCommandController.manager = self
-        }
+        playerController.delegate = self
+        audioSessionInterruptionObserver.delegate = self
+        audioSessionRouteChangesObserver.delegate = self
+        audioSessionMediaServicesWereResetObserver.delegate = self
+        applicationLifeCycleEventsObserver.delegate = self
+        nowPlayingSessionController.delegate = self
     }
     
     deinit {
+        stopObservers()
         print("AKPLayerManager: Deinit called from the AKPLayerManager ✌🏼")
-        _plugins.removeAllObjects()
-        playerNowPlayingMetadataService?.clearNowPlayingPlaybackInfo()
-        remoteCommandController?.disable(commands: AKRemoteCommand.all())
     }
     
-    func prepare() {
-        audioSessionInterruptionEventProducer = AKAudioSessionInterruptionEventProducer(audioSession: audioSessionService.audioSession)
-        playerRateEventProducer = AKPlayerRateEventProducer(with: player)
-        managingAudioOutputEventProducer = AKManagingAudioOutputEventProducer(with: player)
-        routeChangeEventProducer = AKRouteChangeEventProducer(audioSession: audioSessionService.audioSession)
-        mediaServicesResetEventProducer = AKMediaServicesResetEventProducer(audioSession: audioSessionService.audioSession)
-        applicationEventProducer = AKApplicationEventProducer()
+    open func prepare() throws {
+        try setAudioSession(true)
+        try playerController.prepare()
+        try setNowPlayingSessionActive()
         
-        audioSessionInterruptionEventProducer.eventListener = self
-        playerRateEventProducer.eventListener = self
-        managingAudioOutputEventProducer.eventListener = self
-        routeChangeEventProducer.eventListener = self
-        mediaServicesResetEventProducer.eventListener = self
-        applicationEventProducer.eventListener = self
-        
-        audioSessionService.activate(true,
-                                     options: configuration.audioSession.activeOptions)
-        audioSessionService.setCategory(configuration.audioSession.category,
-                                        mode: configuration.audioSession.mode,
-                                        options: configuration.audioSession.categoryOptions)
-        
-        startListeningEvents()
-        controller = AKIdleState(manager: self)
+        startObservers()
+        isExternalAudioPlaybackDeviceConnected = audioSessionRouteChangesObserver.isExternalDeviceConnected()
     }
     
-    func change(_ controller: AKPlayerStateControllerProtocol) {
-        self.controller = controller
-    }
-    
-    func startListeningEvents() {
-        audioSessionInterruptionEventProducer.startProducingEvents()
-        playerRateEventProducer.startProducingEvents()
-        managingAudioOutputEventProducer.startProducingEvents()
-        routeChangeEventProducer.startProducingEvents()
-        mediaServicesResetEventProducer.startProducingEvents()
-        applicationEventProducer.startProducingEvents()
-    }
-    
-    func stopListeningEvents() {
-        audioSessionInterruptionEventProducer.stopProducingEvents()
-        playerRateEventProducer.stopProducingEvents()
-        managingAudioOutputEventProducer.stopProducingEvents()
-        routeChangeEventProducer.stopProducingEvents()
-        mediaServicesResetEventProducer.stopProducingEvents()
-        applicationEventProducer.stopProducingEvents()
-    }
-    
-    // MARK: - Commands
-    
-    func load(media: AKPlayable) {
-        currentMedia = media
-        controller.load(media: media)
-    }
-    
-    func load(media: AKPlayable,
-              autoPlay: Bool) {
-        currentMedia = media
-        controller.load(media: media,
-                        autoPlay: autoPlay)
-    }
-    
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: CMTime) {
-        currentMedia = media
-        controller.load(media: media,
-                        autoPlay: autoPlay,
-                        at: position)
-    }
-    
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: Double) {
-        currentMedia = media
-        controller.load(media: media,
-                        autoPlay: autoPlay,
-                        at: position)
-    }
-    
-    func play() {
-        controller.play()
-    }
-    
-    func pause() {
-        controller.pause()
-    }
-    
-    func togglePlayPause() {
-        controller.togglePlayPause()
-    }
-    
-    func stop() {
-        controller.stop()
-    }
-    
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        seek(to: time, with: (toleranceBefore, toleranceAfter), completionHandler: completionHandler)
-    }
-    
-    func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
-        seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { (_) in }
-    }
-    
-    func seek(to time: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: time, with: nil, completionHandler: completionHandler)
-    }
-    
-    func seek(to time: CMTime) {
-        seek(to: time) { (_) in }
-    }
-    
-    func seek(to time: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: configuration.preferredTimescale),
-             completionHandler: completionHandler)
-    }
-    
-    func seek(to time: Double) {
-        seek(to: time) { (finished) in }
-    }
-    
-    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        controller.seek(to: date, completionHandler: completionHandler)
-    }
-    
-    func seek(to date: Date) {
-        controller.seek(to: date)
-    }
-    
-    func seek(offset: Double) {
-        let position = currentTime.seconds + offset
-        seek(to: position)
-    }
-    
-    func seek(offset: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        let position = currentTime.seconds + offset
-        seek(to: position,
-             completionHandler: completionHandler)
-    }
-    
-    func seek(toPercentage value: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (duration?.seconds ?? 0) * value,
-             completionHandler: completionHandler)
-    }
-    
-    func seek(toPercentage value: Double) {
-        seek(to: ((duration?.seconds ?? 0) * value))
-    }
-    
-    func step(byCount stepCount: Int) {
-        guard let item = currentItem else { unaivalableCommand(reason: .loadMediaFirst); return }
-        
-        let stepService = AKSteppingThroughMediaEventProducer(with: item)
-        
-        let result = stepService.canStep(byCount: stepCount)
-        
-        if result.canStep {
-            controller.step(byCount: stepCount)
-        } else if let reason = result.reason {
-            unaivalableCommand(reason: reason)
-        } else {
-            assertionFailure("BoundedPosition should return at least value or reason")
+    open func canPlay() -> Bool {
+        switch applicationLifeCycleEventsObserver.state {
+        case .resignActive where configuration.playbackPausesWhenResigningActive: return false
+        case .background where configuration.playbackPausesWhenBackgrounded: return false
+        default: return true
         }
     }
     
-    // MARK: - Additional Helper Functions
-    
-    private func seek(to time: CMTime, with tolerance: (before: CMTime, after: CMTime)?,
-                      completionHandler: @escaping (Bool) -> Void) {
-        
-        guard let item = currentItem else {
-            unaivalableCommand(reason: .loadMediaFirst)
-            completionHandler(false)
-            return }
-        
-        item.cancelPendingSeeks()
-        
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: item,
-                                                                      configuration: configuration)
-        let result = seekingThroughMediaService.boundedTime(time)
-        
-        if let seekTime = result.time {
-            requestedSeekingTime = seekTime
-            if let tolerance = tolerance {
-                controller.seek(to: seekTime, toleranceBefore: tolerance.before, toleranceAfter: tolerance.after) { [weak self] (finished) in
-                    guard let strongSelf = self else { return }
-                    strongSelf.requestedSeekingTime = nil
-                    completionHandler(finished)
-                }
-            }else {
-                controller.seek(to: seekTime) { [weak self] (finished) in
-                    guard let strongSelf = self else { return }
-                    strongSelf.requestedSeekingTime = nil
-                    if !finished { strongSelf.delegate?.playerManager(didCurrentTimeChange: strongSelf.player.currentTime() )}
-                    completionHandler(finished)
-                }
-            }
-        } else if let reason = result.reason {
-            unaivalableCommand(reason: reason)
-            completionHandler(false)
-        } else {
-            assertionFailure("BoundedPosition should return at least value or reason")
-        }
+    open func updateNowPlayingControl() {
+        guard configuration.isNowPlayingEnabled else { return }
+        nowPlayingSessionController.unregister(commands: AKRemoteCommand.all())
+        nowPlayingSessionController.register(commands: remoteCommands)
+        nowPlayingSessionController.enable(commands: remoteCommands)
     }
     
-    @discardableResult private func changePlaybackRate(with rate: AKPlaybackRate) -> Bool {
-        if rate == _rate { return true }
-        defer {
-            delegate?.playerManager(didPlaybackRateChange: rate)
-        }
-        if rate.rate == 0.0 {
-            pause()
-            _rate = .normal
-        }else {
-            guard let item = currentItem else { _rate = rate; return  false }
-            if AKDeterminingPlaybackCapabilitiesEventProducer.itemCanBePlayed(at: rate, for: item) {
-                _rate = rate
-                if controller.state == .buffering
-                    || controller.state == .playing
-                    || controller.state == .waitingForNetwork {
-                    player.rate = rate.rate
-                }
-            }
-        }
-        return true
-    }
-    
-    private func unaivalableCommand(reason: AKPlayerUnavailableActionReason) {
-        delegate?.playerManager(unavailableAction: reason)
-        AKPlayerLogger.shared.log(message: reason.description,
-                                  domain: .unavailableCommand)
-    }
-    
-    public func setNowPlayingMetadata() {
+    open func setNowPlayingInfo() {
         guard configuration.isNowPlayingEnabled,
-              let playerNowPlayingMetadataService = playerNowPlayingMetadataService,
-              let remoteCommandController = remoteCommandController,
-              let media = currentMedia else { return }
-        remoteCommandController.enable(commands: remoteCommands)
-        if let staticMetadata = media.staticMetadata  {
-            playerNowPlayingMetadataService.setNowPlayingMetadata(staticMetadata)
-        }else {
-            let assetMetadata = AKMediaMetadata(with: currentItem?.asset.commonMetadata ?? [])
-            var artwork: MPMediaItemArtwork?
-            if let artworkData = assetMetadata.artwork, let image = UIImage(data: artworkData) {
-                artwork = MPMediaItemArtwork(boundsSize: image.size, requestHandler: { size in
-                    return image
-                })
-            }
-            let metadata = AKNowPlayableStaticMetadata(assetURL: media.url,
-                                                       mediaType: .video,
-                                                       isLiveStream: media.isLive(),
-                                                       title: assetMetadata.title ?? "AKPlayer",
-                                                       artist: assetMetadata.artist,
-                                                       artwork: artwork == nil ? nil : .artwork(artwork!),
-                                                       albumArtist: assetMetadata.artist,
-                                                       albumTitle: assetMetadata.albumName)
-            playerNowPlayingMetadataService.setNowPlayingMetadata(metadata)
-        }
+              let currentMedia = currentMedia else { return }
+        let nowPlayableMetadata = AKNowPlayableMetadata(staticMetadata: currentMedia.staticMetadata,
+                                                        dynamicMetadata: getNowPlayableDynamicMetadata())
+        nowPlayingSessionController.setNowPlayingInfo(nowPlayableMetadata)
     }
     
-    public func setNowPlayingPlaybackInfo() {
-        guard configuration.isNowPlayingEnabled,
-              let playerNowPlayingMetadataService = playerNowPlayingMetadataService else { return }
-        var playbackRate: Float = 0
-        let currentTime: Float = Float(player.currentTime().seconds)
-        
-        switch player.timeControlStatus {
-        case .waitingToPlayAtSpecifiedRate, .paused:
-            playbackRate = 0
-        case .playing:
-            playbackRate = 1
-        @unknown default:
-            // FIXME: - Need to add
-            break
-        }
-        
-        let metadata = AKNowPlayableDynamicMetadata(rate: playbackRate,
-                                                    position: currentTime,
-                                                    duration: (duration?.seconds == nil) ? nil : (Float(duration!.seconds) - 10),
-                                                    currentLanguageOptions: [],
-                                                    availableLanguageOptionGroups: [])
-        playerNowPlayingMetadataService.setNowPlayingPlaybackInfo(metadata)
-    }
-    
-    func handleRemoteCommand(command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+    open func handleRemoteCommand(_ command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         switch command {
         case .pause:
-            if isPlaying || state == .paused || state == .stopped || state == .failed {
-                pause()
-                return .success
-            }
-            return .commandFailed
+            if currentMedia == nil { return .noActionableNowPlayingItem }
+            pause()
+            guard state.isPaused else { return .commandFailed }
         case .play:
-            if state == .idle {
-                return .noSuchContent
-            }
+            if currentMedia == nil { return .noActionableNowPlayingItem }
             play()
-            return .success
+            guard (state.isLoadingStateActive && autoPlay) || state.isPlaybackActive else { return .commandFailed }
         case .stop:
-            if isPlaying
-                || state == .paused
-                || state == .stopped {
-                stop()
-                return .success
-            }
-            return .commandFailed
+            if currentMedia == nil { return .noActionableNowPlayingItem }
+            stop()
+            guard state.isStopped else { return .commandFailed }
         case .togglePlayPause:
-            if state == .idle {
-                return .noSuchContent
-            }
+            if currentMedia == nil { return .noActionableNowPlayingItem }
+            let lastState = state
             togglePlayPause()
-            return .success
+            if lastState.isPlaybackInactive {
+                guard (state.isLoadingStateActive && autoPlay) || state.isPlaybackActive else { return .commandFailed }
+            } else {
+                guard state.isPlaybackInactive else { return .commandFailed }
+            }
         case .nextTrack:
             return .commandFailed
         case .previousTrack:
             return .commandFailed
         case .changePlaybackRate:
-            guard let event = event as? MPChangePlaybackRateCommandEvent else { return .commandFailed }
-            guard !changePlaybackRate(with: .custom(event.playbackRate)) else { return .commandFailed }
+            guard let currentItem = currentItem,
+                  let event = event as? MPChangePlaybackRateCommandEvent,
+                  currentItem.canPlay(at: .custom(event.playbackRate)) else { return .commandFailed }
+            rate = .custom(event.playbackRate)
         case .seekBackward:
-            guard let event = event as? MPSeekCommandEvent else { return .commandFailed }
-            guard !changePlaybackRate(with: event.type == .beginSeeking ? .custom(-3.0) : .normal) else { return .commandFailed }
+            guard let currentItem = currentItem,
+                  let event = event as? MPSeekCommandEvent,
+                  currentItem.canPlayFastReverse else { return .commandFailed }
+            play(at: event.type == .beginSeeking ? AKPlaybackRate(rate: -3) : AKPlaybackRate(rate: 1))
         case .seekForward:
-            guard let event = event as? MPSeekCommandEvent else { return .commandFailed }
-            guard !changePlaybackRate(with: event.type == .beginSeeking ? .custom(3.0) : .normal) else { return .commandFailed }
+            guard let currentItem = currentItem,
+                  let event = event as? MPSeekCommandEvent,
+                  currentItem.canPlayFastForward else { return .commandFailed }
+            play(at: event.type == .beginSeeking ? AKPlaybackRate(rate: 3) : AKPlaybackRate(rate: 1))
         case .skipBackward:
-            guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            seek(offset: -event.interval)
+            guard let currentItem = currentItem,
+                  let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            guard currentItem.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+                return .commandFailed
+            }
+            seek(toOffset: event.interval)
         case .skipForward:
-            guard let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            seek(offset: event.interval)
+            guard let currentItem = currentItem,
+                  let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
+            guard currentItem.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+                return .commandFailed
+            }
+            seek(toOffset: event.interval)
         case .changePlaybackPosition:
             guard let event = event as? MPChangePlaybackPositionCommandEvent else { return .commandFailed }
             seek(to: event.positionTime)
@@ -538,98 +264,502 @@ final class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         }
         return .success
     }
-}
-
-// MARK: - AKEventListener
-
-extension AKPlayerManager: AKEventListener {
     
-    func onEvent(_ event: AKEvent, generetedBy eventProducer: AKEventProducer) {
-        if let event = event as? AKAudioSessionInterruptionEventProducer.AudioSessionInterruptionEvent {
-            switch event {
-            case .interruptionBegan:
-                playingBeforeInterruption = isPlaying
-                switch controller.state {
-                case .idle: break
-                case .loading: pause()
-                case .loaded: pause()
-                case .buffering: pause()
-                case .playing: pause()
-                case .waitingForNetwork: pause()
-                case .paused: break
-                case .stopped: break
-                case .failed: break
-                }
-            case .interruptionEnded(shouldResume: let shouldResume):
-                if shouldResume
-                    && playingBeforeInterruption
-                    && .audioSessionInterrupted == playbackInterruptionReason {
-                    play()
-                }
-            }
-        } else if let event = event as? AKRouteChangeEventProducer.RouteChangeEvent {
-            switch event {
-            case .routeChanged(changeReason: let changeReason, currentRoute: _, previousRoute: _):
-                print("Change reason : ", changeReason.rawValue)
-            }
-        } else if let _ = event as? AKMediaServicesResetEventProducer.MediaServicesResetEvent {
-            
-        } else if let event = event as? AKApplicationEventProducer.ApplicationEvent {
-            switch event {
-            case .willResignActive:
-                if configuration.playbackPausesWhenResigningActive
-                    && isPlaying {
-                    playbackInterruptionReason = .applicationResignActive
-                    playingBeforeInterruption = isPlaying
-                    pause()
-                }
-            case .didBecomeActive:
-                if configuration.playbackResumesWhenBecameActive
-                    && !isPlaying
-                    && .applicationResignActive == playbackInterruptionReason
-                    && playingBeforeInterruption {
-                    playbackInterruptionReason = .none
-                    playingBeforeInterruption = false
-                    play()
-                }
-            case .didEnterBackground:
-                if configuration.playbackPausesWhenBackgrounded
-                    && isPlaying {
-                    playbackInterruptionReason = .applicationEnteredBackground
-                    playingBeforeInterruption = isPlaying
-                    pause()
-                }
-            case .willEnterForeground:
-                if configuration.playbackResumesWhenEnteringForeground
-                    && !isPlaying
-                    && .applicationEnteredBackground == playbackInterruptionReason
-                    && playingBeforeInterruption {
-                    playbackInterruptionReason = .none
-                    playingBeforeInterruption = false
-                    play()
-                }
-            }
-        } else if let event = event as? AKPlayerRateEventProducer.PlayerRateEvent {
-            switch event {
-            case .rateChanged(to: let newRate, from: let oldRate):
-                AKPlayerLogger.shared.log(message: "Rate changed to \(newRate.rate) from \(oldRate.rate)",
-                                          domain: .service)
-                setNowPlayingPlaybackInfo()
-            }
-        } else if let event = event as? AKManagingAudioOutputEventProducer.ManagingAudioOutputEvent {
-            switch event {
-            case .volumeChanged(let volume):
-                delegate?.playerManager(didVolumeChange: volume,
-                                        isMuted: isMuted)
-                plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
-                                                  isMuted: isMuted)})
-            case .isMuted(let isMuted):
-                delegate?.playerManager(didVolumeChange: volume,
-                                        isMuted: isMuted)
-                plugins?.forEach({$0.playerPlugin(didVolumeChange: volume,
-                                                  isMuted: isMuted)})
+    // MARK: - Commands
+    
+    open func load(media: AKPlayable) {
+        guard canPlay() else { return actionNotPermitted() }
+        playerController.load(media: media)
+    }
+    
+    open func load(media: AKPlayable,
+                   autoPlay: Bool) {
+        guard canPlay() else { return actionNotPermitted() }
+        if autoPlay {
+            performPlaybackAction {
+                return playerController.load(media: media,
+                                             autoPlay: autoPlay)
             }
         }
+        playerController.load(media: media,
+                              autoPlay: autoPlay)
+    }
+    
+    open func load(media: AKPlayable,
+                   autoPlay: Bool,
+                   at position: CMTime) {
+        guard canPlay() else { return actionNotPermitted() }
+        if autoPlay {
+            performPlaybackAction {
+                return playerController.load(media: media,
+                                             autoPlay: autoPlay,
+                                             at: position)
+            }
+        }
+        playerController.load(media: media,
+                              autoPlay: autoPlay,
+                              at: position)
+    }
+    
+    open func load(media: AKPlayable,
+                   autoPlay: Bool,
+                   at position: Double) {
+        guard canPlay() else { return actionNotPermitted() }
+        if autoPlay {
+            performPlaybackAction {
+                return playerController.load(media: media,
+                                             autoPlay: autoPlay,
+                                             at: position)
+            }
+        }
+        playerController.load(media: media,
+                              autoPlay: autoPlay,
+                              at: position)
+    }
+    
+    open func play() {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { playerController.play() }
+    }
+    
+    open func play(at rate: AKPlaybackRate) {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { playerController.play(at: rate) }
+    }
+    
+    open func pause() {
+        playerController.pause()
+    }
+    
+    open func togglePlayPause() {
+        switch state {
+        case .loaded where !autoPlay, .paused, .stopped, .failed:
+            guard canPlay() else { return actionNotPermitted() }
+            performPlaybackAction { playerController.togglePlayPause() }
+        default:
+            playerController.togglePlayPause()
+        }
+    }
+    
+    open func stop() {
+        playerController.stop()
+    }
+    
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(to: time,
+                              toleranceBefore: toleranceBefore,
+                              toleranceAfter: toleranceAfter,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime) {
+        playerController.seek(to: time,
+                              toleranceBefore: toleranceBefore,
+                              toleranceAfter: toleranceAfter)
+    }
+    
+    open func seek(to time: CMTime,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(to: time,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(to time: CMTime) {
+        playerController.seek(to: time)
+    }
+    
+    open func seek(to time: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(to: time,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(to time: Double) {
+        playerController.seek(to: time)
+    }
+    
+    open func seek(to date: Date,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(to: date,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(to date: Date) {
+        playerController.seek(to: date)
+    }
+    
+    open func seek(toOffset offset: Double) {
+        playerController.seek(toOffset: offset)
+    }
+    
+    open func seek(toOffset offset: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(toOffset: offset,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(toPercentage percentage: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
+        playerController.seek(toPercentage: percentage,
+                              completionHandler: completionHandler)
+    }
+    
+    open func seek(toPercentage percentage: Double) {
+        playerController.seek(toPercentage: percentage)
+    }
+    
+    open func step(by count: Int) {
+        playerController.step(by: count)
+    }
+    
+    open func fastForward() {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { [unowned self] in
+            playerController.fastForward()
+        }
+    }
+    
+    open func fastForward(at rate: AKPlaybackRate) {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { [unowned self] in
+            playerController.fastForward(at: rate)
+        }
+    }
+    
+    open func rewind() {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { [unowned self] in
+            playerController.rewind()
+        }
+    }
+    
+    open func rewind(at rate: AKPlaybackRate) {
+        guard canPlay() else { return actionNotPermitted() }
+        performPlaybackAction { [unowned self] in
+            playerController.rewind(at: rate)
+        }
+    }
+    
+    // MARK: - Additional Helper Functions
+    
+    private func startObservers() {
+        audioSessionInterruptionObserver.startObserving()
+        audioSessionRouteChangesObserver.startObserving()
+        audioSessionMediaServicesWereResetObserver.startObserving()
+        applicationLifeCycleEventsObserver.startObserving()
+    }
+    
+    private func stopObservers() {
+        audioSessionInterruptionObserver.stopObserving()
+        audioSessionRouteChangesObserver.stopObserving()
+        audioSessionMediaServicesWereResetObserver.stopObserving()
+        applicationLifeCycleEventsObserver.stopObserving()
+    }
+    
+    private func setAudioSession(_ active: Bool) throws {
+        guard active else {
+            return try audioSessionService.activate(false,
+                                                    options: configuration.audioSession.activeOptions)
+        }
         
+        try audioSessionService.setCategory(configuration.audioSession.category,
+                                            mode: configuration.audioSession.mode,
+                                            options: configuration.audioSession.categoryOptions)
+        try audioSessionService.activate(true,
+                                         options: configuration.audioSession.activeOptions)
+    }
+    
+    private func setNowPlayingSessionActive() throws {
+        guard nowPlayingSessionController.canBecomeActive() else { throw AKPlayerError.nowPlayingSessionFailure }
+        Task.init { await nowPlayingSessionController.becomeActiveIfPossible() }
+    }
+    
+    private func execute(block: () throws -> Void,
+                         completion: (Bool) -> Void = { _ in }) {
+        do {
+            try block()
+            return completion(true)
+        } catch let error {
+            delegate?.playerManager(self, didFailWith: error as! AKPlayerError)
+        }
+        return completion(false)
+    }
+    
+    private func savePlayerStateSnapshot(with playbackInterruptionReason: AKPlaybackInterruptionReason, 
+                                         shouldResume: Bool) {
+        playerStateSnapshot = AKPlayerStateSnapshot(state: state,
+                                                    shouldResume: shouldResume,
+                                                    playbackInterruptionReason: playbackInterruptionReason)
+    }
+    
+    private func clearPlayerStateSnapshot() {
+        playerStateSnapshot = nil
+    }
+    
+    private func getNowPlayableDynamicMetadata() -> AKNowPlayableDynamicMetadataProtocol? {
+        guard let currentMedia = currentMedia else { return nil }
+        let position = currentMedia.isLive() ? nil : currentItem?.currentTime().isValid ?? false ? Double(currentItem!.currentTime().seconds) : nil
+        let duration = currentMedia.isLive() ? nil : currentItem?.duration.isValid ?? false ? Float(currentItem!.duration.seconds) : nil
+        let playbackProgress = currentMedia.isLive() ? nil : (position != nil) && (duration != nil) ? Float(duration! / Float(currentItem!.currentTime().seconds)) : nil
+        
+        let nynamicMetadata = AKNowPlayableDynamicMetadata(rate: Double(rate.rate),
+                                                           defaultRate: Double(defaultRate.rate),
+                                                           position: position,
+                                                           duration: duration,
+                                                           currentLanguageOptions: nil,
+                                                           availableLanguageOptionGroups: nil,
+                                                           chapterCount: nil,
+                                                           chapterNumber: nil,
+                                                           creditsStartTime: nil,
+                                                           currentPlaybackDate: nil,
+                                                           playbackProgress: playbackProgress,
+                                                           playbackQueueCount: nil,
+                                                           playbackQueueIndex: nil,
+                                                           serviceIdentifier: nil)
+        return nynamicMetadata
+    }
+    
+    private func actionNotPermitted() {
+        delegate?.playerManager(self,
+                                unavailableActionWith: .actionNotPermitted)
+    }
+    
+    private func performPlaybackAction(action: () -> Void) {
+        guard let snapshot = playerStateSnapshot else { return action() }
+        if snapshot.playbackInterruptionReason.isLifeCycleEvent {
+            execute {
+                try setAudioSession(true)
+            } completion: { finished in
+                if finished {
+                    action()
+                }
+            }
+        } else {
+            action()
+        }
+        clearPlayerStateSnapshot()
+    }
+}
+
+// MARK: - AKAudioSessionInterruptionObserverDelegate
+
+extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
+    
+    public func audioSessionInterruptionObserver(_ observer: AKAudioSessionInterruptionObserverProtocol,
+                                                 didBeginInterruptionWith reason: AVAudioSession.InterruptionReason?,
+                                                 for audioSession: AVAudioSession) {
+        
+        guard (state.isLoadingStateActive && autoPlay)
+                || state.isPlaybackActive else { return }
+        /* Audio session automatically pauses player, if not will be paused here.
+         Update the UI to indicate that playback or recording has paused when it’s interrupted. Do not deactivate the audio session. */
+        savePlayerStateSnapshot(with: .audioSessionInterruption, shouldResume: true)
+        pause();
+    }
+    
+    public func audioSessionInterruptionObserver(_ observer: AKAudioSessionInterruptionObserverProtocol,
+                                                 didEndInterruptionWith shouldResume: Bool,
+                                                 for audioSession: AVAudioSession) {
+        
+        guard configuration.playbackResumesWhenAudioSessionInterruptionEnded,
+              let snapshot = playerStateSnapshot,
+              snapshot.playbackInterruptionReason == .audioSessionInterruption,
+              snapshot.shouldResume && shouldResume else { return }
+        
+        play()
+    }
+}
+
+// MARK: - AKAudioSessionInterruptionObserverDelegate
+
+extension AKPlayerManager: AKAudioSessionRouteChangesObserverDelegate {
+    
+    public func audioSessionRouteChangesObserver(_ observer: AKAudioSessionRouteChangesObserverProtocol,
+                                                 didChangeRouteTo currentRoute: AVAudioSessionRouteDescription,
+                                                 from previousRoute: AVAudioSessionRouteDescription?,
+                                                 with reason: AVAudioSession.RouteChangeReason) {
+        
+        defer { isExternalAudioPlaybackDeviceConnected = observer.isExternalDeviceConnected() }
+        
+        guard isExternalAudioPlaybackDeviceConnected
+                && !observer.isExternalDeviceConnected()
+                && (state.isLoadingStateActive && autoPlay)
+                || state.isPlaybackActive else {
+            return
+        }
+        
+        savePlayerStateSnapshot(with: .audioSessionRouteChange, shouldResume: false)
+        pause()
+    }
+}
+
+// MARK: - AKAudioSessionMediaServicesResetObserverDelegate
+
+extension AKPlayerManager: AKAudioSessionMediaServicesResetObserverDelegate {
+    
+    public func audioSessionMediaServicesResetObserver(_ observer: AKAudioSessionMediaServicesWereResetObserverProtocol,
+                                                       mediaServicesWereResetFor audioSession: AVAudioSession) {
+        stop()
+    }
+}
+
+// MARK: - AKApplicationLifeCycleEventsObserverDelegate
+
+extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
+    
+    public func applicationLifeCycleEventsObserver(_ observer: AKApplicationLifeCycleEventsObserverProtocol,
+                                                   on event: AKApplicationLifeCycleEvent) {
+        switch event {
+        case .willResignActive:
+            
+            if configuration.playbackPausesWhenResigningActive {
+                
+                if (state.isLoadingStateActive && autoPlay)
+                    || state.isPlaybackActive {
+                    
+                    savePlayerStateSnapshot(with: .applicationResignActive, shouldResume: true)
+                    pause()
+                }
+                
+                execute { try self.setAudioSession(false) }
+                
+            } else {
+                
+                if (state.isLoadingStateActive && !autoPlay)
+                    || state.isPlaybackInactive {
+                    
+                    savePlayerStateSnapshot(with: .applicationResignActive, shouldResume: false)
+                    execute { try self.setAudioSession(false) }
+                }
+            }
+        case .didBecomeActive:
+            
+            guard configuration.playbackResumesWhenBecameActive,
+                  let snapshot = playerStateSnapshot,
+                  snapshot.playbackInterruptionReason.isLifeCycleEvent,
+                  snapshot.shouldResume else { return }
+            
+            play()
+            
+        case .didEnterBackground:
+            
+            if configuration.playbackPausesWhenBackgrounded {
+                
+                if (state.isLoadingStateActive && autoPlay)
+                    || state.isPlaybackActive {
+                    
+                    savePlayerStateSnapshot(with: .applicationEnteredBackground, shouldResume: true)
+                    pause()
+                }
+                
+                execute { try self.setAudioSession(false) }
+                
+            } else {
+                if (state.isLoadingStateActive && !autoPlay)
+                    || state.isPlaybackInactive {
+                    
+                    savePlayerStateSnapshot(with: .applicationEnteredBackground, shouldResume: false)
+                    execute { try self.setAudioSession(false) }
+                }
+            }
+        case .willEnterForeground:
+            
+            guard configuration.playbackResumesWhenEnteringForeground,
+                  let snapshot = playerStateSnapshot,
+                  snapshot.playbackInterruptionReason.isLifeCycleEvent,
+                  snapshot.shouldResume else { return }
+            
+            play()
+        }
+    }
+}
+
+// MARK: - AKNowPlayingSessionControllerDelegate
+
+extension AKPlayerManager: AKNowPlayingSessionControllerDelegate {
+    
+    public func nowPlayingSessionController(_ controller: AKNowPlayingSessionControllerProtocol,
+                                            didReceive command: AKRemoteCommand,
+                                            with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+        handleRemoteCommand(command, with: event)
+    }
+}
+
+// MARK: - AKPlayerControllerDelegate
+
+extension AKPlayerManager: AKPlayerControllerDelegate {
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangeStateTo state: AKPlayerState) {
+        updateNowPlayingControl()
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangeStateTo: state)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangeMediaTo media: AKPlayable) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangeMediaTo: media)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangePlaybackRateTo newRate: AKPlaybackRate,
+                                 from oldRate: AKPlaybackRate) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangePlaybackRateTo: newRate, from: oldRate)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangeCurrentTimeTo currentTime: CMTime,
+                                 for media: AKPlayable) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangeCurrentTimeTo: currentTime,
+                                for: media)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 playerItemDidReachEnd endTime: CMTime,
+                                 for media: AKPlayable) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                playerItemDidReachEnd: endTime,
+                                for: media)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangeVolumeTo volume: Float) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangeVolumeTo: volume)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didChangeMutedStatusTo isMuted: Bool) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didChangeMutedStatusTo: isMuted)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                unavailableActionWith: reason)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didFailWith error: AKPlayerError) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didFailWith: error)
     }
 }

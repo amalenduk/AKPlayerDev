@@ -26,25 +26,25 @@
 import AVFoundation
 
 public protocol AKPlayerDelegate: AnyObject {
-    func akPlayer(_ player: AKPlayer, didChangeState state: AKPlayerState)
-    func akPlayer(_ player: AKPlayer, didChangeCurrentMedia media: AKPlayable)
-    func akPlayer(_ player: AKPlayer, didChangePlaybackRate playbackRate: AKPlaybackRate)
-    func akPlayer(_ player: AKPlayer, didChangeCurrentTime currentTime: CMTime)
-    func akPlayer(_ player: AKPlayer, didChangeItemDuration itemDuration: CMTime)
-    func akPlayer(_ player: AKPlayer, didItemPlayToEndTime endTime: CMTime)
-    func akPlayer(_ player: AKPlayer, didChangeVolume volume: Float, isMuted: Bool)
-    func akPlayer(_ player: AKPlayer, unavailableAction reason: AKPlayerUnavailableActionReason)
-    func akPlayer(_ player: AKPlayer, didFailedWith error: AKPlayerError)
+    func akPlayer(_ player: AKPlayer, didChangeStateTo state: AKPlayerState)
+    func akPlayer(_ player: AKPlayer, didChangeMediaTo media: AKPlayable)
+    func akPlayer(_ player: AKPlayer, didChangePlaybackRateTo newRate: AKPlaybackRate, from oldRate: AKPlaybackRate)
+    func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable)
+    func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable)
+    func akPlayer(_ player: AKPlayer, didChangeVolumeTo volume: Float)
+    func akPlayer(_ player: AKPlayer, didChangeMutedStatusTo isMuted: Bool)
+    func akPlayer(_ player: AKPlayer, unavailableActionWith reason: AKPlayerUnavailableCommandReason)
+    func akPlayer(_ player: AKPlayer, didFailWith error: AKPlayerError)
 }
 
 public extension AKPlayerDelegate {
-    func akPlayer(_ player: AKPlayer, didChangeState state: AKPlayerState) { }
-    func akPlayer(_ player: AKPlayer, didChangeCurrentMedia media: AKPlayable) { }
-    func akPlayer(_ player: AKPlayer, didChangePlaybackRate playbackRate: AKPlaybackRate) { }
-    func akPlayer(_ player: AKPlayer, didChangeCurrentTime currentTime: CMTime) { }
-    func akPlayer(_ player: AKPlayer, didChangeItemDuration itemDuration: CMTime) { }
-    func akPlayer(_ player: AKPlayer, didItemPlayToEndTime endTime: CMTime) { }
-    func akPlayer(_ player: AKPlayer, didChangeVolume volume: Float, isMuted: Bool) { }
-    func akPlayer(_ player: AKPlayer, unavailableAction reason: AKPlayerUnavailableActionReason) { }
-    func akPlayer(_ player: AKPlayer, didFailedWith error: AKPlayerError) { }
+    func akPlayer(_ player: AKPlayer, didChangeStateTo state: AKPlayerState) { }
+    func akPlayer(_ player: AKPlayer, didChangeMediaTo media: AKPlayable) { }
+    func akPlayer(_ player: AKPlayer, didChangePlaybackRateTo newRate: AKPlaybackRate, from oldRate: AKPlaybackRate) { }
+    func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) { }
+    func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) { }
+    func akPlayer(_ player: AKPlayer, didChangeVolumeTo volume: Float) { }
+    func akPlayer(_ player: AKPlayer, didChangeMutedStatusTo isMuted: Bool) { }
+    func akPlayer(_ player: AKPlayer, unavailableActionWith reason: AKPlayerUnavailableCommandReason) { }
+    func akPlayer(_ player: AKPlayer, didFailWith error: AKPlayerError) { }
 }

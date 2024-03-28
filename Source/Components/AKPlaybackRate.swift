@@ -34,6 +34,7 @@ public enum AKPlaybackRate: CaseIterable {
     case faster
     case fastest
     case superfast
+    case paused
     case custom(Float)
     
     public static let allCases: [AKPlaybackRate] = [.slowest, .slower, .slow, .normal, .fast, .faster, .fastest, .superfast]
@@ -48,6 +49,7 @@ public enum AKPlaybackRate: CaseIterable {
         case 1.50: self = .faster
         case 1.75: self = .fastest
         case 2.00: self = .superfast
+        case 0: self = .paused
         default: self = .custom(rate)
         }
     }
@@ -62,6 +64,7 @@ public enum AKPlaybackRate: CaseIterable {
         case .faster: return 1.5
         case .fastest: return 1.75
         case .superfast: return 2.00
+        case .paused: return 0
         case .custom(let value): return value
         }
     }
@@ -78,6 +81,7 @@ public enum AKPlaybackRate: CaseIterable {
         case .faster: return "Faster"
         case .fastest: return "Fastest"
         case .superfast: return "Super Fast"
+        case .paused: return "Paused"
         case .custom(let value): return "\(value)x"
         }
     }
@@ -92,6 +96,7 @@ public enum AKPlaybackRate: CaseIterable {
         case .faster: return .fastest
         case .fastest: return .superfast
         case .superfast: return .slowest
+        case .paused: return .normal
         case .custom: return .normal
         }
     }
@@ -101,13 +106,14 @@ extension AKPlaybackRate: Equatable {
     public static func ==(lhs: AKPlaybackRate, rhs: AKPlaybackRate) -> Bool {
         switch (lhs, rhs) {
         case (.slowest, .slowest),
-             (.slower, .slower),
-             (.slow, .slow),
-             (.normal, .normal),
-             (.fast, .fast),
-             (.faster, .faster),
-             (.fastest, .fastest),
-             (.superfast, .superfast) :
+            (.slower, .slower),
+            (.slow, .slow),
+            (.normal, .normal),
+            (.fast, .fast),
+            (.faster, .faster),
+            (.fastest, .fastest),
+            (.superfast, .superfast),
+            (.paused, .paused):
             return true
         case (.custom(let lhs), .custom(let rhs)):
             return lhs == rhs
