@@ -46,7 +46,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private var cancellable: AnyCancellable?
     
-    private var isInitializationStarted: Bool = false
+    private var isMediaInitializing: Bool = false
     
     // MARK: - Init
     
@@ -68,7 +68,6 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
         resetPlayer()
         playerController.delegate?.playerController(playerController,
                                                     didChangeMediaTo: media)
-        
         cancellable = media.statePublisher
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
@@ -128,17 +127,13 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     func pause() {
-        guard media.state.isReadyToPlay else {
-            let controller = AKLoadedState(playerController: playerController,
-                                           autoPlay: false,
-                                           position: position)
-            playerController.change(controller)
-            return
+        switch media.state {
+        case .loading, .loaded, .readyToPlay:
+            autoPlay = false
+        case .failed:
+            failedToPrepareForPlayback(with: media.error!)
+        default: break
         }
-        
-        cancelLoading()
-        let controller = AKPausedState(playerController: playerController)
-        playerController.change(controller)
     }
     
     func togglePlayPause() {
@@ -147,6 +142,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     func stop() {
         cancelLoading()
+        stopPlayerItemObservers()
         let controller = AKStoppedState(playerController: playerController)
         playerController.change(controller)
     }
@@ -256,16 +252,12 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private func handleMediaSteChange(with state: AKPlayableState) {
         switch state {
-        case .idle:
-            createPlayerItem(with: media)
-        case .loading:
-            break
-        case .loaded:
-            playerItemLoaded()
-        case .readyToPlay:
-            becameReadyToPlay()
+        case .idle: createPlayerItem(with: media)
+        case .loading: break
+        case .loaded: playerItemLoaded()
+        case .readyToPlay: becameReadyToPlay()
         case .failed:
-            if isInitializationStarted {
+            if isMediaInitializing {
                 failedToPrepareForPlayback(with: media.error!)
             } else {
                 createPlayerItem(with: media)
@@ -274,12 +266,13 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func createPlayerItem(with media: AKPlayable) {
-        isInitializationStarted = true
+        isMediaInitializing = true
         task = Task { [weak self] in
             guard let self else { return }
             do {
                 try await media.initializePlayerItem()
             } catch let error as AKPlayerError {
+                print(Task.isCancelled)
                 guard !Task.isCancelled else { return }
                 failedToPrepareForPlayback(with: error)
             } catch (let error) {
@@ -319,9 +312,11 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
         task?.cancel()
         cancellable?.cancel()
         media.cancelInitialization()
+    }
+    
+    private func stopPlayerItemObservers() {
         media.stopPlayerItemReadinessObserver()
         media.stopPlayerItemAssetKeysObserver()
-        playerController.currentItem?.cancelPendingSeeks()
     }
     
     private func resetPlayer() {
@@ -338,9 +333,11 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
          It seems to be a good idea to reset player current item
          Fix side effect when coming from failed state
          */
+        playerController.currentItem?.cancelPendingSeeks()
         playerController.player.replaceCurrentItem(with: nil)
         
         cancelLoading()
+        stopPlayerItemObservers()
     }
     
     // MARK: - Error Handling - Preparing Assets for Playback Failed

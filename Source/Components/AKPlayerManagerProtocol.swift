@@ -78,16 +78,17 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProto
 public struct AKPlayerStateSnapshot {
     var state: AKPlayerState
     var shouldResume: Bool
+    var applicationState: AKApplicationLifeCycleState
     var playbackInterruptionReason: AKPlaybackInterruptionReason
 }
 
 public enum AKPlaybackInterruptionReason: uint {
     case audioSessionInterruption
-    case applicationEnteredBackground
     case applicationResignActive
-    case audioSessionRouteChange
+    case applicationEnteredBackground
     
     var isLifeCycleEvent: Bool {
-        return self == .applicationEnteredBackground || self == .applicationResignActive
+        return self == .applicationEnteredBackground 
+        || self == .applicationResignActive
     }
 }

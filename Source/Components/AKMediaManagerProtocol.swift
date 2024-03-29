@@ -29,8 +29,8 @@ import Combine
 public protocol AKMediaManagerProtocol: AnyObject {
     var media: AKPlayable { get }
     var playerItem: AVPlayerItem? { get }
-    var state: AKPlayableState { get }
     var error: AKPlayerError? { get }
+    var state: AKPlayableState { get }
     var statePublisher: Published<AKPlayableState>.Publisher { get }
     
     func initializePlayerItem() async throws

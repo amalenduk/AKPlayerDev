@@ -42,6 +42,16 @@ public enum AKApplicationLifeCycleState {
     case active
     case background
     case foreground
+    
+    var isActiveOrForeground: Bool {
+        return self == .active
+        || self == .foreground
+    }
+    
+    var isResignActiveOrBackground: Bool {
+        return self == .resignActive
+        || self == .background
+    }
 }
 
 public protocol AKApplicationLifeCycleEventsObserverProtocol {

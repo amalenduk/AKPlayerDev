@@ -117,7 +117,6 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
          })
          .store(in: &subscriptions)
          */
-        
         var remainingTime: TimeInterval = bufferObservingTimeout
         
         timer = Timer.scheduledTimer(withTimeInterval: bufferObservingTimeInterval,

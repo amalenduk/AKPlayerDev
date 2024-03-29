@@ -33,7 +33,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     let state: AKPlayerState = .loaded
     
-    let autoPlay: Bool
+    var autoPlay: Bool
     
     private let position: CMTime?
     
@@ -49,7 +49,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
         self.position = position
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
         if let position = position {
@@ -121,8 +121,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     func pause() {
-        let controller = AKPausedState(playerController: playerController)
-        change(controller)
+        autoPlay = true
     }
     
     func togglePlayPause() {

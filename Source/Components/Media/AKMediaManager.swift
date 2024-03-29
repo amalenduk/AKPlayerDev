@@ -34,9 +34,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     public private(set) var playerItem: AVPlayerItem?
     
-    @Published public private(set) var state: AKPlayableState = .idle
-    
     public var error: AKPlayerError?
+    
+    @Published public private(set) var state: AKPlayableState = .idle
     
     public var statePublisher: Published<AKPlayableState>.Publisher { $state }
     

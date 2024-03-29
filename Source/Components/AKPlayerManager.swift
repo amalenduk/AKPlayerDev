@@ -276,9 +276,9 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                    autoPlay: Bool) {
         guard canPlay() else { return actionNotPermitted() }
         if autoPlay {
-            performPlaybackAction {
-                return playerController.load(media: media,
-                                             autoPlay: autoPlay)
+            return performPlaybackAction {
+                playerController.load(media: media,
+                                      autoPlay: autoPlay)
             }
         }
         playerController.load(media: media,
@@ -290,10 +290,10 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                    at position: CMTime) {
         guard canPlay() else { return actionNotPermitted() }
         if autoPlay {
-            performPlaybackAction {
-                return playerController.load(media: media,
-                                             autoPlay: autoPlay,
-                                             at: position)
+            return performPlaybackAction {
+                playerController.load(media: media,
+                                      autoPlay: autoPlay,
+                                      at: position)
             }
         }
         playerController.load(media: media,
@@ -306,10 +306,10 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                    at position: Double) {
         guard canPlay() else { return actionNotPermitted() }
         if autoPlay {
-            performPlaybackAction {
-                return playerController.load(media: media,
-                                             autoPlay: autoPlay,
-                                             at: position)
+            return performPlaybackAction {
+                playerController.load(media: media,
+                                      autoPlay: autoPlay,
+                                      at: position)
             }
         }
         playerController.load(media: media,
@@ -342,6 +342,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     }
     
     open func stop() {
+        playerStateSnapshot?.shouldResume = false
         playerController.stop()
     }
     
@@ -490,11 +491,20 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return completion(false)
     }
     
-    private func savePlayerStateSnapshot(with playbackInterruptionReason: AKPlaybackInterruptionReason, 
+    private func savePlayerStateSnapshot(playbackInterruptionReason: AKPlaybackInterruptionReason,
                                          shouldResume: Bool) {
-        playerStateSnapshot = AKPlayerStateSnapshot(state: state,
-                                                    shouldResume: shouldResume,
-                                                    playbackInterruptionReason: playbackInterruptionReason)
+        guard var snapshot = playerStateSnapshot else {
+            playerStateSnapshot = AKPlayerStateSnapshot(state: state,
+                                                        shouldResume: shouldResume,
+                                                        applicationState: applicationLifeCycleEventsObserver.state,
+                                                        playbackInterruptionReason: playbackInterruptionReason)
+            return
+        }
+        
+        snapshot.state = state
+        snapshot.applicationState = applicationLifeCycleEventsObserver.state
+        
+        self.playerStateSnapshot = snapshot
     }
     
     private func clearPlayerStateSnapshot() {
@@ -531,7 +541,8 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private func performPlaybackAction(action: () -> Void) {
         guard let snapshot = playerStateSnapshot else { return action() }
-        if snapshot.playbackInterruptionReason.isLifeCycleEvent {
+        if snapshot.playbackInterruptionReason.isLifeCycleEvent
+            || snapshot.applicationState.isResignActiveOrBackground {
             execute {
                 try setAudioSession(true)
             } completion: { finished in
@@ -558,8 +569,9 @@ extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
                 || state.isPlaybackActive else { return }
         /* Audio session automatically pauses player, if not will be paused here.
          Update the UI to indicate that playback or recording has paused when it’s interrupted. Do not deactivate the audio session. */
-        savePlayerStateSnapshot(with: .audioSessionInterruption, shouldResume: true)
-        pause();
+        savePlayerStateSnapshot(playbackInterruptionReason: .audioSessionInterruption,
+                                shouldResume: true)
+        pause()
     }
     
     public func audioSessionInterruptionObserver(_ observer: AKAudioSessionInterruptionObserverProtocol,
@@ -570,7 +582,6 @@ extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
               let snapshot = playerStateSnapshot,
               snapshot.playbackInterruptionReason == .audioSessionInterruption,
               snapshot.shouldResume && shouldResume else { return }
-        
         play()
     }
 }
@@ -593,7 +604,6 @@ extension AKPlayerManager: AKAudioSessionRouteChangesObserverDelegate {
             return
         }
         
-        savePlayerStateSnapshot(with: .audioSessionRouteChange, shouldResume: false)
         pause()
     }
 }
@@ -622,7 +632,8 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 if (state.isLoadingStateActive && autoPlay)
                     || state.isPlaybackActive {
                     
-                    savePlayerStateSnapshot(with: .applicationResignActive, shouldResume: true)
+                    savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
+                                            shouldResume: true)
                     pause()
                 }
                 
@@ -633,7 +644,8 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 if (state.isLoadingStateActive && !autoPlay)
                     || state.isPlaybackInactive {
                     
-                    savePlayerStateSnapshot(with: .applicationResignActive, shouldResume: false)
+                    savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
+                                            shouldResume: false)
                     execute { try self.setAudioSession(false) }
                 }
             }
@@ -653,17 +665,20 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 if (state.isLoadingStateActive && autoPlay)
                     || state.isPlaybackActive {
                     
-                    savePlayerStateSnapshot(with: .applicationEnteredBackground, shouldResume: true)
+                    savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
+                                            shouldResume: true)
                     pause()
                 }
                 
                 execute { try self.setAudioSession(false) }
                 
             } else {
+                
                 if (state.isLoadingStateActive && !autoPlay)
                     || state.isPlaybackInactive {
                     
-                    savePlayerStateSnapshot(with: .applicationEnteredBackground, shouldResume: false)
+                    savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
+                                            shouldResume: false)
                     execute { try self.setAudioSession(false) }
                 }
             }
