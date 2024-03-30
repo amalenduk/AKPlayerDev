@@ -272,7 +272,6 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
             do {
                 try await media.initializePlayerItem()
             } catch let error as AKPlayerError {
-                print(Task.isCancelled)
                 guard !Task.isCancelled else { return }
                 failedToPrepareForPlayback(with: error)
             } catch (let error) {

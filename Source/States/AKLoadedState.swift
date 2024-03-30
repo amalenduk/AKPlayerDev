@@ -37,16 +37,20 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     private let position: CMTime?
     
+    private var rate: AKPlaybackRate?
+    
     private var workItem: DispatchWorkItem?
     
     // MARK: - Init
     
     init(playerController: AKPlayerControllerProtocol,
          autoPlay: Bool = false,
-         position: CMTime? = nil) {
+         position: CMTime? = nil,
+         rate: AKPlaybackRate? = nil) {
         self.playerController = playerController
         self.autoPlay = autoPlay
         self.position = position
+        self.rate = rate
     }
     
     deinit { print("Deinit called from ", #file) }
@@ -106,7 +110,8 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     func play() {
-        let controller = AKBufferingState(playerController: playerController)
+        let controller = AKBufferingState(playerController: playerController,
+                                          rate: rate)
         change(controller)
     }
     

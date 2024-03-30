@@ -565,7 +565,7 @@ extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
                                                  didBeginInterruptionWith reason: AVAudioSession.InterruptionReason?,
                                                  for audioSession: AVAudioSession) {
         
-        guard (state.isLoadingStateActive && autoPlay)
+        guard state.isLoadingStateActive
                 || state.isPlaybackActive else { return }
         /* Audio session automatically pauses player, if not will be paused here.
          Update the UI to indicate that playback or recording has paused when it’s interrupted. Do not deactivate the audio session. */
@@ -599,7 +599,7 @@ extension AKPlayerManager: AKAudioSessionRouteChangesObserverDelegate {
         
         guard isExternalAudioPlaybackDeviceConnected
                 && !observer.isExternalDeviceConnected()
-                && (state.isLoadingStateActive && autoPlay)
+                && state.isLoadingStateActive
                 || state.isPlaybackActive else {
             return
         }
@@ -629,7 +629,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenResigningActive {
                 
-                if (state.isLoadingStateActive && autoPlay)
+                if state.isLoadingStateActive
                     || state.isPlaybackActive {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
@@ -662,7 +662,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenBackgrounded {
                 
-                if (state.isLoadingStateActive && autoPlay)
+                if state.isLoadingStateActive
                     || state.isPlaybackActive {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
