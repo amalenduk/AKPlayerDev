@@ -61,6 +61,5 @@ public struct AKMediaMetadata {
     
     public init(with commonMetadata: [AVMetadataItem]) {
         self.commonMetadata = commonMetadata
-        
     }
 }

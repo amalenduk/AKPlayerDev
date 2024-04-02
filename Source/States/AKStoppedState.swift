@@ -104,7 +104,7 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
     func play(at rate: AKPlaybackRate) {
         guard let currentMedia = playerController.currentMedia else { fatalError() }
         
-        if currentMedia.state == .readyToPlay {
+        if currentMedia.state.isReadyToPlay {
             if (playerController.currentTime.seconds + 1) >= (playerController.currentItem?.duration.seconds ?? 0) { seek(to: 0) }
             
             if currentMedia.canPlay(at: rate) {

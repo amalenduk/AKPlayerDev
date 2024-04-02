@@ -27,8 +27,9 @@ import Foundation
 
 public enum AKPlayableState: String, CustomStringConvertible {
     case idle
-    case loading
-    case loaded
+    case loadingAsset
+    case assetLoaded
+    case playerItemLoaded
     case readyToPlay
     case failed
     
@@ -40,12 +41,16 @@ public enum AKPlayableState: String, CustomStringConvertible {
         return self == .idle
     }
     
-    var isLoading: Bool {
-        return self == .loading
+    var isLoadingAsset: Bool {
+        return self == .loadingAsset
     }
     
-    var isLoaded: Bool {
-        return self == .loaded
+    var isAssetLoaded: Bool {
+        return self == .assetLoaded
+    }
+    
+    var isPlayerItemLoaded: Bool {
+        return self == .playerItemLoaded
     }
     
     var isReadyToPlay: Bool {
@@ -62,8 +67,9 @@ extension AKPlayableState: Equatable {}
 public func == (lhs: AKPlayableState, rhs: AKPlayableState) -> Bool {
     switch (lhs, rhs) {
     case (.idle, .idle),
-        (.loading, .loading),
-        (.loaded, .loaded),
+        (.loadingAsset, .loadingAsset),
+        (.assetLoaded, .assetLoaded),
+        (.playerItemLoaded, .playerItemLoaded),
         (.readyToPlay, .readyToPlay),
         (.failed, .failed):
         return true

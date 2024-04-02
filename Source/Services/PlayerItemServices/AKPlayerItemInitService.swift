@@ -34,8 +34,13 @@ import AVFoundation
 
 public protocol AKPlayerItemInitServiceProtocol {
     var media: AKPlayable { get }
+    var asset: AVURLAsset? { get }
+    var playerItem: AVPlayerItem? { get }
     
-    func initialize() async throws -> AVPlayerItem
+    func initializeAsset() -> AVURLAsset
+    func createPlayerItem() -> AVPlayerItem
+    func loadPropertyValues() async throws
+    func checkPlayability() async throws
     func cancelInitialization()
 }
 
@@ -45,7 +50,9 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
     
     public unowned let media: AKPlayable
     
-    private var asset: AVURLAsset?
+    public private(set) var asset: AVURLAsset?
+    
+    public private(set) var playerItem: AVPlayerItem?
     
     // MARK: - Init
     
@@ -59,46 +66,66 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
     
     // MARK: - Additional Helper Functions
     
-    open func initialize() async throws -> AVPlayerItem {
+    open func initializeAsset() -> AVURLAsset {
         /*
          Create an asset for inspection of a resource referenced by a given URL.
          */
         let asset: AVURLAsset = AVURLAsset(url: media.url,
                                            options: media.assetInitializationOptions)
         self.asset = asset
-        
-        /* Tells the asset to load the values of any of the specified keys that are not already loaded. */
-        try await loadPropertyValues(for: asset)
-        
-        /* At this point we're ready to set up for playback of the asset. */
-        return createPlayerItem(with: asset)
+        return asset
     }
     
-    open func cancelInitialization() {
-        guard let asset = asset else { return }
-        asset.cancelLoading()
+    open func createPlayerItem() -> AVPlayerItem {
+        assert(!(asset == nil),
+               "Asset must be created before calling this function.")
+        // Create a new AVPlayerItem with the asset and an
+        // array of asset keys to be automatically loaded
+        let playerItem: AVPlayerItem
+        if let automaticallyLoadedAssetKeys = media.automaticallyLoadedAssetKeys {
+            playerItem = AVPlayerItem(asset: asset!,
+                                      automaticallyLoadedAssetKeys: automaticallyLoadedAssetKeys)
+        } else {
+            playerItem = AVPlayerItem(asset: asset!)
+        }
+        self.playerItem = playerItem
+        return playerItem
     }
     
-    private func loadPropertyValues(for asset: AVURLAsset) async throws {
-        /*
-         You can initialize an instance of the player item with the asset
-         if the `playable` property value equals `true`.
-         
-         If the `hasProtectedContent` property value equals `true`, the
-         asset contains protected content and can't be played.
-         */
-        /* Use the AVAsset playable property to detect whether the asset can be played. */
+    open func loadPropertyValues() async throws {
+        assert(!(asset == nil),
+               "Asset must be created before calling this function.")
         do {
-            let (isPlayable, hasProtectedContent) = try await asset.load(.isPlayable, .hasProtectedContent)
+            let (_, _, _, _) = try await asset!.load(.duration,
+                                                     .metadata,
+                                                     .commonMetadata,
+                                                     .lyrics)
+            
+        } catch (let error) {
+            
+            guard let err = error as? URLError,
+                  err.code  == URLError.Code.notConnectedToInternet else {
+                throw AKPlayerError.assetLoadingFailed(reason: .propertyKeyLoadingFailed(error: error))
+            }
+            throw AKPlayerError.assetLoadingFailed(reason: .notConnectedToInternet(error: err))
+        }
+    }
+    
+    open func checkPlayability() async throws {
+        assert(!(asset == nil),
+               "Asset must be created before calling this function.")
+        do {
+            let (isPlayable, hasProtectedContent) = try await asset!.load(.isPlayable,
+                                                                          .hasProtectedContent)
             try checkAssetPlayability(isPlayable: isPlayable,
                                       hasProtectedContent: hasProtectedContent)
         } catch (let error) {
-            if let err = error as? URLError,
-               err.code  == URLError.Code.notConnectedToInternet {
-                throw AKPlayerError.assetLoadingFailed(reason: .notConnectedToInternet(error: err))
-            } else {
+            
+            guard let err = error as? URLError,
+                  err.code  == URLError.Code.notConnectedToInternet else {
                 throw AKPlayerError.assetLoadingFailed(reason: .propertyKeyLoadingFailed(error: error))
             }
+            throw AKPlayerError.assetLoadingFailed(reason: .notConnectedToInternet(error: err))
         }
     }
     
@@ -108,16 +135,8 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         guard !hasProtectedContent else { throw AKPlayerError.assetLoadingFailed(reason: .protectedContent) }
     }
     
-    private func createPlayerItem(with asset: AVURLAsset) -> AVPlayerItem {
-        // Create a new AVPlayerItem with the asset and an
-        // array of asset keys to be automatically loaded
-        let playerItem: AVPlayerItem
-        if let automaticallyLoadedAssetKeys = media.automaticallyLoadedAssetKeys {
-            playerItem = AVPlayerItem(asset: asset,
-                                      automaticallyLoadedAssetKeys: automaticallyLoadedAssetKeys)
-        } else {
-            playerItem = AVPlayerItem(asset: asset)
-        }
-        return playerItem
+    open func cancelInitialization() {
+        guard let asset = asset else { return }
+        asset.cancelLoading()
     }
 }

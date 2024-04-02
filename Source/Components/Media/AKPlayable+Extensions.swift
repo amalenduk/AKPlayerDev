@@ -66,8 +66,12 @@ public extension AKPlayable {
 
 public extension AKPlayable {
     
-    func initializePlayerItem() async throws {
-        try await manager.initializePlayerItem()
+    func initializeAsset() async throws {
+        try await manager.initializeAsset()
+    }
+    
+    func createPlayerItem() {
+        manager.createPlayerItem()
     }
     
     func cancelInitialization() {
@@ -189,6 +193,28 @@ public extension AKPlayable {
     var loadedTimeRanges: [NSValue] {
         return playerItem?.loadedTimeRanges ?? []
     }
+    
+    var seekableTimeRange: CMTimeRange? {
+        guard let firstRange = seekableTimeRanges.first?.timeRangeValue,
+                !firstRange.isIndefinite,
+              let lastRange = seekableTimeRanges.last?.timeRangeValue,
+                !lastRange.isIndefinite else {
+            return nil
+        }
+        return CMTimeRangeFromTimeToTime(start: firstRange.start,
+                                         end: lastRange.end)
+    }
+    
+    var loadedTimeRange: CMTimeRange? {
+        guard let firstRange = loadedTimeRanges.first?.timeRangeValue,
+                !firstRange.isIndefinite,
+              let lastRange = loadedTimeRanges.last?.timeRangeValue,
+                !lastRange.isIndefinite else {
+            return nil
+        }
+        return CMTimeRangeFromTimeToTime(start: firstRange.start,
+                                         end: lastRange.end)
+    }
 }
 
 public extension AKPlayable {
@@ -212,7 +238,7 @@ public extension AKPlayable {
         return playerItem?.presentationSize ?? .zero
     }
     
-    var automaticallyLoadedAssetKeys: [String] {
-        return playerItem?.automaticallyLoadedAssetKeys ?? []
-    }
+    //    var automaticallyLoadedAssetKeys: [String] {
+    //        return playerItem?.automaticallyLoadedAssetKeys ?? []
+    //    }
 }

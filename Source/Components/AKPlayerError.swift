@@ -53,6 +53,7 @@ public enum AKPlayerError: Error {
     
     public enum PlayerItemLoadingFailureReason {
         case statusLoadingFailed(error: Error)
+        case invalidAsset
     }
     
     public enum PlayerItemFailedToPlayReason {
@@ -93,7 +94,8 @@ extension AKPlayerError.PlayerItemLoadingFailureReason: LocalizedError {
         switch self {
         case .statusLoadingFailed(error: let error):
             return NSLocalizedString("The AVPlayerItem status has failed with error: \(error.localizedDescription)", comment: "This error occurs when the status of the AVPlayerItem is .failed, indicating that there was an issue with the player item that prevented it from playing successfully.")
-            
+        case .invalidAsset:
+            return "Not a valid asset"
         }
     }
     
@@ -101,12 +103,16 @@ extension AKPlayerError.PlayerItemLoadingFailureReason: LocalizedError {
         switch self {
         case .statusLoadingFailed:
             return localizedDescription
+        case .invalidAsset:
+            return localizedDescription
         }
     }
     
     public var failureReason: String? {
         switch self {
         case .statusLoadingFailed:
+            return localizedDescription
+        case .invalidAsset:
             return localizedDescription
         }
     }
@@ -203,6 +209,8 @@ public extension AKPlayerError.PlayerItemLoadingFailureReason {
         switch self {
         case .statusLoadingFailed(error: let error):
             return error
+        case .invalidAsset:
+            return nil
         }
     }
 }

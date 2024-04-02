@@ -33,7 +33,8 @@ public protocol AKMediaManagerProtocol: AnyObject {
     var state: AKPlayableState { get }
     var statePublisher: Published<AKPlayableState>.Publisher { get }
     
-    func initializePlayerItem() async throws
+    func initializeAsset() async throws
+    func createPlayerItem()
     func cancelInitialization()
     
     func startPlayerItemAssetKeysObserver()

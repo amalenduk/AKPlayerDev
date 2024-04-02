@@ -128,7 +128,10 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     func pause() {
         switch media.state {
-        case .loading, .loaded, .readyToPlay:
+        case .loadingAsset,
+                .assetLoaded,
+                .playerItemLoaded,
+                .readyToPlay:
             autoPlay = false
         case .failed:
             failedToPrepareForPlayback(with: media.error!)
@@ -252,38 +255,35 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private func handleMediaSteChange(with state: AKPlayableState) {
         switch state {
-        case .idle: createPlayerItem(with: media)
-        case .loading: break
-        case .loaded: playerItemLoaded()
+        case .idle: initializeAsset()
+        case .loadingAsset: break
+        case .assetLoaded: createPlayerItem()
+        case .playerItemLoaded: playerItemLoaded()
         case .readyToPlay: becameReadyToPlay()
         case .failed:
             if isMediaInitializing {
                 failedToPrepareForPlayback(with: media.error!)
             } else {
-                createPlayerItem(with: media)
+                createPlayerItem()
             }
         }
     }
     
-    private func createPlayerItem(with media: AKPlayable) {
+    private func initializeAsset() {
         isMediaInitializing = true
         task = Task { [weak self] in
             guard let self else { return }
             do {
-                try await media.initializePlayerItem()
-            } catch let error as AKPlayerError {
+                try await media.initializeAsset()
+            } catch {
                 guard !Task.isCancelled else { return }
-                failedToPrepareForPlayback(with: error)
-            } catch (let error) {
-                guard !Task.isCancelled else { return }
-                if let err = error as? URLError,
-                   err.code  == URLError.Code.notConnectedToInternet {
-                    failedToPrepareForPlayback(with: AKPlayerError.assetLoadingFailed(reason: .notConnectedToInternet(error: err)))
-                } else {
-                    failedToPrepareForPlayback(with: AKPlayerError.assetLoadingFailed(reason: .assetInitializationFailed(error: error)))
-                }
+                failedToPrepareForPlayback(with: error as! AKPlayerError)
             }
         }
+    }
+    
+    private func createPlayerItem() {
+        media.createPlayerItem()
     }
     
     private func playerItemLoaded() {

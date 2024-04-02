@@ -29,7 +29,8 @@ import Combine
 public protocol AKPlayerItemReadinessObserverDelegate: AnyObject {
     func playerItemReadinessObserver(_ observer: AKPlayerItemReadinessObserverProtocol,
                                      didChangeStatusTo status: AVPlayerItem.Status,
-                                     for playerItem: AVPlayerItem)
+                                     for playerItem: AVPlayerItem,
+                                     with error: AKPlayerError?)
 }
 
 public protocol AKPlayerItemReadinessObserverProtocol {
@@ -72,7 +73,8 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
             guard let delegate = delegate else { return }
             delegate.playerItemReadinessObserver(self,
                                                  didChangeStatusTo: status,
-                                                 for: playerItem)
+                                                 for: playerItem, 
+                                                 with: status == .failed ? AKPlayerError.playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil)
         })
         .store(in: &subscriptions)
     }

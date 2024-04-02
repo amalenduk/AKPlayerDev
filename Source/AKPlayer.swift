@@ -92,7 +92,7 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
     // MARK: - Init
     
     public init(player: AVPlayer = AVPlayer(),
-                configuration: AKPlayerConfigurationProtocol = AKPlayerConfiguration(),
+                configuration: AKPlayerConfigurationProtocol = AKPlayerConfiguration.default,
                 audioSessionService: AKAudioSessionServiceProtocol = AKAudioSessionService()) {
         manager = AKPlayerManager(player: player,
                                   configuration: configuration,

@@ -25,6 +25,8 @@
 
 import AVFoundation
 
+// https://developer.apple.com/documentation/avfoundation/media_playback/controlling_the_transport_behavior_of_a_player
+
 public protocol AKPlayerRateObserverDelegate: AnyObject {
     func playerRateObserver(_ observer: AKPlayerRateObserverProtocol,
                             didChangePlaybackRateTo newRate: AKPlaybackRate,
