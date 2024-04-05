@@ -264,7 +264,7 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
             if isMediaInitializing {
                 failedToPrepareForPlayback(with: media.error!)
             } else {
-                createPlayerItem()
+                initializeAsset()
             }
         }
     }
@@ -341,15 +341,6 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Error Handling - Preparing Assets for Playback Failed
     
-    /* --------------------------------------------------------------
-     **  Called when an asset fails to prepare for playback for any of
-     **  the following reasons:
-     **
-     **  1) values of asset keys did not load successfully,
-     **  2) the asset keys did load successfully, but the asset is not
-     **     playable
-     **  3) the item did not become ready to play.
-     ** ----------------------------------------------------------- */
     private func failedToPrepareForPlayback(with error: AKPlayerError) {
         cancelLoading()
         let controller = AKFailedState(playerController: playerController, error: error)

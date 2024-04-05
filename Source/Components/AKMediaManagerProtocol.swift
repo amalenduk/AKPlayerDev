@@ -28,6 +28,7 @@ import Combine
 
 public protocol AKMediaManagerProtocol: AnyObject {
     var media: AKPlayable { get }
+    var asset: AVURLAsset? { get }
     var playerItem: AVPlayerItem? { get }
     var error: AKPlayerError? { get }
     var state: AKPlayableState { get }

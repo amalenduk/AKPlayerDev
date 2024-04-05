@@ -196,9 +196,9 @@ public extension AKPlayable {
     
     var seekableTimeRange: CMTimeRange? {
         guard let firstRange = seekableTimeRanges.first?.timeRangeValue,
-                !firstRange.isIndefinite,
+              !firstRange.isIndefinite,
               let lastRange = seekableTimeRanges.last?.timeRangeValue,
-                !lastRange.isIndefinite else {
+              !lastRange.isIndefinite else {
             return nil
         }
         return CMTimeRangeFromTimeToTime(start: firstRange.start,
@@ -207,9 +207,9 @@ public extension AKPlayable {
     
     var loadedTimeRange: CMTimeRange? {
         guard let firstRange = loadedTimeRanges.first?.timeRangeValue,
-                !firstRange.isIndefinite,
+              !firstRange.isIndefinite,
               let lastRange = loadedTimeRanges.last?.timeRangeValue,
-                !lastRange.isIndefinite else {
+              !lastRange.isIndefinite else {
             return nil
         }
         return CMTimeRangeFromTimeToTime(start: firstRange.start,

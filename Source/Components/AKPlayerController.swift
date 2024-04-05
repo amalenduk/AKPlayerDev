@@ -105,7 +105,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     // MARK: - Init
     
-    public init(player: AVPlayer, configuration: AKPlayerConfigurationProtocol) {
+    public init(player: AVPlayer, 
+                configuration: AKPlayerConfigurationProtocol) {
         self.player = player
         self.configuration = configuration
         
