@@ -45,7 +45,7 @@ final class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerItem)
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
         startPlayerItemObservingNotificationsService()

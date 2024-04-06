@@ -33,20 +33,35 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     let state: AKPlayerState = .playing
     
+    private var rate: AKPlaybackRate?
+    
     private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
     
     // MARK: - Init
     
-    init(playerController: AKPlayerControllerProtocol) {
+    init(playerController: AKPlayerControllerProtocol,
+         rate: AKPlaybackRate? = nil) {
+        print("Init called from ", #file)
         self.playerController = playerController
+        self.rate = rate
         
         playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
         startPlayerItemObservingNotificationsService()
+        playerController.player.play()
+        
+        guard let rate = rate,
+              playerController.player.rate != rate.rate else { return }
+        if playerController.currentItem!.canPlay(at: rate) {
+            playerController.player.rate = rate.rate
+        } else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+        }
     }
     
     // MARK: - Commands
@@ -94,8 +109,9 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate);
-            fatalError() }
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+            return
+        }
         playerController.player.rate = rate.rate
     }
     
@@ -117,28 +133,36 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
               toleranceBefore: CMTime,
               toleranceAfter: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter,
+                        completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime,
               toleranceBefore: CMTime,
               toleranceAfter: CMTime) {
-        playerController.player.seek(to: time,
-                                     toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter)
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: time,
+                        completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        playerController.player.seek(to: time)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: time)
     }
     
     func seek(to time: Double,
@@ -155,12 +179,16 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     func seek(to date: Date,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: date,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: date,
+                        completionHandler: completionHandler)
     }
     
     func seek(to date: Date) {
-        playerController.player.seek(to: date)
+        let controller = AKBufferingState(playerController: playerController)
+        playerController.change(controller)
+        controller.seek(to: date)
     }
     
     func seek(toOffset offset: Double) {

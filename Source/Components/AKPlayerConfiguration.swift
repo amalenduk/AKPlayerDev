@@ -33,11 +33,11 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     public var preferredTimeScale: CMTimeScale = CMTimeScale(NSEC_PER_SEC)
     
-    public var boundaryTimeObserverMultiplier: Double = 0.20
+    public var boundaryTimeObserverMultiplier: Double = 0.10
     
     public var bufferObservingTimeout: TimeInterval = 30
     
-    public var bufferObservingTimeInterval: TimeInterval = 1
+    public var bufferObservingTimeInterval: TimeInterval = 0.20
     
     public var audioSession: AKAudioSessionConfiguration = AKAudioSessionConfiguration()
     

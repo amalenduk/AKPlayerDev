@@ -392,7 +392,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         delegate?.playerController(self, unavailableActionWith: reason)
     }
     
-    // Not a correct solution as it may come from pause state which may not have player item
     private func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
         guard !state.isIdle && !state.isLoading && !state.isFailed else {

@@ -39,7 +39,7 @@ final class AKIdleState: AKPlayerStateControllerProtocol {
         self.playerController = playerController
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() { }
     

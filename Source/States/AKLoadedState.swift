@@ -39,7 +39,7 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     private var rate: AKPlaybackRate?
     
-    private var workItem: DispatchWorkItem?
+    private var isSeeking: Bool = false
     
     // MARK: - Init
     
@@ -56,19 +56,18 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
-        if let position = position {
-            seek(to: position)
-        } else {
-            playerController.delegate?.playerController(playerController,
-                                                        didChangeCurrentTimeTo: playerController.currentTime,
-                                                        for: playerController.currentMedia!)
-        }
-        if autoPlay {
-            workItem = DispatchWorkItem(block: { [unowned self] in
+        playerController.delegate?.playerController(playerController,
+                                                    didChangeCurrentTimeTo: playerController.currentTime,
+                                                    for: playerController.currentMedia!)
+        if autoPlay, let position = position {
+            seek(to: position) { [weak self] finished in
+                guard let self = self else { return }
                 play()
-            })
-            DispatchQueue.main.asyncAfter(deadline: DispatchTime.now() + 0.5,
-                                          execute: workItem!)
+            }
+        } else if autoPlay {
+            play()
+        } else if let position = position {
+            seek(to: position)
         }
     }
     
@@ -118,8 +117,9 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate);
-            fatalError() }
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           rate: rate)
         change(controller)
@@ -146,28 +146,54 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
               toleranceBefore: CMTime,
               toleranceAfter: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
+        isSeeking = true
         playerController.player.seek(to: time,
                                      toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter,
-                                     completionHandler: completionHandler)
+                                     toleranceAfter: toleranceAfter) { [weak self] finished in
+            print("Seek completed ", finished)
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to time: CMTime,
               toleranceBefore: CMTime,
               toleranceAfter: CMTime) {
+        isSeeking = true
         playerController.player.seek(to: time,
                                      toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter)
+                                     toleranceAfter: toleranceAfter) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     completionHandler: completionHandler)
+        isSeeking = true
+        playerController.player.seek(to: time) { [weak self] finished in
+            print("Seek completed ", finished)
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to time: CMTime) {
-        playerController.player.seek(to: time)
+        isSeeking = true
+        playerController.player.seek(to: time) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(to time: Double,
@@ -184,13 +210,24 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     
     func seek(to date: Date,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: date,
-                                     completionHandler: completionHandler)
-        
+        isSeeking = true
+        playerController.player.seek(to: date) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to date: Date) {
-        playerController.player.seek(to: date)
+        isSeeking = true
+        playerController.player.seek(to: date) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(toOffset offset: Double) {
@@ -236,7 +273,6 @@ final class AKLoadedState: AKPlayerStateControllerProtocol {
     // MARK: - Additional Helper Functions
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        workItem?.cancel()
         playerController.change(controller)
     }
 }

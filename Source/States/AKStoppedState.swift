@@ -43,7 +43,7 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
         self.playerItemDidPlayToEndTime = flag
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
         playerController.player.pause()
@@ -88,7 +88,7 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
     }
     
     func play() {
-        guard let currentMedia = playerController.currentMedia else { return assertionFailure() }
+        guard let currentMedia = playerController.currentMedia else { fatalError() }
         if currentMedia.state == .readyToPlay {
             if (playerController.currentTime.seconds + 1) >= (playerController.currentItem?.duration.seconds ?? 0) { seek(to: 0) }
             let controller = AKBufferingState(playerController: playerController)

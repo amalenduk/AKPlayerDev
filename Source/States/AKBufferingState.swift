@@ -35,6 +35,10 @@ final class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private var rate: AKPlaybackRate?
     
+    private var isSeeking: Bool = false
+    
+    private var previousState: AKPlayerState?
+    
     private var playerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObserverProtocol!
     
     private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
@@ -43,6 +47,7 @@ final class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     init(playerController: AKPlayerControllerProtocol,
          rate: AKPlaybackRate? = nil) {
+        print("Init called from ", #file)
         self.playerController = playerController
         self.rate = rate
         
@@ -50,9 +55,13 @@ final class AKBufferingState: AKPlayerStateControllerProtocol  {
         playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
+        if (playerController.player.timeControlStatus == .playing)
+            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+            playerController.player.pause()
+        }
         startPlayerItemBufferingStatusObserver()
         startPlayerItemNotificationsObserver()
     }
@@ -121,28 +130,53 @@ final class AKBufferingState: AKPlayerStateControllerProtocol  {
               toleranceBefore: CMTime,
               toleranceAfter: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
+        isSeeking = true
         playerController.player.seek(to: time,
                                      toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter,
-                                     completionHandler: completionHandler)
+                                     toleranceAfter: toleranceAfter) { [weak self] finished in
+            print("Seek completed ", finished)
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to time: CMTime,
               toleranceBefore: CMTime,
               toleranceAfter: CMTime) {
+        isSeeking = true
         playerController.player.seek(to: time,
                                      toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter)
+                                     toleranceAfter: toleranceAfter) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     completionHandler: completionHandler)
+        isSeeking = true
+        playerController.player.seek(to: time) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to time: CMTime) {
-        playerController.player.seek(to: time)
+        isSeeking = true
+        playerController.player.seek(to: time) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(to time: Double,
@@ -159,12 +193,24 @@ final class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     func seek(to date: Date,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: date,
-                                     completionHandler: completionHandler)
+        isSeeking = true
+        playerController.player.seek(to: date) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+            completionHandler(finished)
+        }
     }
     
     func seek(to date: Date) {
-        playerController.player.seek(to: date)
+        isSeeking = true
+        playerController.player.seek(to: date) { [weak self] finished in
+            guard let self = self else { return }
+            if finished {
+                isSeeking = false
+            }
+        }
     }
     
     func seek(toOffset offset: Double) {
@@ -259,22 +305,16 @@ extension AKBufferingState: AKPlayerItemBufferingStatusObserverDelegate {
     func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
                                            didChangeMediaPlaybackContinuationStatusTo shouldContinuePlayback: Bool,
                                            for playerItem: AVPlayerItem) {
-        guard shouldContinuePlayback else {
+        guard shouldContinuePlayback
+                && !isSeeking else {
             let controller = AKWaitingForNetworkState(playerController: playerController)
             return change(controller)
         }
         
         switch playerController.player.status {
         case .readyToPlay:
-            if playerController.player.timeControlStatus == .paused {
-                playerController.player.play()
-            }
-            if let rate = rate,
-               playerItem.canPlay(at: rate)
-                && !(playerController.player.rate == rate.rate) {
-                playerController.player.rate = rate.rate
-            }
-            let controller = AKPlayingState(playerController: playerController)
+            let controller = AKPlayingState(playerController: playerController,
+                                            rate: rate)
             change(controller)
         case .failed:
             let controller = AKFailedState(playerController: playerController,

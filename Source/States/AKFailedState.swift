@@ -43,7 +43,7 @@ final class AKFailedState: AKPlayerStateControllerProtocol {
         self.error = error
     }
     
-    deinit { }
+    deinit { print("Deinit called from ", #file) }
     
     func didChangeState() {
         playerController.delegate?.playerController(playerController,
