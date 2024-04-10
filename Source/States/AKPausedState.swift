@@ -29,9 +29,9 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
-    unowned let playerController: AKPlayerControllerProtocol
+    unowned public let playerController: AKPlayerControllerProtocol
     
-    let state: AKPlayerState = .paused
+    public let state: AKPlayerState = .paused
     
     // MARK: - Init
     
@@ -86,7 +86,8 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
         guard let media = playerController.currentMedia else { return assertionFailure() }
         
         if media.state.isReadyToPlay {
-            let controller = AKBufferingState(playerController: playerController)
+            let controller = AKBufferingState(playerController: playerController,
+                                              autoPlay: true)
             change(controller)
         } else {
             load(media: media,
@@ -101,6 +102,7 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
             if currentMedia.canPlay(at: rate) {
                 let controller: AKBufferingState
                 controller = AKBufferingState(playerController: playerController,
+                                              autoPlay: true,
                                               rate: rate)
                 change(controller)
                 
@@ -127,7 +129,8 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
     }
     
     func stop() {
-        let controller = AKStoppedState(playerController: playerController)
+        let controller = AKStoppedState(playerController: playerController,
+                                        seekToZero: true)
         change(controller)
     }
     
@@ -135,28 +138,40 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
               toleranceBefore: CMTime,
               toleranceAfter: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter,
+                        completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime,
               toleranceBefore: CMTime,
               toleranceAfter: CMTime) {
-        playerController.player.seek(to: time,
-                                     toleranceBefore: toleranceBefore,
-                                     toleranceAfter: toleranceAfter)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter)
     }
     
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: time,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: time,
+                        completionHandler: completionHandler)
     }
     
     func seek(to time: CMTime) {
-        playerController.player.seek(to: time)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: time)
     }
     
     func seek(to time: Double,
@@ -173,12 +188,18 @@ final class AKPausedState: AKPlayerStateControllerProtocol {
     
     func seek(to date: Date,
               completionHandler: @escaping (Bool) -> Void) {
-        playerController.player.seek(to: date,
-                                     completionHandler: completionHandler)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: date,
+                        completionHandler: completionHandler)
     }
     
     func seek(to date: Date) {
-        playerController.player.seek(to: date)
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: false)
+        change(controller)
+        controller.seek(to: date)
     }
     
     func seek(toOffset offset: Double) {

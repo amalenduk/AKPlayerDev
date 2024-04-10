@@ -52,6 +52,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     private var steppingThroughMediaObserver: AKSteppingThroughMediaObserverProtocol!
     
+    private var seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol!
+    
     private var playerItemTimingInformationObserver: AKPlayerItemTimingInformationObserverProtocol!
     
     private var playerItemAvailableTimeRangesObserver: AKPlayerItemTimeRangesObserver!
@@ -92,7 +94,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     open func createPlayerItem() {
         assert(state.isAssetLoaded,
                "Unexpected media state: This function should be called only after the asset has been loaded.")
-        playerItem = playerItemInitService.createPlayerItem()
+        playerItem = playerItemInitService!.createPlayerItem()
         initializeObservers(with: playerItem!)
         set(error: nil)
         state = .playerItemLoaded
@@ -133,17 +135,43 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     open func canStep(by count: Int) -> Bool {
         guard state.isPlayerItemLoaded || state.isReadyToPlay else { return false }
-        return playerItem!.canStep(by: count)
+        var isForward: Bool { return count.signum() == 1 }
+        return isForward ? playerItem!.canStepForward : playerItem!.canStepBackward
     }
     
     open func canPlay(at rate: AKPlaybackRate) -> Bool {
         guard state.isPlayerItemLoaded || state.isReadyToPlay else { return false }
-        return playerItem!.canPlay(at: rate)
+        switch rate.rate {
+        case 0.0...:
+            switch rate.rate {
+            case 2.0...:
+                return playerItem!.canPlayFastForward
+            case 1.0..<2.0:
+                return true
+            case 0.0..<1.0:
+                return playerItem!.canPlaySlowForward
+            default:
+                return false
+            }
+        case ..<0.0:
+            switch rate.rate {
+            case -1.0:
+                return playerItem!.canPlayReverse
+            case -1.0..<0.0:
+                return playerItem!.canPlaySlowReverse
+            case ..<(-1.0):
+                return playerItem!.canPlayFastReverse
+            default:
+                return false
+            }
+        default:
+            return false
+        }
     }
     
     open func canSeek(to time: CMTime) -> Bool {
         guard state.isPlayerItemLoaded || state.isReadyToPlay else { return false }
-        return playerItem!.canSeek(to: time)
+        return seekingThroughMediaService.canSeek(to: time).flag
     }
     
     // MARK: - Additional Helper Functions
@@ -157,6 +185,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItemAvailableTimeRangesObserver = AKPlayerItemTimeRangesObserver(with: playerItem)
         playerItemTracksObserver = AKPlayerItemTracksObserver(with: playerItem)
         playerItemPresentationObserver = AKPlayerItemPresentationObserver(with: playerItem)
+        seekingThroughMediaService = AKSeekingThroughMediaService(with: playerItem)
         
         playerItemReadinessObserver.delegate = self
         playerItemTracksObserverProtocol.delegate = self

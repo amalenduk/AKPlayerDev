@@ -35,7 +35,7 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     public var boundaryTimeObserverMultiplier: Double = 0.10
     
-    public var bufferObservingTimeout: TimeInterval = 30
+    public var bufferObservingTimeout: TimeInterval = 20
     
     public var bufferObservingTimeInterval: TimeInterval = 0.20
     
@@ -47,9 +47,9 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
                                                               AKPlayerState.playing]
     public var textStyleRules: [AVTextStyleRule]? = nil
     
-    public var playbackPausesWhenResigningActive: Bool = true
+    public var playbackPausesWhenResigningActive: Bool = false
     
-    public var playbackPausesWhenBackgrounded: Bool = true
+    public var playbackPausesWhenBackgrounded: Bool = false
     
     public var playbackResumesWhenBecameActive: Bool = true
     

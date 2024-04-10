@@ -29,9 +29,9 @@ final class AKIdleState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
-    unowned let playerController: AKPlayerControllerProtocol
+    unowned public let playerController: AKPlayerControllerProtocol
     
-    let state: AKPlayerState = .idle
+    public let state: AKPlayerState = .idle
     
     // MARK: - Init
     

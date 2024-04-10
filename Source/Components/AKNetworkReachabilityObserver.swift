@@ -1,5 +1,5 @@
 //
-//  AVPlayerItem+Extensions.swift
+//  AKNetworkReachabilityObserver.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,41 +23,7 @@
 //  SOFTWARE.
 //
 
-import AVFoundation
+import Foundation
+import Network
 
-internal extension AVPlayerItem {
-    
-    func canStep(by count: Int) -> Bool {
-        var isForward: Bool { return count.signum() == 1 }
-        return isForward ? canStepForward : canStepBackward
-    }
-    
-    func canPlay(at rate: AKPlaybackRate) -> Bool {
-        switch rate.rate {
-        case 0.0...:
-            switch rate.rate {
-            case 2.0...:
-                return canPlayFastForward
-            case 1.0..<2.0:
-                return true
-            case 0.0..<1.0:
-                return canPlaySlowForward
-            default:
-                return false
-            }
-        case ..<0.0:
-            switch rate.rate {
-            case -1.0:
-                return canPlayReverse
-            case -1.0..<0.0:
-                return canPlaySlowReverse
-            case ..<(-1.0):
-                return canPlayFastReverse
-            default:
-                return false
-            }
-        default:
-            return false
-        }
-    }
-}
+

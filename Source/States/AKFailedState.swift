@@ -29,9 +29,9 @@ final class AKFailedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
-    unowned let playerController: AKPlayerControllerProtocol
+    unowned public let playerController: AKPlayerControllerProtocol
     
-    let state: AKPlayerState = .failed
+    public let state: AKPlayerState = .failed
     
     public var error: AKPlayerError
     

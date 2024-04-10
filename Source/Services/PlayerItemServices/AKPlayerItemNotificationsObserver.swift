@@ -45,6 +45,14 @@ public protocol AKPlayerItemNotificationsObserverDelegate: AnyObject {
 
 extension AKPlayerItemNotificationsObserverDelegate {
     func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didPlayToEndTimeAt time: CMTime,
+                                         for playerItem: AVPlayerItem) { }
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didFailToPlayToEndTimeWith error: AKPlayerError,
+                                         for playerItem: AVPlayerItem) { }
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                         didStallPlaybackFor playerItem: AVPlayerItem) { }
+    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
                                          didTimeJumpFor playerItem: AVPlayerItem) { }
     func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
                                          didChangeMediaSelectionFor playerItem: AVPlayerItem) { }

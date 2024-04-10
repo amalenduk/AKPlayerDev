@@ -83,40 +83,40 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                                bufferObservingTimeInterval: TimeInterval) {
         guard !isObserving else { return }
         
-        /*
-         playerItem.publisher(for: \.isPlaybackLikelyToKeepUp,
-         options: [.initial, .new])
-         .receive(on: DispatchQueue.main)
-         .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
-         guard let delegate = delegate else { return }
-         delegate.playerItemBufferingStatusObserver(self,
-         didChangePlaybackLikelyToKeepUpStatusTo: isPlaybackLikelyToKeepUp,
-         for: playerItem)
-         })
-         .store(in: &subscriptions)
-         
-         playerItem.publisher(for: \.isPlaybackBufferFull,
-         options: [.initial, .new])
-         .receive(on: DispatchQueue.main)
-         .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
-         guard let delegate = delegate else { return }
-         delegate.playerItemBufferingStatusObserver(self,
-         didChangePlaybackBufferFullStatusTo: isPlaybackBufferFull,
-         for: playerItem)
-         })
-         .store(in: &subscriptions)
-         
-         playerItem.publisher(for: \.isPlaybackBufferEmpty,
-         options: [.initial, .new])
-         .receive(on: DispatchQueue.main)
-         .sink(receiveValue: { [unowned self] isPlaybackBufferEmpty in
-         guard let delegate = delegate else { return }
-         delegate.playerItemBufferingStatusObserver(self,
-         didChangePlaybackBufferEmptyStatusTo: isPlaybackBufferEmpty,
-         for: playerItem)
-         })
-         .store(in: &subscriptions)
-         */
+        
+        playerItem.publisher(for: \.isPlaybackLikelyToKeepUp,
+                             options: [.initial, .new])
+        .receive(on: DispatchQueue.main)
+        .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
+            guard let delegate = delegate else { return }
+            delegate.playerItemBufferingStatusObserver(self,
+                                                       didChangePlaybackLikelyToKeepUpStatusTo: isPlaybackLikelyToKeepUp,
+                                                       for: playerItem)
+        })
+        .store(in: &subscriptions)
+        
+        playerItem.publisher(for: \.isPlaybackBufferFull,
+                             options: [.initial, .new])
+        .receive(on: DispatchQueue.main)
+        .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
+            guard let delegate = delegate else { return }
+            delegate.playerItemBufferingStatusObserver(self,
+                                                       didChangePlaybackBufferFullStatusTo: isPlaybackBufferFull,
+                                                       for: playerItem)
+        })
+        .store(in: &subscriptions)
+        
+        playerItem.publisher(for: \.isPlaybackBufferEmpty,
+                             options: [.initial, .new])
+        .receive(on: DispatchQueue.main)
+        .sink(receiveValue: { [unowned self] isPlaybackBufferEmpty in
+            guard let delegate = delegate else { return }
+            delegate.playerItemBufferingStatusObserver(self,
+                                                       didChangePlaybackBufferEmptyStatusTo: isPlaybackBufferEmpty,
+                                                       for: playerItem)
+        })
+        .store(in: &subscriptions)
+        
         var remainingTime: TimeInterval = bufferObservingTimeout
         
         timer = Timer.scheduledTimer(withTimeInterval: bufferObservingTimeInterval,

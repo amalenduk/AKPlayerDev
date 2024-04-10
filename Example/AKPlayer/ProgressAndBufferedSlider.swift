@@ -75,7 +75,7 @@ import AVKit
             let height = trackRect(forBounds: rect).height
             
             let rangeRect = CGRect(x: CGFloat(startX), y: centerY - height / 2, width: CGFloat(width), height: height)
-            context.setFillColor(UIColor.darkGray.withAlphaComponent(0.5).cgColor)
+            context.setFillColor(UIColor.darkGray.cgColor)
             context.fill(rangeRect)
         }
     }

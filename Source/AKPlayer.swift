@@ -53,6 +53,14 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
         return manager.autoPlay
     }
     
+    open var isSeeking: Bool {
+        return manager.isSeeking
+    }
+    
+    open var seekPosition: AKSeekPosition? {
+        return manager.seekPosition
+    }
+    
     open var state: AKPlayerState {
         return manager.state
     }

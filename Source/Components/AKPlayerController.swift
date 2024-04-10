@@ -63,6 +63,15 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open var autoPlay: Bool {
         return (controller as? AKLoadedState)?.autoPlay ?? false
         || (controller as? AKLoadingState)?.autoPlay ?? false
+        || (controller as? AKBufferingState)?.autoPlay ?? false
+    }
+    
+    open var isSeeking: Bool {
+        return playerSeekingThroughMediaService.isSeeking
+    }
+    
+    open var seekPosition: AKSeekPosition? {
+        return playerSeekingThroughMediaService.seekPosition
     }
     
     open var volume: Float {
@@ -82,9 +91,11 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open private(set) var controller: AKPlayerStateControllerProtocol {
         get { return _controller }
         set {
+            let oldState: AKPlayerState = _controller?.state ?? .idle
+            beforeStateChange(with: newValue.state)
             _controller = newValue
             controller.didChangeState()
-            handleStateChange()
+            afterStateChange(with: oldState)
             delegate?.playerController(self, didChangeStateTo: controller.state)
         }
     }
@@ -99,13 +110,15 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private var playerRateObserver: AKPlayerRateObserverProtocol
     
-    private var playerAudioBehaviorObserverProtocol: AKPlayerAudioBehaviorObserverProtocol
+    private var playerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol
     
     private var playerReadinessObserver: AKPlayerReadinessObserverProtocol
     
+    public var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol
+    
     // MARK: - Init
     
-    public init(player: AVPlayer, 
+    public init(player: AVPlayer,
                 configuration: AKPlayerConfigurationProtocol) {
         self.player = player
         self.configuration = configuration
@@ -114,13 +127,14 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerReadinessObserver = AKPlayerReadinessObserver(with: player)
         playerPlaybackTimeObserver = AKPlayerPlaybackTimeObserver(with: player)
         playerWaitingBehaviorObserver = AKPlayerWaitingBehaviorObserver(with: player)
-        playerAudioBehaviorObserverProtocol = AKPlayerAudioBehaviorObserver(with: player)
+        playerAudioBehaviorObserver = AKPlayerAudioBehaviorObserver(with: player)
+        playerSeekingThroughMediaService = AKPlayerSeekingThroughMediaService(with: player)
         
         playerRateObserver.delegate = self
         playerReadinessObserver.delegate = self
         playerPlaybackTimeObserver.delegate = self
         playerWaitingBehaviorObserver.delegate = self
-        playerAudioBehaviorObserverProtocol.delegate = self
+        playerAudioBehaviorObserver.delegate = self
     }
     
     deinit {
@@ -348,7 +362,33 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         self.controller = controller
     }
     
-    open func handleStateChange() {
+    open func beforeStateChange(with newState: AKPlayerState) {
+        guard !newState.isIdle else { return }
+        switch newState {
+        case .idle:
+            break
+        case .loading:
+            break
+        case .loaded:
+            break
+        case .buffering:
+            break
+        case .paused:
+            break
+        case .playing:
+            break
+        case .stopped:
+            break
+        case .waitingForNetwork:
+            break
+        case .failed:
+            break
+        case .buffering:
+            break
+        }
+    }
+    
+    open func afterStateChange(with oldState: AKPlayerState) {
         switch state {
         case .idle:
             break
@@ -377,7 +417,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerReadinessObserver.startObserving()
         playerPlaybackTimeObserver.startObservingPeriodicTime(for: configuration.getPeriodicTimeInterval())
         playerWaitingBehaviorObserver.startObserving()
-        playerAudioBehaviorObserverProtocol.startObserving()
+        playerAudioBehaviorObserver.startObserving()
     }
     
     private func stopPlayerObservers() {
@@ -385,7 +425,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerReadinessObserver.stopObserving()
         playerPlaybackTimeObserver.stopObservingPeriodicTime()
         playerWaitingBehaviorObserver.stopObserving()
-        playerAudioBehaviorObserverProtocol.stopObserving()
+        playerAudioBehaviorObserver.stopObserving()
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {

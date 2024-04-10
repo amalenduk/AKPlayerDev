@@ -28,10 +28,15 @@ import AVFoundation
 public protocol AKSeekingThroughMediaServiceProtocol {
     var playerItem: AVPlayerItem { get }
     
-    func boundedTime(_ time: CMTime) -> (time: CMTime?, reason: AKPlayerUnavailableCommandReason?)
+    func canSeek(to time: CMTime) -> (flag: Bool,
+                                      reason: AKPlayerUnavailableCommandReason?)
+    func isTimeInRanges(_ time: CMTime,
+                        _ ranges: [CMTimeRange]) -> Bool
+    
+    func getRangesAvailable() -> [CMTimeRange]
 }
 
-open class AKSeekingThroughMediaService {
+open class AKSeekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
     
     // MARK: - Properties
     
@@ -47,27 +52,31 @@ open class AKSeekingThroughMediaService {
     
     // MARK: - Additional Helper Functions
     
-    private func isTimeInRanges(_ time: CMTime, _ ranges: [CMTimeRange]) -> Bool {
-        return ranges.filter({$0.containsTime(time)}).count > 0
-    }
-    
-    private func getRangesAvailable(for item: AVPlayerItem) -> [CMTimeRange] {
-        let ranges = item.seekableTimeRanges + item.loadedTimeRanges
-        return ranges.map { $0.timeRangeValue }
-    }
-    
-    open func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
+    open func canSeek(to time: CMTime) -> (flag: Bool,
+                                           reason: AKPlayerUnavailableCommandReason?) {
         
-        guard time.isValid && time.isNumeric && time.seconds >= 0 else { return (false, .seekPositionNotAvailable)}
+        guard time.isValid
+                && time.isNumeric
+                && time.seconds >= 0 else { return (false, .seekPositionNotAvailable)}
         
         let duration = playerItem.duration.seconds
         guard duration.isNormal else {
-            let ranges = getRangesAvailable(for: playerItem)
+            let ranges = getRangesAvailable()
             return isTimeInRanges(time, ranges) ? (true, nil) : (false, .seekPositionNotAvailable)
         }
         
         guard time.seconds < duration else { return (false, .seekOverstepPosition) }
         
         return (true, nil)
+    }
+    
+    open func isTimeInRanges(_ time: CMTime,
+                             _ ranges: [CMTimeRange]) -> Bool {
+        return ranges.filter({$0.containsTime(time)}).count > 0
+    }
+    
+    open func getRangesAvailable() -> [CMTimeRange] {
+        let ranges = playerItem.seekableTimeRanges + playerItem.loadedTimeRanges
+        return ranges.map { $0.timeRangeValue }
     }
 }

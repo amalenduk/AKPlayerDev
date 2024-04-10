@@ -1,5 +1,5 @@
 //
-//  AVPlayerItem+Extensions.swift
+//  AKSeek.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,41 +23,52 @@
 //  SOFTWARE.
 //
 
-import AVFoundation
+import CoreMedia
 
-internal extension AVPlayerItem {
+public enum AKSeekPosition: Hashable {
+    case time(CMTime)
+    case date(Date)
     
-    func canStep(by count: Int) -> Bool {
-        var isForward: Bool { return count.signum() == 1 }
-        return isForward ? canStepForward : canStepBackward
-    }
-    
-    func canPlay(at rate: AKPlaybackRate) -> Bool {
-        switch rate.rate {
-        case 0.0...:
-            switch rate.rate {
-            case 2.0...:
-                return canPlayFastForward
-            case 1.0..<2.0:
-                return true
-            case 0.0..<1.0:
-                return canPlaySlowForward
-            default:
-                return false
-            }
-        case ..<0.0:
-            switch rate.rate {
-            case -1.0:
-                return canPlayReverse
-            case -1.0..<0.0:
-                return canPlaySlowReverse
-            case ..<(-1.0):
-                return canPlayFastReverse
-            default:
-                return false
-            }
-        default:
+    public var isTime: Bool {
+        if case .time = self {
+            return true
+        } else {
             return false
         }
+    }
+    
+    public var isDate: Bool {
+        if case .date = self {
+            return true
+        } else {
+            return false
+        }
+    }
+}
+
+public struct AKSeek: Equatable, Hashable {
+    private let id = UUID()
+    
+    public let position: AKSeekPosition
+    public let toleranceBefore: CMTime
+    public let toleranceAfter: CMTime
+    public let completionHandler: ((Bool) -> Void)?
+    
+    public init(position: AKSeekPosition,
+                toleranceBefore: CMTime = .positiveInfinity,
+                toleranceAfter: CMTime = .positiveInfinity,
+                completionHandler: ((Bool) -> Void)? = nil) {
+        self.position = position
+        self.toleranceBefore = toleranceBefore
+        self.toleranceAfter = toleranceAfter
+        self.completionHandler = completionHandler
+    }
+    
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.id == rhs.id
+    }
+    
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(id)
     }
 }

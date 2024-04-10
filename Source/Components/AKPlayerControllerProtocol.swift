@@ -55,7 +55,10 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol, AKPlayerCommandsPr
     var controller: AKPlayerStateControllerProtocol { get }
     var delegate: AKPlayerControllerDelegate? { get set }
     
+    var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol { get }
+    
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)
-    func handleStateChange()
+    func beforeStateChange(with newState: AKPlayerState)
+    func afterStateChange(with oldState: AKPlayerState)
 }

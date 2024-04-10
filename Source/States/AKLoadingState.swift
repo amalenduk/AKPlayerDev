@@ -30,9 +30,9 @@ final class AKLoadingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
-    unowned let playerController: AKPlayerControllerProtocol
+    unowned public let playerController: AKPlayerControllerProtocol
     
-    let state: AKPlayerState = .loading
+    public let state: AKPlayerState = .loading
     
     private let media: AKPlayable
     

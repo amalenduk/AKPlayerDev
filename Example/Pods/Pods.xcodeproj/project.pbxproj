@@ -27,6 +27,10 @@
 		04A998E92637215200895B1C /* AKNowPlayingSessionController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04A998E82637215200895B1C /* AKNowPlayingSessionController.swift */; };
 		04AF46F22713FDAF000D3521 /* AKMediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04AF46F12713FDAF000D3521 /* AKMediaItem.swift */; };
 		04B3CDAA2AB35A4B00481C3B /* AKPlayable+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04B3CDA92AB35A4B00481C3B /* AKPlayable+Extensions.swift */; };
+		04BF4BC92BC32B0700CD04AE /* AKNetworkReachabilityObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BF4BC82BC32B0700CD04AE /* AKNetworkReachabilityObserver.swift */; };
+		04BF4BCB2BC3ABAA00CD04AE /* AKSeek.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BF4BCA2BC3ABAA00CD04AE /* AKSeek.swift */; };
+		04BF4BCD2BC4180100CD04AE /* AKPlayerSeekingThroughMediaService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BF4BCC2BC4180100CD04AE /* AKPlayerSeekingThroughMediaService.swift */; };
+		04BF4BCF2BC5C4B400CD04AE /* OrderedSet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04BF4BCE2BC5C4B400CD04AE /* OrderedSet.swift */; };
 		04C79C15273D92DB007C3DE0 /* AKAudioSessionSilenceSecondaryAudioHintObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C79C14273D92DB007C3DE0 /* AKAudioSessionSilenceSecondaryAudioHintObserver.swift */; };
 		04C79C17273D97B5007C3DE0 /* AKAudioSessionMediaServicesWereResetObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04C79C16273D97B5007C3DE0 /* AKAudioSessionMediaServicesWereResetObserver.swift */; };
 		04D3FB0B29A68CFF000E7D72 /* AKPlayerController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04D3FB0A29A68CFF000E7D72 /* AKPlayerController.swift */; };
@@ -132,6 +136,10 @@
 		04AF46F02713E803000D3521 /* Notes.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = Notes.md; sourceTree = "<group>"; };
 		04AF46F12713FDAF000D3521 /* AKMediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKMediaItem.swift; sourceTree = "<group>"; };
 		04B3CDA92AB35A4B00481C3B /* AKPlayable+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AKPlayable+Extensions.swift"; sourceTree = "<group>"; };
+		04BF4BC82BC32B0700CD04AE /* AKNetworkReachabilityObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKNetworkReachabilityObserver.swift; sourceTree = "<group>"; };
+		04BF4BCA2BC3ABAA00CD04AE /* AKSeek.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKSeek.swift; sourceTree = "<group>"; };
+		04BF4BCC2BC4180100CD04AE /* AKPlayerSeekingThroughMediaService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlayerSeekingThroughMediaService.swift; sourceTree = "<group>"; };
+		04BF4BCE2BC5C4B400CD04AE /* OrderedSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OrderedSet.swift; sourceTree = "<group>"; };
 		04C79C14273D92DB007C3DE0 /* AKAudioSessionSilenceSecondaryAudioHintObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAudioSessionSilenceSecondaryAudioHintObserver.swift; sourceTree = "<group>"; };
 		04C79C16273D97B5007C3DE0 /* AKAudioSessionMediaServicesWereResetObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAudioSessionMediaServicesWereResetObserver.swift; sourceTree = "<group>"; };
 		04D3FB0A29A68CFF000E7D72 /* AKPlayerController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlayerController.swift; sourceTree = "<group>"; };
@@ -295,6 +303,7 @@
 				1310566BED1163DC4F27B2DAB6C53ACB /* AKPlayerPlaybackTimeObserver.swift */,
 				65D465E06F56E5377B823ED1B5AFFCAA /* AKPlayerWaitingBehaviorObserver.swift */,
 				561614F50D770C826A028530C8A05259 /* AKPlayerAudioBehaviorObserver.swift */,
+				04BF4BCC2BC4180100CD04AE /* AKPlayerSeekingThroughMediaService.swift */,
 			);
 			path = PlayerServices;
 			sourceTree = "<group>";
@@ -389,6 +398,8 @@
 				042977B32997FF18006858F8 /* AKTIme.swift */,
 				04262CD02A86873F00AE4468 /* Runtime.swift */,
 				04569F632AC1E2DF0080164B /* AKMediaManagerProtocol.swift */,
+				04BF4BC82BC32B0700CD04AE /* AKNetworkReachabilityObserver.swift */,
+				04BF4BCA2BC3ABAA00CD04AE /* AKSeek.swift */,
 			);
 			name = Components;
 			path = Source/Components;
@@ -510,6 +521,7 @@
 				04262CCE2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift */,
 				048C3E0D2ABAAB72005A74B8 /* Event.swift */,
 				04267CAF2BAB530500738B04 /* Dictionary+Extensions.swift */,
+				04BF4BCE2BC5C4B400CD04AE /* OrderedSet.swift */,
 			);
 			name = Extensions;
 			path = Source/Extensions;
@@ -700,6 +712,7 @@
 				F45BAE002612613700BB3DDB /* AKPlayerItemTimingInformationObserver.swift in Sources */,
 				A48FFA322B18A6D43F80969D37374EB9 /* AKPlayerAudioBehaviorObserver.swift in Sources */,
 				BF267D7AD66EB9D7BB3BAB04A2D342C2 /* AKMedia.swift in Sources */,
+				04BF4BCD2BC4180100CD04AE /* AKPlayerSeekingThroughMediaService.swift in Sources */,
 				1842EB8B8A60099766DA1300BFA65582 /* AKPlaybackCapabilitiesObserver.swift in Sources */,
 				A58809A6D9891847485F53557D926C5E /* AKMediaMetadata.swift in Sources */,
 				37C217E1EEDBFCA4EF99936FD2440542 /* AKMediaSelectionOption.swift in Sources */,
@@ -743,6 +756,7 @@
 				7DB591584BCF68BB91D56A847CEA8ECB /* AKAudioSessionRouteChangesObserver.swift in Sources */,
 				55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */,
 				04262CCF2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift in Sources */,
+				04BF4BC92BC32B0700CD04AE /* AKNetworkReachabilityObserver.swift in Sources */,
 				F43B790D261E1D74002E3EE5 /* AKMediaDelegate.swift in Sources */,
 				B76287138A14DBC598899A910855BD80 /* AKPlayerStateControllerProtocol.swift in Sources */,
 				04D3FB0B29A68CFF000E7D72 /* AKPlayerController.swift in Sources */,
@@ -750,10 +764,12 @@
 				1BF74F86408E29DA85EE04B96AD32C2B /* AKPlayerPlaybackTimeObserver.swift in Sources */,
 				51C7A7599DF55F06FABF4B35844E1B65 /* AKPlayerUnavailableCommandReason.swift in Sources */,
 				042977B42997FF18006858F8 /* AKTIme.swift in Sources */,
+				04BF4BCB2BC3ABAA00CD04AE /* AKSeek.swift in Sources */,
 				0410711B27402583009EA93E /* AKApplicationLifeCycleEventsObserver.swift in Sources */,
 				AE5C6DD39ED52024B50DAB38069DDB0F /* AKPlayerView.swift in Sources */,
 				81196B66C38E282AEBCEF5918CF1015C /* AKPlayingState.swift in Sources */,
 				19E0DA3B06E1D42EF3A22BDD6C2FAAF8 /* AKSteppingThroughMediaObserver.swift in Sources */,
+				04BF4BCF2BC5C4B400CD04AE /* OrderedSet.swift in Sources */,
 				DADC8A4D79B8266AF33C231DC2540F19 /* AKStoppedState.swift in Sources */,
 				758A1F6F5E0538DAF9B559678A489A3E /* AKWaitingForNetworkState.swift in Sources */,
 				042977B629981D33006858F8 /* CMTime+Extension.swift in Sources */,

@@ -73,6 +73,14 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return playerController.autoPlay
     }
     
+    open var isSeeking: Bool {
+        return playerController.isSeeking
+    }
+    
+    open var seekPosition: AKSeekPosition? {
+        return playerController.seekPosition
+    }
+    
     public var volume: Float {
         get { return playerController.volume }
         set { playerController.volume = newValue }
@@ -206,9 +214,9 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         case .previousTrack:
             return .commandFailed
         case .changePlaybackRate:
-            guard let currentItem = currentItem,
+            guard let currentMedia = currentMedia,
                   let event = event as? MPChangePlaybackRateCommandEvent,
-                  currentItem.canPlay(at: .custom(event.playbackRate)) else { return .commandFailed }
+                  currentMedia.canPlay(at: .custom(event.playbackRate)) else { return .commandFailed }
             rate = .custom(event.playbackRate)
         case .seekBackward:
             guard let currentItem = currentItem,
@@ -221,16 +229,16 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                   currentItem.canPlayFastForward else { return .commandFailed }
             play(at: event.type == .beginSeeking ? AKPlaybackRate(rate: 3) : AKPlaybackRate(rate: 1))
         case .skipBackward:
-            guard let currentItem = currentItem,
+            guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentItem.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)
         case .skipForward:
-            guard let currentItem = currentItem,
+            guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentItem.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)

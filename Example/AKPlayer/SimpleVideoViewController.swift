@@ -127,6 +127,7 @@ class SimpleVideoViewController: UIViewController {
         timeSlider.addTarget(self, action: #selector(progressSliderDidStartTracking(_ :)), for: [.touchDown])
         timeSlider.addTarget(self, action: #selector(progressSliderDidEndTracking(_ :)), for: [.touchUpInside, .touchCancel, .touchUpOutside])
         timeSlider.addTarget(self, action: #selector(progressSliderDidChangedValue(_ :)), for: [.valueChanged])
+        
         timeSlider.minimumValue = 0
         timeSlider.maximumValue = 1
         timeSlider.value = 0
@@ -265,12 +266,18 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func progressSliderDidEndTracking(_ slider: UISlider) {
-        player.seek(to: CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
-            self.isTracking = false
-        }
+        //        player.seek(to: CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
+        //            self.isTracking = false
+        //        }
     }
     
     @objc func progressSliderDidChangedValue(_ slider: UISlider) {
+        let time = CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        print("time started ", time.seconds)
+        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { finished in
+            self.isTracking = false
+            print("time finished ", time.seconds, finished)
+        }
     }
     
     @IBAction func play(_ sender: UIButton) {
@@ -290,7 +297,7 @@ class SimpleVideoViewController: UIViewController {
     
     @IBAction func load(_ sender: Any) {
         let index = Int.random(in: 0..<4)
-        let url =  URL(string: "https://cdn.theoplayer.com/video/big_buck_bunny/big_buck_bunny_metadata.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
+        let url =  URL(string: "https://cdn.theoplayer.com/video/sintel/nosubs.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
         let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
         let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata], staticMetadata: staticMetadata)
         media.delegate = self
@@ -298,10 +305,10 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func testButtonAction(_ sender: Any) {
-//        NotificationCenter.default.post(
-//            name: AVAudioSession.routeChangeNotification,
-//            object: AVAudioSession.sharedInstance(),
-//            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue])
+        //        NotificationCenter.default.post(
+        //            name: AVAudioSession.routeChangeNotification,
+        //            object: AVAudioSession.sharedInstance(),
+        //            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue])
         
         NotificationCenter.default.post(
             name: AVAudioSession.interruptionNotification,
@@ -409,7 +416,7 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
-            self.currentTimeLabel.text = "Current Timing: " + currentTime.stringValue
+            self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
             self.setSliderProgress(currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
         }
     }

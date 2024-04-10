@@ -36,6 +36,8 @@ public protocol AKPlayerProtocol: AnyObject {
     var currentTime: CMTime { get }
     var remainingTime: CMTime? { get }
     var autoPlay: Bool { get }
+    var isSeeking: Bool { get }
+    var seekPosition: AKSeekPosition? { get }
     var volume: Float { get set }
     var isMuted: Bool { get set }
     var error: AKPlayerError? { get }
