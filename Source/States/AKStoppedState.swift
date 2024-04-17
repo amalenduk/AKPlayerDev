@@ -52,7 +52,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
         }
         
         guard playerController.currentMedia!.state.isReadyToPlay
-                && playerController.currentMedia!.currentTime.seconds > 0
+                && playerController.currentMedia!.currentTime.seconds >= 0
                 && seekToZero else { return }
         playerController.delegate?.playerController(playerController,
                                                     didChangeCurrentTimeTo: .zero, for: playerController.currentMedia!)
@@ -65,7 +65,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
         })
     }
     
-    // MARK: - Commands bolo Ajay Ajay
+    // MARK: - Commands
     
     public func load(media: AKPlayable) {
         let controller = AKLoadingState(playerController: playerController,
@@ -107,7 +107,8 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
         guard playerController.currentMedia!.state.isReadyToPlay,
         playerController.player.currentItem == playerController.currentMedia?.playerItem else {
             load(media: playerController.currentMedia!,
-                 autoPlay: true)
+                 autoPlay: true,
+                 at: .zero)
             return
         }
         
@@ -125,6 +126,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
             let controller = AKLoadingState(playerController: playerController,
                                             media: playerController.currentMedia!,
                                             autoPlay: true,
+                                            position: .zero,
                                             rate: rate)
             return change(controller)
         }

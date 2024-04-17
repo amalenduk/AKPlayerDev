@@ -63,6 +63,11 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
+        if playerController.player.timeControlStatus == .playing
+            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+            playerController.player.pause()
+        }
+        
         startPlayerItemObservingNotificationsService()
         observeNetworkChanges()
     }
@@ -112,33 +117,12 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
                                                         unavailableActionWith: .waitingForEstablishedNetwork)
             return
         }
-        guard let reasonForWaitingToPlay = playerController.player.reasonForWaitingToPlay else {
-            let controller = AKBufferingState(playerController: playerController,
-                                              autoPlay: autoPlay,
-                                              rate: rate,
-                                              stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-            change(controller)
-            return
-        }
         
-        switch reasonForWaitingToPlay {
-        case .evaluatingBufferingRate, .toMinimizeStalls:
-            let controller = AKBufferingState(playerController: playerController,
-                                              autoPlay: autoPlay,
-                                              rate: rate,
-                                              stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-            change(controller)
-        case .noItemToPlay:
-            let controller = AKLoadingState(playerController: playerController,
-                                            media: playerController.currentMedia!,
-                                            autoPlay: true)
-            change(controller)
-        default:
-            let controller = AKLoadingState(playerController: playerController,
-                                            media: playerController.currentMedia!,
-                                            autoPlay: true)
-            change(controller)
-        }
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: autoPlay,
+                                          rate: rate,
+                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
+        change(controller)
     }
     
     public func play(at rate: AKPlaybackRate) {
@@ -148,35 +132,17 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
                                                         unavailableActionWith: .waitingForEstablishedNetwork)
             return
         }
+        
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .canNotPlayAtSpecifiedRate)
             return
         }
-        guard let reasonForWaitingToPlay = playerController.player.reasonForWaitingToPlay else {
-            let controller = AKBufferingState(playerController: playerController,
-                                              autoPlay: autoPlay,
-                                              rate: rate,
-                                              stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-            change(controller)
-            return
-        }
-        
-        switch reasonForWaitingToPlay {
-        case .evaluatingBufferingRate, .toMinimizeStalls:
-            let controller = AKBufferingState(playerController: playerController,
-                                              autoPlay: autoPlay,
-                                              rate: rate,
-                                              stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-            change(controller)
-        case .noItemToPlay:
-            let controller = AKLoadingState(playerController: playerController,
-                                            media: playerController.currentMedia!,
-                                            autoPlay: true, rate: rate)
-            change(controller)
-        default:
-            assertionFailure("Sould be not here \(reasonForWaitingToPlay.rawValue)")
-        }
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: autoPlay,
+                                          rate: rate,
+                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
+        change(controller)
     }
     
     public func pause() {

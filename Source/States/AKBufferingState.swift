@@ -118,16 +118,26 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .alreadyTryingToPlay)
+        if autoPlay {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .alreadyTryingToPlay)
+        } else {
+            self.autoPlay = true
+        }
     }
     
     public func play(at rate: AKPlaybackRate) {
+        guard playerController.currentMedia!.canPlay(at: rate) else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .alreadyTryingToPlay)
+            return
+        }
         self.rate = rate
     }
     
     public func pause() {
-        stateToNavigateAfterBuffering = stateToNavigateAfterBuffering == .stopped ? .stopped : .paused
+        let controller = AKPausedState(playerController: playerController)
+        change(controller)
     }
     
     public func togglePlayPause() {

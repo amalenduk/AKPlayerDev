@@ -238,6 +238,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                             completionHandler: completionHandler)
         } else {
             unaivalableCommand(reason: result.reason!)
+            completionHandler(false)
         }
     }
     
@@ -264,6 +265,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                             completionHandler: completionHandler)
         } else {
             unaivalableCommand(reason: result.reason!)
+            completionHandler(false)
         }
     }
     
@@ -287,6 +289,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                             completionHandler: completionHandler)
         } else {
             unaivalableCommand(reason: result.reason!)
+            completionHandler(false)
         }
     }
     
@@ -329,6 +332,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                             completionHandler: completionHandler)
         } else {
             unaivalableCommand(reason: result.reason!)
+            completionHandler(false)
         }
     }
     
@@ -341,6 +345,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                             completionHandler: completionHandler)
         } else {
             unaivalableCommand(reason: result.reason!)
+            completionHandler(false)
         }
     }
     
@@ -490,7 +495,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private func canSeek(toOffset offset: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        let time = CMTime(seconds: currentItem!.duration.seconds,
+        let time = CMTime(seconds: currentItem!.currentTime().seconds + offset,
                           preferredTimescale: configuration.preferredTimeScale)
         
         let result = canSeek(to: time)
