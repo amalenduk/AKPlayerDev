@@ -70,12 +70,12 @@ public struct OrderedSet<Element: Hashable>: Sequence {
         set.remove(removedElement)
     }
     
-    mutating func removeAll() {
+    public mutating func removeAll() {
         elements.removeAll()
         set.removeAll()
     }
     
-    mutating func remove(_ element: Element) {
+    public mutating func remove(_ element: Element) {
         elements.removeAll(where: { $0 == element })
         set.remove(element)
     }

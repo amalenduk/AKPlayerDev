@@ -273,10 +273,8 @@ class SimpleVideoViewController: UIViewController {
     
     @objc func progressSliderDidChangedValue(_ slider: UISlider) {
         let time = CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        print("time started ", time.seconds)
         player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { finished in
             self.isTracking = false
-            print("time finished ", time.seconds, finished)
         }
     }
     
@@ -320,13 +318,15 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func testTwoButtonAction(_ sender: Any) {
-        NotificationCenter.default.post(
-            name: AVAudioSession.interruptionNotification,
-            object: SimpleVideoViewController.session,
-            userInfo: [
-                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue,
-                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
-            ])
+//        NotificationCenter.default.post(
+//            name: AVAudioSession.interruptionNotification,
+//            object: SimpleVideoViewController.session,
+//            userInfo: [
+//                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue,
+//                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
+//            ])
+        
+        player.player.replaceCurrentItem(with: nil)
     }
     
     @IBAction func changeAudioTrackButtonAction(_ sender: Any) {
@@ -392,6 +392,7 @@ class SimpleVideoViewController: UIViewController {
 
 
 extension SimpleVideoViewController: AKPlayerDelegate {
+    
     func akPlayer(_ player: AKPlayer, didChangeMediaTo media: AKPlayable) {
     }
     
@@ -416,8 +417,8 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
-            self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
-            self.setSliderProgress(currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
+            self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.seconds ?? currentTime.seconds)"
+            self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
         }
     }
     

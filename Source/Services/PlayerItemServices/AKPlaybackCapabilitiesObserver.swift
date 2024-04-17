@@ -67,7 +67,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
     
     private var isObserving = false
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -91,7 +91,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                                                   didChangeCanPlayReverseStatusTo: canPlayReverse,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlayFastForward,
                              options: [.initial, .new])
@@ -102,7 +102,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                                                   didChangeCanPlayFastForwardStatusTo: canPlayFastForward,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlayFastReverse,
                              options: [.initial, .new])
@@ -113,7 +113,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                                                   didChangeCanPlayFastReverseStatusTo: canPlayFastReverse,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlaySlowForward,
                              options: [.initial, .new])
@@ -124,7 +124,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                                                   didChangeCanPlaySlowForwardStatusTo: canPlaySlowForward,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlaySlowReverse,
                              options: [.initial, .new])
@@ -135,14 +135,14 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                                                   didChangeCanPlaySlowReverseStatusTo: canPlaySlowReverse,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        subscriptions.forEach({ $0.cancel() })
+        cancellables.forEach({ $0.cancel() })
         isObserving = false
     }
 }

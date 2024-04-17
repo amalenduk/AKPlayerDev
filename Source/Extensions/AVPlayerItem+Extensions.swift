@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-internal extension AVPlayerItem {
+public extension AVPlayerItem {
     
     func canStep(by count: Int) -> Bool {
         var isForward: Bool { return count.signum() == 1 }

@@ -44,6 +44,11 @@ public enum AKSeekPosition: Hashable {
             return false
         }
     }
+    
+    public var time: CMTime? {
+        guard case .time(let time) = self else { return .zero }
+        return time
+    }
 }
 
 public struct AKSeek: Equatable, Hashable {

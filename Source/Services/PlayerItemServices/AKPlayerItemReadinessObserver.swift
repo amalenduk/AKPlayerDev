@@ -51,7 +51,7 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
     
     private var isObserving = false
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -76,12 +76,12 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
                                                  for: playerItem, 
                                                  with: status == .failed ? AKPlayerError.playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        subscriptions.forEach({ $0.cancel() })
+        cancellables.forEach({ $0.cancel() })
         isObserving = false
     }
 }

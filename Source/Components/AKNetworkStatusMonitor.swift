@@ -1,5 +1,5 @@
 //
-//  AKPlayerItemTracksObserver.swift
+//  AKNetworkReachabilityObserver.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -23,39 +23,55 @@
 //  SOFTWARE.
 //
 
-import AVFoundation
+import Foundation
+import Network
 import Combine
 
-public protocol AKPlayerItemTracksObserverDelegate: AnyObject {
-    func playerItemTracksObserver(_ observer: AKPlayerItemTracksObserverProtocol,
-                                  didLoad tracks: [AVPlayerItemTrack],
-                                  for playerItem: AVPlayerItem)
-}
-
-public protocol AKPlayerItemTracksObserverProtocol {
-    var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemTracksObserverDelegate? { get set }
+public protocol AKNetworkStatusMonitorProtocol {
+    var networkPathMonitor: NWPathMonitor { get }
+    var currentPath: NWPath { get }
+    var currentNetworkStatus: NWPath.Status { get }
+    var isConnected: Bool { get }
+    var networkStatusPublisher: AnyPublisher<NWPath.Status, Never> { get }
     
     func startObserving()
     func stopObserving()
 }
 
-open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
+open class AKNetworkStatusMonitor: AKNetworkStatusMonitorProtocol {
     
     // MARK: - Properties
     
-    public let playerItem: AVPlayerItem
-    
-    public weak var delegate: AKPlayerItemTracksObserverDelegate?
+    public let networkPathMonitor: NWPathMonitor
     
     private var isObserving = false
     
-    private var cancellables = Set<AnyCancellable>()
+    public var currentPath: NWPath {
+        return networkPathMonitor.currentPath
+    }
+    
+    public var currentNetworkStatus: NWPath.Status {
+        return currentPath.status
+    }
+    
+    public var isConnected: Bool {
+        return currentNetworkStatus == .satisfied
+    }
+    
+    private var networkStatusSubject: PassthroughSubject<NWPath.Status, Never> = PassthroughSubject<NWPath.Status, Never>()
+    
+    public var networkStatusPublisher: AnyPublisher<NWPath.Status, Never> {
+        return networkStatusSubject.eraseToAnyPublisher()
+    }
     
     // MARK: - Init
     
-    public init(with playerItem: AVPlayerItem) {
-        self.playerItem = playerItem
+    public init() {
+        self.networkPathMonitor = NWPathMonitor()
+        
+        networkPathMonitor.pathUpdateHandler = { [unowned self] path in
+            networkStatusSubject.send(path.status)
+        }
     }
     
     deinit {
@@ -65,23 +81,17 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
     open func startObserving() {
         guard !isObserving else { return }
         
-        playerItem.publisher(for: \.tracks,
-                             options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
-        .sink(receiveValue: { [unowned self] tracks in
-            guard let delegate = delegate else { return }
-            delegate.playerItemTracksObserver(self,
-                                              didLoad: tracks,
-                                              for: playerItem)
-        })
-        .store(in: &cancellables)
+        networkPathMonitor.start(queue: DispatchQueue.global(qos: .background))
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        
+        networkPathMonitor.cancel()
+        
         isObserving = false
     }
 }
+

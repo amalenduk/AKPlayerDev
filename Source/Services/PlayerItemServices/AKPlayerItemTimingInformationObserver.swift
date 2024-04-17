@@ -53,7 +53,7 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
     
     private var isObserving = false
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -77,7 +77,7 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
                                                          didChangeDurationTo: duration,
                                                          for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         
         playerItem.publisher(for: \.timebase,
@@ -89,14 +89,14 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
                                                         didChangeTimebaseTo: timebase,
                                                         for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        subscriptions.forEach({ $0.cancel() })
+        cancellables.forEach({ $0.cancel() })
         isObserving = false
     }
 }

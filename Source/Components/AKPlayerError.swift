@@ -174,6 +174,59 @@ extension AKPlayerError.AssetLoadingFailureReason: LocalizedError {
     }
 }
 
+extension AKPlayerError: LocalizedError {
+    
+    public var localizedDescription: String {
+        switch self {
+        case .noItemToPlay:
+            return NSLocalizedString("The player item got nil",
+                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
+        case .itemFailedToPlayToEndTime:
+            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
+                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
+        case .playerCanNoLongerPlay(error: let error):
+            return NSLocalizedString("Player can no longer play media due to an error error:\n \(error?.localizedDescription ?? "No reason avialable")",
+                                     comment: "Player can no longer play media")
+        case .assetLoadingFailed(reason: let reason):
+            return reason.localizedDescription
+        case .playerItemLoadingFailed(reason: let reason):
+            return reason.localizedDescription
+        case .playerItemFailedToPlay(reason: let reason):
+            return reason.localizedDescription
+        case .audioSessionFailure(reason: let reason):
+            return reason.localizedDescription
+        case .nowPlayingSessionFailure:
+            return NSLocalizedString("Failed to active now playing session",
+                                     comment: "Failed to active now playing session")
+        }
+    }
+    
+    public var failureReason: String? {
+        switch self {
+        case .noItemToPlay:
+            return NSLocalizedString("The player item got nil",
+                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
+        case .itemFailedToPlayToEndTime:
+            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
+                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
+        case .playerCanNoLongerPlay(error: let error):
+            return NSLocalizedString("Player can no longer play media due to an error error:\n \(error?.localizedDescription ?? "No reason avialable")",
+                                     comment: "Player can no longer play media")
+        case .assetLoadingFailed(reason: let reason):
+            return reason.localizedDescription
+        case .playerItemLoadingFailed(reason: let reason):
+            return reason.localizedDescription
+        case .playerItemFailedToPlay(reason: let reason):
+            return reason.localizedDescription
+        case .audioSessionFailure(reason: let reason):
+            return reason.localizedDescription
+        case .nowPlayingSessionFailure:
+            return NSLocalizedString("Failed to active now playing session",
+                                     comment: "Failed to active now playing session")
+        }
+    }
+}
+
 // MARK: - Underlying Error
 
 public extension AKPlayerError.AudioSessionFailureReason {
@@ -224,56 +277,25 @@ public extension AKPlayerError.PlayerItemFailedToPlayReason {
     }
 }
 
-
-extension AKPlayerError: LocalizedError {
-    
-    public var localizedDescription: String {
+public extension AKPlayerError {
+    var underlyingError: Error? {
         switch self {
         case .noItemToPlay:
-            return NSLocalizedString("The player item got nil",
-                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
+            return nil
         case .itemFailedToPlayToEndTime:
-            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
-                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
+            return nil
         case .playerCanNoLongerPlay(error: let error):
-            return NSLocalizedString("Player can no longer play media due to an error error:\n \(error?.localizedDescription ?? "No reason avialable")",
-                                     comment: "Player can no longer play media")
+            return error
         case .assetLoadingFailed(reason: let reason):
-            return reason.localizedDescription
+            return reason.underlyingError
         case .playerItemLoadingFailed(reason: let reason):
-            return reason.localizedDescription
+            return reason.underlyingError
         case .playerItemFailedToPlay(reason: let reason):
-            return reason.localizedDescription
+            return reason.underlyingError
         case .audioSessionFailure(reason: let reason):
-            return reason.localizedDescription
+            return reason.underlyingError
         case .nowPlayingSessionFailure:
-            return NSLocalizedString("Failed to active now playing session",
-                                     comment: "Failed to active now playing session")
-        }
-    }
-    
-    public var failureReason: String? {
-        switch self {
-        case .noItemToPlay:
-            return NSLocalizedString("The player item got nil",
-                                     comment: "The player item got nil, reason may be the player's current item extermally fored to nil")
-        case .itemFailedToPlayToEndTime:
-            return NSLocalizedString("This player is unable to play the item till end possible reason can be no netwrok",
-                                     comment: "This player is unable to play the item till end possible reason can be no netwrok")
-        case .playerCanNoLongerPlay(error: let error):
-            return NSLocalizedString("Player can no longer play media due to an error error:\n \(error?.localizedDescription ?? "No reason avialable")",
-                                     comment: "Player can no longer play media")
-        case .assetLoadingFailed(reason: let reason):
-            return reason.localizedDescription
-        case .playerItemLoadingFailed(reason: let reason):
-            return reason.localizedDescription
-        case .playerItemFailedToPlay(reason: let reason):
-            return reason.localizedDescription
-        case .audioSessionFailure(reason: let reason):
-            return reason.localizedDescription
-        case .nowPlayingSessionFailure:
-            return NSLocalizedString("Failed to active now playing session",
-                                     comment: "Failed to active now playing session")
+            return nil
         }
     }
 }

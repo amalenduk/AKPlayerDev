@@ -43,7 +43,7 @@ public protocol AKPlayerItemNotificationsObserverDelegate: AnyObject {
                                          for playerItem: AVPlayerItem)
 }
 
-extension AKPlayerItemNotificationsObserverDelegate {
+public extension AKPlayerItemNotificationsObserverDelegate {
     func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
                                          didPlayToEndTimeAt time: CMTime,
                                          for playerItem: AVPlayerItem) { }
@@ -69,7 +69,7 @@ public protocol AKPlayerItemNotificationsObserverProtocol {
     func stopObserving()
 }
 
-public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol {
+open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol {
     
     // MARK: - Properties
     
@@ -81,7 +81,7 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
     
     // MARK: - Init
     
-    init(playerItem: AVPlayerItem) {
+    public init(playerItem: AVPlayerItem) {
         self.playerItem = playerItem
     }
     
@@ -89,7 +89,7 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
         stopObserving()
     }
     
-    public func startObserving() {
+    open func startObserving() {
         guard !isObserving else { return }
         
         /* When the player item has played to its end time */
@@ -134,7 +134,7 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
         isObserving = true
     }
     
-    public func stopObserving() {
+    open func stopObserving() {
         guard isObserving else { return }
         NotificationCenter.default.removeObserver(self,
                                                   name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
@@ -187,7 +187,7 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
     }
     
     /* A notification that’s posted when some media doesn’t arrive in time to continue playback. */
-    @objc func handlePlayerItemPlaybackStalled(_ notification: Notification) {
+    @objc private func handlePlayerItemPlaybackStalled(_ notification: Notification) {
         guard let item = notification.object as? AVPlayerItem,
               item == playerItem,
               let delegate = delegate  else { return }
@@ -195,14 +195,14 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
                                                  didStallPlaybackFor: item)
     }
     
-    @objc func handlePlayerItemtTimeJumped(_ notification: Notification) {
+    @objc private func handlePlayerItemtTimeJumped(_ notification: Notification) {
         guard let item = notification.object as? AVPlayerItem,
               item == playerItem,
               let delegate = delegate  else { return }
         delegate.playerItemNotificationsObserver(self, didTimeJumpFor: item)
     }
     
-    @objc func handleMediaSelectionDidChange(_ notification: Notification) {
+    @objc private func handleMediaSelectionDidChange(_ notification: Notification) {
         guard let item = notification.object as? AVPlayerItem,
               item == playerItem,
               let delegate = delegate  else { return }
@@ -210,7 +210,7 @@ public final class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsO
                                                  didChangeMediaSelectionFor: item)
     }
     
-    @objc func handleRecommendedTimeOffsetFromLiveDidChange(_ notification: Notification) {
+    @objc private func handleRecommendedTimeOffsetFromLiveDidChange(_ notification: Notification) {
         guard let item = notification.object as? AVPlayerItem,
               item == playerItem,
               let delegate = delegate  else { return }

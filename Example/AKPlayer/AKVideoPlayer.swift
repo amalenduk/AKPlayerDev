@@ -273,8 +273,8 @@ extension AKVideoPlayer: AKPlayerDelegate {
             controlView.setPlaybackState(.playing)
         case .loaded:
             controlView.progressSlider(true)
-            if let currentItemDuration = player.currentItemDuration {
-                controlView.setDuration(currentItemDuration)
+            if player.currentItemDuration.isValid {
+                controlView.setDuration(player.currentItemDuration)
             }
             controlView.setPlaybackState(.paused)
         case .buffering:
@@ -312,6 +312,11 @@ extension AKVideoPlayer: AKPlayerDelegate {
             }
             controlView.setSliderProgress(currentTime, itemDuration: player.currentItemDuration)
         }
+    }
+    public func akPlayer(_ player: AKPlayer, 
+                         didInvokeBoundaryTimeObserverAt time: CMTime,
+                         for media: AKPlayable) {
+        
     }
     public func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) {}
     public func akPlayer(_ player: AKPlayer, didChangeVolumeTo volume: Float) {}

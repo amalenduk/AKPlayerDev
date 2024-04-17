@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKStoppedState: AKPlayerStateControllerProtocol {
+public class AKStoppedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -33,47 +33,57 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
     
     public let state: AKPlayerState = .stopped
     
-    private let seekToStart: Bool
+    private let seekToZero: Bool
     
     // MARK: - Init
     
-    init(playerController: AKPlayerControllerProtocol,
-         seekToZero flag: Bool = false) {
+    public init(playerController: AKPlayerControllerProtocol,
+                seekToZero flag: Bool = false) {
         self.playerController = playerController
-        self.seekToStart = flag
+        self.seekToZero = flag
     }
     
-    deinit { print("Deinit called from ", #file) }
+    deinit { }
     
-    func didChangeState() {
-        playerController.player.pause()
-        if playerController.currentItem!.currentTime().seconds > 0
-            && seekToStart {
-            seek(to: CMTime.zero,
-                 toleranceBefore: .zero,
-                 toleranceAfter: .zero)
+    public func didChangeState() {
+        if playerController.player.timeControlStatus == .playing
+            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+            playerController.player.pause()
         }
+        
+        guard playerController.currentMedia!.state.isReadyToPlay
+                && playerController.currentMedia!.currentTime.seconds > 0
+                && seekToZero else { return }
+        playerController.delegate?.playerController(playerController,
+                                                    didChangeCurrentTimeTo: .zero, for: playerController.currentMedia!)
+        playerController.currentMedia?.playerItem?.seek(to: .zero,
+                                                        toleranceBefore: .zero,
+                                                        toleranceAfter: .zero,
+                                                        completionHandler: { [unowned self] finished in
+            playerController.delegate?.playerController(playerController,
+                                                        didChangeCurrentTimeTo: .zero, for: playerController.currentMedia!)
+        })
     }
     
-    // MARK: - Commands
+    // MARK: - Commands bolo Ajay Ajay
     
-    func load(media: AKPlayable) {
+    public func load(media: AKPlayable) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media)
         change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay)
         change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: CMTime) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: CMTime) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
@@ -81,33 +91,37 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: Double) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: Double) {
+        let time = CMTime(seconds: position,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        position: CMTime(seconds: position,
-                                                         preferredTimescale: playerController.configuration.preferredTimeScale))
+                                        position: time)
         change(controller)
     }
     
-    func play() {
-        guard .readyToPlay == playerController.currentMedia!.state else {
-            let controller = AKLoadingState(playerController: playerController,
-                                            media: playerController.currentMedia!,
-                                            autoPlay: true)
-            return change(controller)
+    public func play() {
+        guard playerController.currentMedia!.state.isReadyToPlay,
+        playerController.player.currentItem == playerController.currentMedia?.playerItem else {
+            load(media: playerController.currentMedia!,
+                 autoPlay: true)
+            return
         }
         
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true)
         change(controller)
-        controller.seek(to: CMTime.zero)
+        controller.seek(to: CMTime.zero,
+                        toleranceBefore: .zero,
+                        toleranceAfter: .zero)
     }
     
-    func play(at rate: AKPlaybackRate) {
-        guard .readyToPlay == playerController.currentMedia!.state else {
+    public func play(at rate: AKPlaybackRate) {
+        guard playerController.currentMedia!.state.isReadyToPlay,
+        playerController.player.currentItem == playerController.currentMedia?.playerItem else {
             let controller = AKLoadingState(playerController: playerController,
                                             media: playerController.currentMedia!,
                                             autoPlay: true,
@@ -115,37 +129,44 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
             return change(controller)
         }
         
-        if playerController.currentMedia!.canPlay(at: rate) {
-            let controller: AKBufferingState
-            controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: true,
-                                          rate: rate)
-            change(controller)
-            controller.seek(to: CMTime.zero)
-        } else {
+        guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .canNotPlayAtSpecifiedRate)
+            return
         }
+        
+        let controller = AKBufferingState(playerController: playerController,
+                                          autoPlay: true,
+                                          rate: rate)
+        change(controller)
+        controller.seek(to: CMTime.zero,
+                        toleranceBefore: .zero,
+                        toleranceAfter: .zero)
     }
     
-    func pause() {
+    public func pause() {
         playerController.delegate?.playerController(playerController,
                                                     unavailableActionWith: .alreadyStopped)
     }
     
-    func togglePlayPause() {
+    public func togglePlayPause() {
         play()
     }
     
-    func stop() {
+    public func stop() {
         playerController.delegate?.playerController(playerController,
                                                     unavailableActionWith: .alreadyStopped)
     }
     
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
+    public func seek(to time: CMTime,
+                     toleranceBefore: CMTime,
+                     toleranceAfter: CMTime,
+                     completionHandler: @escaping (Bool) -> Void) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
@@ -155,9 +176,14 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
                         completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime) {
+    public func seek(to time: CMTime,
+                     toleranceBefore: CMTime,
+                     toleranceAfter: CMTime) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
@@ -166,8 +192,13 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
                         toleranceAfter: toleranceAfter)
     }
     
-    func seek(to time: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
+    public func seek(to time: CMTime,
+                     completionHandler: @escaping (Bool) -> Void) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
@@ -175,27 +206,39 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
                         completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime) {
+    public func seek(to time: CMTime) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
         controller.seek(to: time)
     }
     
-    func seek(to time: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: playerController.configuration.preferredTimeScale),
+    public func seek(to time: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = CMTime(seconds: time,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(to time: Double) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: playerController.configuration.preferredTimeScale))
+    public func seek(to time: Double) {
+        let time = CMTime(seconds: time,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
+        seek(to: time)
     }
     
-    func seek(to date: Date,
-              completionHandler: @escaping (Bool) -> Void) {
+    public func seek(to date: Date,
+                     completionHandler: @escaping (Bool) -> Void) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
@@ -203,50 +246,73 @@ final class AKStoppedState: AKPlayerStateControllerProtocol {
                         completionHandler: completionHandler)
     }
     
-    func seek(to date: Date) {
+    public func seek(to date: Date) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         change(controller)
         controller.seek(to: date)
     }
     
-    func seek(toOffset offset: Double) {
-        seek(to: playerController.currentTime.seconds + offset)
+    public func seek(toOffset offset: Double) {
+        let time = playerController.currentTime.seconds + offset
+        seek(to: time)
     }
     
-    func seek(toOffset offset: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: playerController.currentTime.seconds + offset,
+    public func seek(toOffset offset: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = playerController.currentTime.seconds + offset
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage percentage: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100),
+    public func seek(toPercentage percentage: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage percentage: Double) {
-        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100))
+    public func seek(toPercentage percentage: Double) {
+        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        seek(to: time)
     }
     
-    func step(by count: Int) {
+    public func step(by count: Int) {
+        guard playerController.currentMedia!.state.isReadyToPlay else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .loadMediaFirst)
+            return
+        }
+        
+        let result = playerController.currentMedia!.canStep(by: count)
+        
+        guard result else {
+            playerController.delegate?.playerController(playerController,
+                                                        unavailableActionWith: .canNotStepForward)
+            return
+        }
+        
         playerController.currentItem!.step(byCount: count)
     }
     
-    func fastForward() {
+    public func fastForward() {
         play(at: playerController.configuration.fastForwardRate)
     }
     
-    func fastForward(at rate: AKPlaybackRate) {
+    public func fastForward(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     
-    func rewind() {
+    public func rewind() {
         play(at: playerController.configuration.rewindRate)
     }
     
-    func rewind(at rate: AKPlaybackRate) {
+    public func rewind(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     

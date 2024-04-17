@@ -44,7 +44,7 @@ internal extension AKPlayable {
         set { setRetainedAssociatedObject(self, &managerKey, newValue)}
     }
     
-    var statePublisher: Published<AKPlayableState>.Publisher {
+    var statePublisher: AnyPublisher<AKPlayableState, Never> {
         get { manager.statePublisher }
     }
 }
@@ -66,16 +66,26 @@ public extension AKPlayable {
 
 public extension AKPlayable {
     
-    func initializeAsset() async throws {
-        try await manager.initializeAsset()
+    @discardableResult
+    func createAsset() -> AVURLAsset {
+        return manager.createAsset()
     }
     
-    func createPlayerItem() {
-        manager.createPlayerItem()
+    func fetchAssetPropertiesValues() async throws {
+        try await manager.fetchAssetPropertiesValues()
     }
     
-    func cancelInitialization() {
-        manager.cancelInitialization()
+    func validateAssetPlayability() async throws {
+        try await manager.validateAssetPlayability()
+    }
+    
+    @discardableResult
+    func createPlayerItemFromAsset() -> AVPlayerItem {
+        return manager.createPlayerItemFromAsset()
+    }
+    
+    func abortAssetInitialization() {
+        manager.abortAssetInitialization()
     }
     
     func startPlayerItemAssetKeysObserver() {
@@ -105,7 +115,8 @@ public extension AKPlayable {
         return manager.canPlay(at: rate)
     }
     
-    func canSeek(to time: CMTime) -> Bool {
+    func canSeek(to time: CMTime) -> (flag: Bool,
+                                      reason: AKPlayerUnavailableCommandReason?) {
         return manager.canSeek(to: time)
     }
 }
@@ -194,26 +205,34 @@ public extension AKPlayable {
         return playerItem?.loadedTimeRanges ?? []
     }
     
-    var seekableTimeRange: CMTimeRange? {
+    var seekableTimeRange: CMTimeRange {
         guard let firstRange = seekableTimeRanges.first?.timeRangeValue,
               !firstRange.isIndefinite,
               let lastRange = seekableTimeRanges.last?.timeRangeValue,
               !lastRange.isIndefinite else {
-            return nil
+            return .invalid
         }
         return CMTimeRangeFromTimeToTime(start: firstRange.start,
                                          end: lastRange.end)
     }
     
-    var loadedTimeRange: CMTimeRange? {
+    var loadedTimeRange: CMTimeRange {
         guard let firstRange = loadedTimeRanges.first?.timeRangeValue,
               !firstRange.isIndefinite,
               let lastRange = loadedTimeRanges.last?.timeRangeValue,
               !lastRange.isIndefinite else {
-            return nil
+            return .invalid
         }
         return CMTimeRangeFromTimeToTime(start: firstRange.start,
                                          end: lastRange.end)
+    }
+    
+    var buffer: Float {
+        let duration = seekableTimeRange.duration
+        guard loadedTimeRange.end.isNumeric,
+              duration.isNumeric,
+              duration != .zero else { return 0 }
+        return Float(loadedTimeRange.end.seconds / duration.seconds)
     }
 }
 
@@ -238,7 +257,7 @@ public extension AKPlayable {
         return playerItem?.presentationSize ?? .zero
     }
     
-    //    var automaticallyLoadedAssetKeys: [String] {
-    //        return playerItem?.automaticallyLoadedAssetKeys ?? []
-    //    }
+    var automaticallyLoadedAssetKeysStrings: [String] {
+        return playerItem?.automaticallyLoadedAssetKeys ?? []
+    }
 }

@@ -37,11 +37,11 @@ public protocol AKPlayerItemInitServiceProtocol {
     var asset: AVURLAsset? { get }
     var playerItem: AVPlayerItem? { get }
     
-    func initializeAsset() -> AVURLAsset
-    func createPlayerItem() -> AVPlayerItem
-    func loadPropertyValues() async throws
-    func checkPlayability() async throws
-    func cancelInitialization()
+    func createAsset() -> AVURLAsset
+    func createPlayerItemFromAsset() -> AVPlayerItem
+    func fetchAssetPropertiesValues() async throws
+    func validateAssetPlayability() async throws
+    func abortAssetInitialization()
 }
 
 open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
@@ -60,13 +60,11 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         self.media = media
     }
     
-    deinit {
-        print("Deinit called from ", #file)
-    }
+    deinit { }
     
     // MARK: - Additional Helper Functions
     
-    open func initializeAsset() -> AVURLAsset {
+    open func createAsset() -> AVURLAsset {
         /*
          Create an asset for inspection of a resource referenced by a given URL.
          */
@@ -76,7 +74,7 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         return asset
     }
     
-    open func createPlayerItem() -> AVPlayerItem {
+    open func createPlayerItemFromAsset() -> AVPlayerItem {
         assert(!(asset == nil),
                "Asset must be created before calling this function.")
         // Create a new AVPlayerItem with the asset and an
@@ -92,7 +90,7 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         return playerItem
     }
     
-    open func loadPropertyValues() async throws {
+    open func fetchAssetPropertiesValues() async throws {
         assert(!(asset == nil),
                "Asset must be created before calling this function.")
         do {
@@ -102,7 +100,6 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
                                                      .lyrics)
             
         } catch (let error) {
-            
             guard let err = error as? URLError,
                   err.code  == URLError.Code.notConnectedToInternet else {
                 throw AKPlayerError.assetLoadingFailed(reason: .propertyKeyLoadingFailed(error: error))
@@ -111,16 +108,15 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         }
     }
     
-    open func checkPlayability() async throws {
+    open func validateAssetPlayability() async throws {
         assert(!(asset == nil),
                "Asset must be created before calling this function.")
         do {
             let (isPlayable, hasProtectedContent) = try await asset!.load(.isPlayable,
                                                                           .hasProtectedContent)
-            try checkAssetPlayability(isPlayable: isPlayable,
-                                      hasProtectedContent: hasProtectedContent)
+            try verifyPlayability(isPlayable: isPlayable,
+                                  hasProtectedContent: hasProtectedContent)
         } catch (let error) {
-            
             guard let err = error as? URLError,
                   err.code  == URLError.Code.notConnectedToInternet else {
                 throw AKPlayerError.assetLoadingFailed(reason: .propertyKeyLoadingFailed(error: error))
@@ -129,14 +125,14 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         }
     }
     
-    private func checkAssetPlayability(isPlayable: Bool,
-                                       hasProtectedContent: Bool) throws {
-        guard isPlayable else { throw AKPlayerError.assetLoadingFailed(reason: .notPlayable) }
-        guard !hasProtectedContent else { throw AKPlayerError.assetLoadingFailed(reason: .protectedContent) }
-    }
-    
-    open func cancelInitialization() {
+    open func abortAssetInitialization() {
         guard let asset = asset else { return }
         asset.cancelLoading()
+    }
+    
+    private func verifyPlayability(isPlayable: Bool,
+                                   hasProtectedContent: Bool) throws {
+        guard isPlayable else { throw AKPlayerError.assetLoadingFailed(reason: .notPlayable) }
+        guard !hasProtectedContent else { throw AKPlayerError.assetLoadingFailed(reason: .protectedContent) }
     }
 }

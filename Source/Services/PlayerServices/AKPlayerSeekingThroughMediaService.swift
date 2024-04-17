@@ -109,6 +109,10 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
                       toleranceBefore: CMTime = .positiveInfinity,
                       toleranceAfter: CMTime = .positiveInfinity,
                       completionHandler: ((Bool) -> Void)? = nil) {
+        guard player.currentItem != nil else {
+            completionHandler?(false)
+            return
+        }
         
         let seek = AKSeek(position: position,
                           toleranceBefore: toleranceBefore,

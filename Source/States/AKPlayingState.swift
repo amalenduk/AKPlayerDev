@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKPlayingState: AKPlayerStateControllerProtocol {
+public class AKPlayingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -39,74 +39,69 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Init
     
-    init(playerController: AKPlayerControllerProtocol,
-         rate: AKPlaybackRate? = nil) {
-        print("Init called from ", #file)
+    public init(playerController: AKPlayerControllerProtocol,
+                rate: AKPlaybackRate? = nil) {
         self.playerController = playerController
         self.rate = rate
         
         playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
-    deinit { print("Deinit called from ", #file) }
+    deinit { }
     
-    func didChangeState() {
+    public func didChangeState() {
         startPlayerItemObservingNotificationsService()
         playerController.player.play()
         
         guard let rate = rate,
               playerController.player.rate != rate.rate else { return }
-        if playerController.currentItem!.canPlay(at: rate) {
-            playerController.player.rate = rate.rate
-        } else {
-            playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
-        }
+        play(at: rate)
     }
     
     // MARK: - Commands
     
-    func load(media: AKPlayable) {
+    public func load(media: AKPlayable) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: CMTime) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: CMTime) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
                                         position: position)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: Double) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: Double) {
+        let time = CMTime(seconds: position,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        position: CMTime(seconds: position,
-                                                         preferredTimescale: playerController.configuration.preferredTimeScale))
-        playerController.change(controller)
+                                        position: time)
+        change(controller)
     }
     
-    func play() {
+    public func play() {
         playerController.delegate?.playerController(playerController,
                                                     unavailableActionWith: .alreadyPlaying)
     }
     
-    func play(at rate: AKPlaybackRate) {
+    public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .canNotPlayAtSpecifiedRate)
@@ -116,132 +111,138 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         playerController.player.rate = rate.rate
     }
     
-    func pause() {
+    public func pause() {
         let controller = AKPausedState(playerController: playerController)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func togglePlayPause() {
+    public func togglePlayPause() {
         pause()
     }
     
-    func stop() {
+    public func stop() {
         let controller = AKStoppedState(playerController: playerController,
                                         seekToZero: true)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
+    public  func seek(to time: CMTime,
+                      toleranceBefore: CMTime,
+                      toleranceAfter: CMTime,
+                      completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter,
                         completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime) {
+    public func seek(to time: CMTime,
+                     toleranceBefore: CMTime,
+                     toleranceAfter: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter)
     }
     
-    func seek(to time: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
+    public func seek(to time: CMTime,
+                     completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: time,
                         completionHandler: completionHandler)
     }
     
-    func seek(to time: CMTime) {
+    public func seek(to time: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: time)
     }
     
-    func seek(to time: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: playerController.configuration.preferredTimeScale),
+    public func seek(to time: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = CMTime(seconds: time,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(to time: Double) {
-        seek(to: CMTime(seconds: time,
-                        preferredTimescale: playerController.configuration.preferredTimeScale))
+    public func seek(to time: Double) {
+        let time = CMTime(seconds: time,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
+        seek(to: time)
     }
     
-    func seek(to date: Date,
-              completionHandler: @escaping (Bool) -> Void) {
+    public func seek(to date: Date,
+                     completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: date,
                         completionHandler: completionHandler)
     }
     
-    func seek(to date: Date) {
+    public func seek(to date: Date) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
         controller.seek(to: date)
     }
     
-    func seek(toOffset offset: Double) {
-        seek(to: playerController.currentTime.seconds + offset)
+    public func seek(toOffset offset: Double) {
+        let time = playerController.currentTime.seconds + offset
+        seek(to: time)
     }
     
-    func seek(toOffset offset: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: playerController.currentTime.seconds + offset,
+    public func seek(toOffset offset: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = playerController.currentTime.seconds + offset
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage percentage: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100),
+    public func seek(toPercentage percentage: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        seek(to: time,
              completionHandler: completionHandler)
     }
     
-    func seek(toPercentage percentage: Double) {
-        seek(to: (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100))
+    public func seek(toPercentage percentage: Double) {
+        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        seek(to: time)
     }
     
-    func step(by count: Int) {
+    public func step(by count: Int) {
         playerController.currentItem!.step(byCount: count)
     }
     
-    func fastForward() {
+    public func fastForward() {
         play(at: playerController.configuration.fastForwardRate)
     }
     
-    func fastForward(at rate: AKPlaybackRate) {
+    public func fastForward(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     
-    func rewind() {
+    public func rewind() {
         play(at: playerController.configuration.rewindRate)
     }
     
-    func rewind(at rate: AKPlaybackRate) {
+    public func rewind(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     
@@ -251,35 +252,41 @@ final class AKPlayingState: AKPlayerStateControllerProtocol {
         playerItemNotificationsObserver.delegate = self
         playerItemNotificationsObserver.startObserving()
     }
+    
+    // MARK: - Additional Helper Functions
+    
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
+        playerController.change(controller)
+    }
 }
 
 // MARK: - AKPlayerItemNotificationsObserverDelegate
 
 extension AKPlayingState: AKPlayerItemNotificationsObserverDelegate {
     
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didPlayToEndTimeAt time: CMTime,
-                                         for playerItem: AVPlayerItem) {
+    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                                didPlayToEndTimeAt time: CMTime,
+                                                for playerItem: AVPlayerItem) {
         playerController.delegate?.playerController(playerController,
                                                     playerItemDidReachEnd: playerController.currentTime,
                                                     for: playerController.currentMedia!)
         let controller = AKStoppedState(playerController: playerController,
                                         seekToZero: false)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didFailToPlayToEndTimeWith error: AKPlayerError,
-                                         for playerItem: AVPlayerItem) {
+    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                                didFailToPlayToEndTimeWith error: AKPlayerError,
+                                                for playerItem: AVPlayerItem) {
         let controller = AKWaitingForNetworkState(playerController: playerController)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didStallPlaybackFor playerItem: AVPlayerItem) {
+    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                                didStallPlaybackFor playerItem: AVPlayerItem) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        playerController.change(controller)
+        change(controller)
     }
 }

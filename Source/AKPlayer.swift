@@ -41,7 +41,7 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
         return manager.currentTime
     }
     
-    open var currentItemDuration: CMTime? {
+    open var currentItemDuration: CMTime {
         return manager.currentItemDuration
     }
     
@@ -109,9 +109,7 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
         manager.delegate = self
     }
     
-    deinit {
-        print("AKPlayer: Deinit called from the AKPLayer ✌🏼")
-    }
+    deinit { }
     
     open func prepare() throws {
         try manager.prepare()
@@ -165,12 +163,22 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
         manager.stop()
     }
     
-    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        manager.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter, completionHandler: completionHandler)
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime,
+                   completionHandler: @escaping (Bool) -> Void) {
+        manager.seek(to: time,
+                     toleranceBefore: toleranceBefore,
+                     toleranceAfter: toleranceAfter,
+                     completionHandler: completionHandler)
     }
     
-    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
-        manager.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter)
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime) {
+        manager.seek(to: time,
+                     toleranceBefore: toleranceBefore,
+                     toleranceAfter: toleranceAfter)
     }
     
     open func seek(to time: CMTime,
@@ -193,8 +201,10 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
         manager.seek(to: time)
     }
     
-    open func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        manager.seek(to: date, completionHandler: completionHandler)
+    open func seek(to date: Date,
+                   completionHandler: @escaping (Bool) -> Void) {
+        manager.seek(to: date,
+                     completionHandler: completionHandler)
     }
     
     open func seek(to date: Date) {
@@ -246,39 +256,71 @@ open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
 
 extension AKPlayer: AKPlayerManagerDelegate {
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangeStateTo state: AKPlayerState) {
-        delegate?.akPlayer(self, didChangeStateTo: state)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangeStateTo state: AKPlayerState) {
+        delegate?.akPlayer(self,
+                           didChangeStateTo: state)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangeMediaTo media: AKPlayable) {
-        delegate?.akPlayer(self, didChangeMediaTo: media)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangeMediaTo media: AKPlayable) {
+        delegate?.akPlayer(self,
+                           didChangeMediaTo: media)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangePlaybackRateTo newRate: AKPlaybackRate, from oldRate: AKPlaybackRate) {
-        delegate?.akPlayer(self, didChangePlaybackRateTo: newRate, from: oldRate)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangePlaybackRateTo newRate: AKPlaybackRate,
+                              from oldRate: AKPlaybackRate) {
+        delegate?.akPlayer(self,
+                           didChangePlaybackRateTo: newRate,
+                           from: oldRate)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
-        delegate?.akPlayer(self, didChangeCurrentTimeTo: currentTime, for: media)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangeCurrentTimeTo currentTime: CMTime,
+                              for media: AKPlayable) {
+        delegate?.akPlayer(self,
+                           didChangeCurrentTimeTo: currentTime,
+                           for: media)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) {
-        delegate?.akPlayer(self, playerItemDidReachEnd: endTime, for: media)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didInvokeBoundaryTimeObserverAt time: CMTime,
+                              for media: AKPlayable) {
+        delegate?.akPlayer(self,
+                           didInvokeBoundaryTimeObserverAt: time,
+                           for: media)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangeVolumeTo volume: Float) {
-        delegate?.akPlayer(self, didChangeVolumeTo: volume)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              playerItemDidReachEnd endTime: CMTime,
+                              for media: AKPlayable) {
+        delegate?.akPlayer(self,
+                           playerItemDidReachEnd: endTime,
+                           for: media)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didChangeMutedStatusTo isMuted: Bool) {
-        delegate?.akPlayer(self, didChangeMutedStatusTo: isMuted)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangeVolumeTo volume: Float) {
+        delegate?.akPlayer(self,
+                           didChangeVolumeTo: volume)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
-        delegate?.akPlayer(self, unavailableActionWith: reason)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didChangeMutedStatusTo isMuted: Bool) {
+        delegate?.akPlayer(self,
+                           didChangeMutedStatusTo: isMuted)
     }
     
-    public func playerManager(_ playerManager: AKPlayerManagerProtocol, didFailWith error: AKPlayerError) {
-        delegate?.akPlayer(self, didFailWith: error)
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
+        delegate?.akPlayer(self,
+                           unavailableActionWith: reason)
+    }
+    
+    public func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                              didFailWith error: AKPlayerError) {
+        delegate?.akPlayer(self,
+                           didFailWith: error)
     }
 }

@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-final class AKIdleState: AKPlayerStateControllerProtocol {
+public class AKIdleState: AKPlayerStateControllerProtocol {
     
     // MARK: - Properties
     
@@ -35,174 +35,181 @@ final class AKIdleState: AKPlayerStateControllerProtocol {
     
     // MARK: - Init
     
-    init(playerController: AKPlayerControllerProtocol) {
+    public init(playerController: AKPlayerControllerProtocol) {
         self.playerController = playerController
     }
     
-    deinit { print("Deinit called from ", #file) }
+    deinit { }
     
-    func didChangeState() { }
+    public func didChangeState() { }
     
     // MARK: - Commands
     
-    func load(media: AKPlayable) {
+    public func load(media: AKPlayable) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: CMTime) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: CMTime) {
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
                                         position: position)
-        playerController.change(controller)
+        change(controller)
     }
     
-    func load(media: AKPlayable,
-              autoPlay: Bool,
-              at position: Double) {
+    public func load(media: AKPlayable,
+                     autoPlay: Bool,
+                     at position: Double) {
+        let time = CMTime(seconds: position,
+                          preferredTimescale: playerController.configuration.preferredTimeScale)
         let controller = AKLoadingState(playerController: playerController,
                                         media: media,
                                         autoPlay: autoPlay,
-                                        position: CMTime(seconds: position,
-                                                         preferredTimescale: playerController.configuration.preferredTimeScale))
+                                        position: time)
+        change(controller)
+    }
+    
+    public func play() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func play(at rate: AKPlaybackRate) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func pause() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func togglePlayPause() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func stop() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(to time: CMTime,
+                     toleranceBefore: CMTime,
+                     toleranceAfter: CMTime,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(to time: CMTime,
+                     toleranceBefore: CMTime,
+                     toleranceAfter: CMTime) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(to time: CMTime,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(to time: CMTime) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(to time: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(to time: Double) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(to date: Date,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(to date: Date) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(toOffset offset: Double) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func seek(toOffset offset: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(toPercentage percentage: Double,
+                     completionHandler: @escaping (Bool) -> Void) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+        completionHandler(false)
+    }
+    
+    public func seek(toPercentage percentage: Double) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func step(by count: Int) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func fastForward() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func fastForward(at rate: AKPlaybackRate) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func rewind() {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    public func rewind(at rate: AKPlaybackRate) {
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .loadMediaFirst)
+    }
+    
+    // MARK: - Additional Helper Functions
+    
+    private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)
-    }
-    
-    func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func play(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func pause() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func togglePlayPause() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func stop() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(to time: CMTime,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(to time: CMTime) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(to time: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(to time: Double) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(to date: Date,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(to date: Date) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(toOffset offset: Double) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func seek(toOffset offset: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(toPercentage percentage: Double,
-              completionHandler: @escaping (Bool) -> Void) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-        completionHandler(false)
-    }
-    
-    func seek(toPercentage percentage: Double) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func step(by count: Int) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func fastForward() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func fastForward(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func rewind() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
-    }
-    
-    func rewind(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
     }
 }

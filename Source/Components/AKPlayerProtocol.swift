@@ -32,7 +32,7 @@ public protocol AKPlayerProtocol: AnyObject {
     var rate: AKPlaybackRate { get set }
     var currentMedia: AKPlayable? { get }
     var currentItem: AVPlayerItem? { get }
-    var currentItemDuration: CMTime? { get }
+    var currentItemDuration: CMTime { get }
     var currentTime: CMTime { get }
     var remainingTime: CMTime? { get }
     var autoPlay: Bool { get }

@@ -89,3 +89,9 @@ public extension CMTime {
         return verboseString!.replacingOccurrences(of: ",", with: "")
     }
 }
+
+public extension CMTimeRange {
+    var isValidAndNotEmpty: Bool {
+        isValid && !isEmpty
+    }
+}

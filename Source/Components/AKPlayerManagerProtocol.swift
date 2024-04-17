@@ -39,6 +39,9 @@ public protocol AKPlayerManagerDelegate: AnyObject {
                        didChangeCurrentTimeTo currentTime: CMTime,
                        for media: AKPlayable)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
+                       didInvokeBoundaryTimeObserverAt time: CMTime,
+                       for media: AKPlayable)
+    func playerManager(_ playerManager: AKPlayerManagerProtocol,
                        playerItemDidReachEnd endTime: CMTime,
                        for media: AKPlayable)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,

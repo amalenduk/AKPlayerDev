@@ -78,10 +78,10 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
             }else {
                 return (false, .canNotStepForward)
             }
-        }else {
+        } else {
             if playerItem.canStepForward {
                 return (true, nil)
-            }else {
+            } else {
                 return (false, .canNotStepBackward)
             }
         }

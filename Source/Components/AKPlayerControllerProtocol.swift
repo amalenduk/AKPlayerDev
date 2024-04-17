@@ -38,6 +38,9 @@ public protocol AKPlayerControllerDelegate: AnyObject {
                           didChangeCurrentTimeTo currentTime: CMTime,
                           for media: AKPlayable)
     func playerController(_ playerController: AKPlayerControllerProtocol,
+                          didInvokeBoundaryTimeObserverAt time: CMTime,
+                          for media: AKPlayable)
+    func playerController(_ playerController: AKPlayerControllerProtocol,
                           playerItemDidReachEnd endTime: CMTime,
                           for media: AKPlayable)
     func playerController(_ playerController: AKPlayerControllerProtocol,
@@ -56,6 +59,7 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol, AKPlayerCommandsPr
     var delegate: AKPlayerControllerDelegate? { get set }
     
     var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol { get }
+    var networkStatusMonitor: AKNetworkStatusMonitorProtocol { get }
     
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)

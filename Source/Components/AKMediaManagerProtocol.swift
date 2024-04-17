@@ -32,11 +32,13 @@ public protocol AKMediaManagerProtocol: AnyObject {
     var playerItem: AVPlayerItem? { get }
     var error: AKPlayerError? { get }
     var state: AKPlayableState { get }
-    var statePublisher: Published<AKPlayableState>.Publisher { get }
+    var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
     
-    func initializeAsset() async throws
-    func createPlayerItem()
-    func cancelInitialization()
+    func createAsset() -> AVURLAsset
+    func createPlayerItemFromAsset() -> AVPlayerItem
+    func fetchAssetPropertiesValues() async throws
+    func validateAssetPlayability() async throws
+    func abortAssetInitialization()
     
     func startPlayerItemAssetKeysObserver()
     func startPlayerItemReadinessObserver()
@@ -45,6 +47,7 @@ public protocol AKMediaManagerProtocol: AnyObject {
     
     func canStep(by count: Int) -> Bool
     func canPlay(at rate: AKPlaybackRate) -> Bool
-    func canSeek(to time: CMTime) -> Bool
+    func canSeek(to time: CMTime) -> (flag: Bool,
+                                      reason: AKPlayerUnavailableCommandReason?)
 }
 

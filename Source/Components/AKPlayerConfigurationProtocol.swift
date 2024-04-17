@@ -75,7 +75,8 @@ public protocol AKPlayerConfigurationProtocol {
 
 public extension AKPlayerConfigurationProtocol {
     func getPeriodicTimeInterval() -> CMTime {
-        return CMTimeMakeWithSeconds(periodicTimeInterval.value, preferredTimescale: preferredTimeScale)
+        return CMTimeMakeWithSeconds(periodicTimeInterval.value, 
+                                     preferredTimescale: preferredTimeScale)
     }
 }
 

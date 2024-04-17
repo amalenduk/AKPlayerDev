@@ -57,7 +57,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return playerController.currentItem
     }
     
-    public var currentItemDuration: CMTime? {
+    public var currentItemDuration: CMTime {
         return playerController.currentItemDuration
     }
     
@@ -231,14 +231,14 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         case .skipBackward:
             guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)
         case .skipForward:
             guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)) else {
+            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)
@@ -747,6 +747,15 @@ extension AKPlayerManager: AKPlayerControllerDelegate {
         delegate?.playerManager(self,
                                 didChangeCurrentTimeTo: currentTime,
                                 for: media)
+    }
+    
+    public func playerController(_ playerController: AKPlayerControllerProtocol,
+                                 didInvokeBoundaryTimeObserverAt time: CMTime,
+                                 for media: AKPlayable) {
+        setNowPlayingInfo()
+        delegate?.playerManager(self,
+                                didInvokeBoundaryTimeObserverAt: time,
+                                for: currentMedia!)
     }
     
     public func playerController(_ playerController: AKPlayerControllerProtocol,

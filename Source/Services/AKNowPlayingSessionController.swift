@@ -94,7 +94,6 @@ public class AKNowPlayingSessionController: AKNowPlayingSessionControllerProtoco
         unregister(commands: AKRemoteCommand.all())
         clearNowPlayingPlaybackInfo()
         delegate = nil
-        print("Deinit called from ", #file)
     }
     
     public func addPlayer(_ player: AVPlayer) {

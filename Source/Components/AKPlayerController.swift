@@ -25,6 +25,7 @@
 
 import Foundation
 import AVFoundation
+import Combine
 
 open class AKPlayerController: AKPlayerControllerProtocol {
     
@@ -51,12 +52,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     open var currentItem: AVPlayerItem? { return player.currentItem }
     
-    open var currentItemDuration: CMTime? { return currentItem?.duration }
+    open var currentItemDuration: CMTime { return currentItem?.duration ?? .indefinite }
     
     open var currentTime: CMTime { player.currentTime() }
     
     open var remainingTime: CMTime? {
-        guard let currentItemDuration = currentItemDuration else { return nil }
+        guard currentItemDuration.isValid else { return nil }
         return CMTimeSubtract(currentItemDuration, currentTime)
     }
     
@@ -64,6 +65,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         return (controller as? AKLoadedState)?.autoPlay ?? false
         || (controller as? AKLoadingState)?.autoPlay ?? false
         || (controller as? AKBufferingState)?.autoPlay ?? false
+        || (controller as? AKWaitingForNetworkState)?.autoPlay ?? false
     }
     
     open var isSeeking: Bool {
@@ -104,6 +106,10 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     open weak var delegate: AKPlayerControllerDelegate?
     
+    public var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol
+    
+    public var networkStatusMonitor: AKNetworkStatusMonitorProtocol
+    
     private var playerPlaybackTimeObserver: AKPlayerPlaybackTimeObserverProtocol
     
     private var playerWaitingBehaviorObserver: AKPlayerWaitingBehaviorObserverProtocol
@@ -114,7 +120,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private var playerReadinessObserver: AKPlayerReadinessObserverProtocol
     
-    public var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol
+    private var cancellables : Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -129,6 +135,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerWaitingBehaviorObserver = AKPlayerWaitingBehaviorObserver(with: player)
         playerAudioBehaviorObserver = AKPlayerAudioBehaviorObserver(with: player)
         playerSeekingThroughMediaService = AKPlayerSeekingThroughMediaService(with: player)
+        networkStatusMonitor = AKNetworkStatusMonitor()
         
         playerRateObserver.delegate = self
         playerReadinessObserver.delegate = self
@@ -145,7 +152,9 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     // MARK: - Commands
     
     open func load(media: AKPlayable) {
-        if !state.isIdle && !state.isStopped && !state.isFailed {
+        if !state.isIdle
+            && !state.isStopped
+            && !state.isFailed {
             stop()
         }
         currentMedia = media
@@ -153,8 +162,11 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         controller.load(media: media)
     }
     
-    open func load(media: AKPlayable, autoPlay: Bool) {
-        if !state.isIdle && !state.isStopped && !state.isFailed {
+    open func load(media: AKPlayable,
+                   autoPlay: Bool) {
+        if !state.isIdle
+            && !state.isStopped
+            && !state.isFailed {
             stop()
         }
         currentMedia = media
@@ -163,8 +175,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                         autoPlay: autoPlay)
     }
     
-    open func load(media: AKPlayable, autoPlay: Bool, at position: CMTime) {
-        if !state.isIdle && !state.isStopped && !state.isFailed {
+    open func load(media: AKPlayable,
+                   autoPlay: Bool,
+                   at position: CMTime) {
+        if !state.isIdle
+            && !state.isStopped
+            && !state.isFailed {
             stop()
         }
         currentMedia = media
@@ -174,8 +190,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                         at: position)
     }
     
-    open func load(media: AKPlayable, autoPlay: Bool, at position: Double) {
-        if !state.isIdle && !state.isStopped && !state.isFailed {
+    open func load(media: AKPlayable,
+                   autoPlay: Bool,
+                   at position: Double) {
+        if !state.isIdle
+            && !state.isStopped
+            && !state.isFailed {
             stop()
         }
         currentMedia = media
@@ -205,7 +225,10 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         controller.stop()
     }
     
-    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime,
+                   completionHandler: @escaping (Bool) -> Void) {
         let result = canSeek(to: time)
         
         if result.flag {
@@ -218,7 +241,9 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         }
     }
     
-    open func seek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime) {
+    open func seek(to time: CMTime,
+                   toleranceBefore: CMTime,
+                   toleranceAfter: CMTime) {
         let result = canSeek(to: time)
         
         if result.flag {
@@ -230,7 +255,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         }
     }
     
-    open func seek(to time: CMTime, completionHandler: @escaping (Bool) -> Void) {
+    open func seek(to time: CMTime,
+                   completionHandler: @escaping (Bool) -> Void) {
         let result = canSeek(to: time)
         
         if result.flag {
@@ -251,7 +277,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         }
     }
     
-    open func seek(to time: Double, completionHandler: @escaping (Bool) -> Void) {
+    open func seek(to time: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
         let result = canSeek(to: CMTime(seconds: time,
                                         preferredTimescale: configuration.preferredTimeScale))
         
@@ -293,7 +320,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         }
     }
     
-    open func seek(toOffset offset: Double, completionHandler: @escaping (Bool) -> Void) {
+    open func seek(toOffset offset: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
         let result = canSeek(toOffset: offset)
         
         if result.flag {
@@ -304,7 +332,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         }
     }
     
-    open func seek(toPercentage percentage: Double, completionHandler: @escaping (Bool) -> Void) {
+    open func seek(toPercentage percentage: Double,
+                   completionHandler: @escaping (Bool) -> Void) {
         let result = canSeek(toPercentage: percentage)
         
         if result.flag {
@@ -355,6 +384,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     open func prepare() throws {
         controller = AKIdleState(playerController: self)
+        networkStatusMonitor.startObserving()
         startPlayerObservers()
     }
     
@@ -383,8 +413,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
             break
         case .failed:
             break
-        case .buffering:
-            break
         }
     }
     
@@ -407,7 +435,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         case .waitingForNetwork:
             break
         case .failed:
-            // TODO: - Stop observers which are not required
             break
         }
     }
@@ -426,6 +453,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerPlaybackTimeObserver.stopObservingPeriodicTime()
         playerWaitingBehaviorObserver.stopObserving()
         playerAudioBehaviorObserver.stopObserving()
+        networkStatusMonitor.stopObserving()
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {
@@ -434,53 +462,106 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        guard !state.isIdle && !state.isLoading && !state.isFailed else {
-            return (flag: false, reason: state.isIdle || state.isFailed ? .loadMediaFirst : .waitTillMediaLoaded)
+        guard let currentMedia = currentMedia,
+              currentMedia.state.isReadyToPlay,
+              state.isLoaded
+                || state.isBuffering
+                || state.isPlaying
+                || state.isWaitingForNetwork
+                || state.isPaused
+                || (state.isStopped && player.currentItem != nil) else {
+            if currentMedia?.state.isIdle ?? false
+                || currentMedia?.state.isFailed ?? false
+                || state.isIdle
+                || state.isFailed {
+                return (false, .loadMediaFirst)
+            } else if currentMedia?.state.isAssetLoaded ?? false
+                        || currentMedia?.state.isPlayerItemLoaded ?? false
+                        || state.isLoading {
+                return (false, .waitTillMediaLoaded)
+            }
+            return (false, .actionNotPermitted)
         }
         
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: currentItem!)
-        let result = seekingThroughMediaService.canSeek(to: time)
+        let result = currentMedia.canSeek(to: time)
         
         return result
     }
     
     private func canSeek(toOffset offset: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        guard !state.isIdle && !state.isLoading && !state.isFailed else {
-            return (flag: false, reason: state.isIdle || state.isFailed ? .loadMediaFirst : .waitTillMediaLoaded)
-        }
+        let time = CMTime(seconds: currentItem!.duration.seconds,
+                          preferredTimescale: configuration.preferredTimeScale)
         
-        let time = CMTime(seconds: currentItem!.duration.seconds, preferredTimescale: configuration.preferredTimeScale)
-        
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: currentItem!)
-        let result = seekingThroughMediaService.canSeek(to: time)
+        let result = canSeek(to: time)
         
         return result
     }
     
     private func canSeek(toPercentage percentage: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        guard !state.isIdle && !state.isLoading && !state.isFailed else {
-            return (flag: false, reason: state.isIdle || state.isFailed ? .loadMediaFirst : .waitTillMediaLoaded)
-        }
+        let time = CMTime(seconds: (currentItem!.duration.seconds * (percentage / 100)),
+                          preferredTimescale: configuration.preferredTimeScale)
         
-        let time = CMTime(seconds: (currentItem!.duration.seconds * (percentage / 100)), preferredTimescale: configuration.preferredTimeScale)
-        
-        let seekingThroughMediaService = AKSeekingThroughMediaService(with: currentItem!)
-        let result = seekingThroughMediaService.canSeek(to: time)
+        let result = currentMedia!.canSeek(to: time)
         
         return result
     }
     
     private func canStep(by count: Int) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        guard !state.isIdle && !state.isLoading && !state.isFailed else {
-            return (flag: false, reason: state.isIdle || state.isFailed ? .loadMediaFirst : .waitTillMediaLoaded)
+        guard let currentMedia = currentMedia,
+              currentMedia.state.isReadyToPlay,
+              state.isLoaded
+                || state.isBuffering
+                || state.isPlaying
+                || state.isWaitingForNetwork
+                || state.isPaused
+                || state.isStopped else {
+            if currentMedia?.state.isIdle ?? false
+                || currentMedia?.state.isFailed ?? false
+                || state.isIdle
+                || state.isFailed {
+                return (false, .loadMediaFirst)
+            } else if currentMedia?.state.isAssetLoaded ?? false
+                        || currentMedia?.state.isPlayerItemLoaded ?? false
+                        || state.isLoading {
+                return (false, .waitTillMediaLoaded)
+            }
+            return (false, .actionNotPermitted)
         }
         
-        let result = currentItem!.canStep(by: count)
+        let result = currentMedia.canStep(by: count)
         
         return (flag: result, reason: result ? nil : count.signum() == 1 ? .canNotStepForward : .canNotStepBackward)
+    }
+    
+    private func canPlay(at rate: AKPlaybackRate) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        
+        guard let currentMedia = currentMedia,
+              currentMedia.state.isReadyToPlay,
+              state.isLoaded
+                || state.isBuffering
+                || state.isPlaying
+                || state.isWaitingForNetwork
+                || state.isPaused
+                || state.isStopped else {
+            if currentMedia?.state.isIdle ?? false
+                || currentMedia?.state.isFailed ?? false
+                || state.isIdle
+                || state.isFailed {
+                return (false, .loadMediaFirst)
+            } else if currentMedia?.state.isAssetLoaded ?? false
+                        || currentMedia?.state.isPlayerItemLoaded ?? false
+                        || state.isLoading {
+                return (false, .waitTillMediaLoaded)
+            }
+            return (false, .actionNotPermitted)
+        }
+        
+        let result = currentMedia.canPlay(at: rate)
+        
+        return (flag: result, reason: result ? nil : .canNotPlayAtSpecifiedRate)
     }
 }
 
@@ -498,7 +579,11 @@ extension AKPlayerController: AKPlayerPlaybackTimeObserverDelegate {
     
     public func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
                                            didInvokeBoundaryTimeObserverAt time: CMTime,
-                                           for player: AVPlayer) {}
+                                           for player: AVPlayer) {
+        delegate?.playerController(self,
+                                   didInvokeBoundaryTimeObserverAt: time,
+                                   for: currentMedia!)
+    }
 }
 
 // MARK: - AKPlayerWaitingBehaviorObserverDelegate
@@ -511,9 +596,16 @@ extension AKPlayerController: AKPlayerWaitingBehaviorObserverDelegate {
         
         switch status {
         case .paused:
-            if state.isBuffering
-                || state.isPlaying {
+            if state.isPlaying {
                 pause()
+            } else if state.isBuffering && player.currentItem == nil {
+                stop()
+            } else if state.isPaused && player.currentItem == nil {
+                stop()
+            } else if state.isWaitingForNetwork && player.currentItem == nil {
+                stop()
+            } else if state.isLoaded && player.currentItem == nil {
+                stop()
             }
         case .waitingToPlayAtSpecifiedRate:
             if state.isBuffering {
@@ -591,13 +683,11 @@ extension AKPlayerController: AKPlayerReadinessObserverDelegate {
                                         didChangeStatusTo status: AVPlayer.Status,
                                         for player: AVPlayer) {
         switch status {
-        case .unknown: break
-        case .readyToPlay: break
         case .failed:
-            // TODO: - Check if player pauses by it's own or not, if does then no need to call `stop()`
             stop()
-            delegate?.playerController(self, didFailWith: .playerCanNoLongerPlay(error: player.error))
-        @unknown default: break
+            delegate?.playerController(self,
+                                       didFailWith: .playerCanNoLongerPlay(error: player.error))
+        default: break
         }
     }
 }

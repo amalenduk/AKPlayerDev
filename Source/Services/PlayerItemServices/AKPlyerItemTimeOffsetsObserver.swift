@@ -51,7 +51,7 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
     
     private var isObserving = false
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -75,14 +75,14 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
                                                   didChangeRecommendedTimeOffsetFromLiveTo: recommendedTimeOffsetFromLive,
                                                   for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        subscriptions.forEach({ $0.cancel() })
+        cancellables.forEach({ $0.cancel() })
         isObserving = false
     }
 }

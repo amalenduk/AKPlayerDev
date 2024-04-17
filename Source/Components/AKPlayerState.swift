@@ -102,8 +102,9 @@ public func == (lhs: AKPlayerState, rhs: AKPlayerState) -> Bool {
     case (.idle, .idle),
         (.loading, .loading),
         (.loaded, .loaded),
-        (.paused, .paused),
+        (.buffering, .buffering),
         (.playing, .playing),
+        (.paused, .paused),
         (.stopped, .stopped),
         (.waitingForNetwork, .waitingForNetwork),
         (.failed, .failed) :

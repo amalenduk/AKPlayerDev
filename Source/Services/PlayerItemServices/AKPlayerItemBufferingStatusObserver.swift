@@ -41,9 +41,12 @@ public protocol AKPlayerItemBufferingStatusObserverDelegate: AnyObject {
     func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
                                            didChangePlaybackBufferEmptyStatusTo isPlaybackBufferEmpty: Bool,
                                            for playerItem: AVPlayerItem)
+}
+
+public extension AKPlayerItemBufferingStatusObserverDelegate {
     func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                           didChangeMediaPlaybackContinuationStatusTo shouldContinuePlayback: Bool,
-                                           for playerItem: AVPlayerItem)
+                                           didChangePlaybackBufferEmptyStatusTo isPlaybackBufferEmpty: Bool,
+                                           for playerItem: AVPlayerItem) { }
 }
 
 public protocol AKPlayerItemBufferingStatusObserverProtocol {
@@ -63,15 +66,13 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
     
     public weak var delegate: AKPlayerItemBufferingStatusObserverDelegate?
     
-    private var timer: Timer?
-    
     private var isObserving = false
     
-    private var subscriptions = Set<AnyCancellable>()
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
-    init(with playerItem: AVPlayerItem) {
+    public init(with playerItem: AVPlayerItem) {
         self.playerItem = playerItem
     }
     
@@ -79,8 +80,8 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
         stopObserving()
     }
     
-    public func startObserving(with bufferObservingTimeout: TimeInterval,
-                               bufferObservingTimeInterval: TimeInterval) {
+    open func startObserving(with bufferObservingTimeout: TimeInterval,
+                             bufferObservingTimeInterval: TimeInterval) {
         guard !isObserving else { return }
         
         
@@ -93,7 +94,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                                                        didChangePlaybackLikelyToKeepUpStatusTo: isPlaybackLikelyToKeepUp,
                                                        for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.isPlaybackBufferFull,
                              options: [.initial, .new])
@@ -104,7 +105,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                                                        didChangePlaybackBufferFullStatusTo: isPlaybackBufferFull,
                                                        for: playerItem)
         })
-        .store(in: &subscriptions)
+        .store(in: &cancellables)
         
         playerItem.publisher(for: \.isPlaybackBufferEmpty,
                              options: [.initial, .new])
@@ -115,40 +116,15 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                                                        didChangePlaybackBufferEmptyStatusTo: isPlaybackBufferEmpty,
                                                        for: playerItem)
         })
-        .store(in: &subscriptions)
-        
-        var remainingTime: TimeInterval = bufferObservingTimeout
-        
-        timer = Timer.scheduledTimer(withTimeInterval: bufferObservingTimeInterval,
-                                     repeats: true,
-                                     block: { [unowned self] (_) in
-            guard let delegate = delegate,
-                  timer?.isValid ?? false else { stopObserving(); return }
-            remainingTime -= bufferObservingTimeInterval
-            
-            if playerItem.isPlaybackBufferFull || playerItem.isPlaybackLikelyToKeepUp {
-                delegate.playerItemBufferingStatusObserver(self,
-                                                           didChangeMediaPlaybackContinuationStatusTo: true,
-                                                           for: playerItem)
-                stopObserving()
-            } else if remainingTime <= 0 {
-                delegate.playerItemBufferingStatusObserver(self,
-                                                           didChangeMediaPlaybackContinuationStatusTo: false,
-                                                           for: playerItem)
-                stopObserving()
-            }
-        })
+        .store(in: &cancellables)
         
         isObserving = true
     }
     
-    public func stopObserving() {
+    open func stopObserving() {
         guard isObserving else { return }
         
-        subscriptions.forEach({ $0.cancel() })
-        
-        timer?.invalidate()
-        timer = nil
+        cancellables.forEach({ $0.cancel() })
         
         isObserving = false
     }
