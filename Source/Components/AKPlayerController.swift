@@ -577,6 +577,7 @@ extension AKPlayerController: AKPlayerPlaybackTimeObserverDelegate {
     public func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
                                            didInvokePeriodicTimeObserverAt time: CMTime,
                                            for player: AVPlayer) {
+        print("didInvokePeriodicTimeObserverAt", time.seconds)
         delegate?.playerController(self,
                                    didChangeCurrentTimeTo: time,
                                    for: currentMedia!)

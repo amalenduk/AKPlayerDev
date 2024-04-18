@@ -160,7 +160,10 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
             seek.completionHandler?(finished)
             pendingSeeks.removeAll()
         } else {
-            enqueue(seek: seek)
+            // Add condition if seek failed because of cancellation then do
+            seek.completionHandler?(false)
+            // else
+            // enqueue(seek: seek)
         }
     }
 }

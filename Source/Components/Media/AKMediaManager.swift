@@ -41,6 +41,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     public private(set) var state: AKPlayableState = .idle {
         didSet {
             stateSubject.send(state)
+            media.delegate?.akMedia(media,
+                                    didChangedState: state)
         }
     }
     

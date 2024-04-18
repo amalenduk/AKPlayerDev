@@ -141,7 +141,12 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func togglePlayPause() {
-        pause()
+        if autoPlay {
+            pause()
+        } else {
+            self.autoPlay = true
+        }
+        
     }
     
     public func stop() {
@@ -203,26 +208,26 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = playerController.currentTime.seconds + offset
+        let time = CMTimeGetSeconds(playerController.currentTime) + offset
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = playerController.currentTime.seconds + offset
+        let time = CMTimeGetSeconds(playerController.currentTime) + offset
         seek(to: time,
              completionHandler: completionHandler)
     }
     
     public func seek(toPercentage percentage: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time,
              completionHandler: completionHandler)
     }
     
     public func seek(toPercentage percentage: Double) {
-        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time)
     }
     

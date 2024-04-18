@@ -51,8 +51,10 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
             playerController.player.pause()
         }
         
+        playerController.currentMedia?.playerItem?.cancelPendingSeeks()
+        
         guard playerController.currentMedia!.state.isReadyToPlay
-                && playerController.currentMedia!.currentTime.seconds >= 0
+                && CMTimeGetSeconds(playerController.currentMedia!.currentTime) >= 0
                 && seekToZero else { return }
         playerController.delegate?.playerController(playerController,
                                                     didChangeCurrentTimeTo: .zero, for: playerController.currentMedia!)
@@ -105,7 +107,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     
     public func play() {
         guard playerController.currentMedia!.state.isReadyToPlay,
-        playerController.player.currentItem == playerController.currentMedia?.playerItem else {
+              playerController.player.currentItem == playerController.currentMedia?.playerItem else {
             load(media: playerController.currentMedia!,
                  autoPlay: true,
                  at: .zero)
@@ -115,14 +117,14 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true)
         change(controller)
-        controller.seek(to: CMTime.zero,
+        controller.seek(to: playerController.currentMedia!.isLive() ? playerController.currentMedia!.getLivePosition() : .zero,
                         toleranceBefore: .zero,
                         toleranceAfter: .zero)
     }
     
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.state.isReadyToPlay,
-        playerController.player.currentItem == playerController.currentMedia?.playerItem else {
+              playerController.player.currentItem == playerController.currentMedia?.playerItem else {
             let controller = AKLoadingState(playerController: playerController,
                                             media: playerController.currentMedia!,
                                             autoPlay: true,
@@ -141,7 +143,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
                                           autoPlay: true,
                                           rate: rate)
         change(controller)
-        controller.seek(to: CMTime.zero,
+        controller.seek(to: playerController.currentMedia!.isLive() ? playerController.currentMedia!.getLivePosition() : .zero,
                         toleranceBefore: .zero,
                         toleranceAfter: .zero)
     }
@@ -261,26 +263,26 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = playerController.currentTime.seconds + offset
+        let time = CMTimeGetSeconds(playerController.currentTime) + offset
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = playerController.currentTime.seconds + offset
+        let time = CMTimeGetSeconds(playerController.currentTime) + offset
         seek(to: time,
              completionHandler: completionHandler)
     }
     
     public func seek(toPercentage percentage: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time,
              completionHandler: completionHandler)
     }
     
     public func seek(toPercentage percentage: Double) {
-        let time = (playerController.currentItem?.duration.seconds ?? 0) * (percentage / 100)
+        let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time)
     }
     

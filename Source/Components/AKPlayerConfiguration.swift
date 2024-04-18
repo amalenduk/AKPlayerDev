@@ -37,7 +37,7 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     public var bufferObservingTimeout: TimeInterval = 20
     
-    public var bufferObservingTimeInterval: TimeInterval = 0.20
+    public var bufferObservingTimeInterval: TimeInterval = 0.05
     
     public var audioSession: AKAudioSessionConfiguration = AKAudioSessionConfiguration()
     

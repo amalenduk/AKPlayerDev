@@ -28,6 +28,7 @@
 import AVFoundation
 import AKPlayer
 import UIKit
+import Combine
 
 var vids = [
     [
@@ -266,16 +267,22 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func progressSliderDidEndTracking(_ slider: UISlider) {
-        //        player.seek(to: CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
-        //            self.isTracking = false
-        //        }
+        if player.currentMedia!.isLive() {
+            player.seek(to: CMTimeMakeWithSeconds((player.currentMedia!.getLivePosition().seconds * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
+                self.isTracking = false
+            }
+        } else {
+            player.seek(to: CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
+                self.isTracking = false
+            }
+        }
     }
     
     @objc func progressSliderDidChangedValue(_ slider: UISlider) {
-        let time = CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))
-        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { finished in
-            self.isTracking = false
-        }
+        //        let time = CMTimeMakeWithSeconds(((player.currentItem?.duration.seconds ?? 0) * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        //        player.seek(to: time, toleranceBefore: .zero, toleranceAfter: .zero) { finished in
+        //            self.isTracking = false
+        //        }
     }
     
     @IBAction func play(_ sender: UIButton) {
@@ -295,11 +302,11 @@ class SimpleVideoViewController: UIViewController {
     
     @IBAction func load(_ sender: Any) {
         let index = Int.random(in: 0..<4)
-        let url =  URL(string: "https://cdn.theoplayer.com/video/sintel/nosubs.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
-        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
-        let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata], staticMetadata: staticMetadata)
+        let url =  URL(string: "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
+        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: true, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
+        let media = AKMedia(url: url, type: .stream(isLive: true), automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata], staticMetadata: staticMetadata)
         media.delegate = self
-        player.load(media: media, autoPlay: autoPlaySwitch.isOn, at: 200)
+        player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
     
     @IBAction func testButtonAction(_ sender: Any) {
@@ -308,23 +315,26 @@ class SimpleVideoViewController: UIViewController {
         //            object: AVAudioSession.sharedInstance(),
         //            userInfo: [AVAudioSessionRouteChangeReasonKey: AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue])
         
-        NotificationCenter.default.post(
-            name: AVAudioSession.interruptionNotification,
-            object: SimpleVideoViewController.session,
-            userInfo: [
-                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
-                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
-            ])
+        //        NotificationCenter.default.post(
+        //            name: AVAudioSession.interruptionNotification,
+        //            object: SimpleVideoViewController.session,
+        //            userInfo: [
+        //                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.began.rawValue,
+        //                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
+        //            ])
+        
+        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
+        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
     }
     
     @IBAction func testTwoButtonAction(_ sender: Any) {
-//        NotificationCenter.default.post(
-//            name: AVAudioSession.interruptionNotification,
-//            object: SimpleVideoViewController.session,
-//            userInfo: [
-//                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue,
-//                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
-//            ])
+        //        NotificationCenter.default.post(
+        //            name: AVAudioSession.interruptionNotification,
+        //            object: SimpleVideoViewController.session,
+        //            userInfo: [
+        //                AVAudioSessionInterruptionTypeKey: AVAudioSession.InterruptionType.ended.rawValue,
+        //                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
+        //            ])
         
         player.player.replaceCurrentItem(with: nil)
     }
@@ -417,8 +427,17 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
-            self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.seconds ?? currentTime.seconds)"
-            self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
+            if media.isLive() {
+                print("didChangeCurrentTimeTo ", currentTime.seconds)
+                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.stringValue ?? currentTime.stringValue)"
+                
+                self.currentTimeLabel.textColor = media.isLivePositionCloseToLive() ? .red : .green
+                
+                self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
+            } else {
+                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.seconds ?? currentTime.seconds)"
+                self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
+            }
         }
     }
     
@@ -453,7 +472,11 @@ extension SimpleVideoViewController: AKMediaDelegate {
     
     func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) {
         DispatchQueue.main.async {
-            self.durationLabel.text = "Duration: " + itemDuration.stringValue
+            if media.isLive() {
+                self.durationLabel.text = "Duration: " + "Live"
+            } else {
+                self.durationLabel.text = "Duration: " + itemDuration.stringValue
+            }
         }
     }
     
@@ -481,9 +504,13 @@ extension SimpleVideoViewController: AKMediaDelegate {
             return startSeconds + durationSeconds
         }
         DispatchQueue.main.async {
-            self.timeSlider.itemDuration = self.player.currentItemDuration ?? .zero
+            self.timeSlider.itemDuration = self.player.currentItemDuration
             self.timeSlider.loadedTimeRanges = loadedTimeRanges.map { $0.timeRangeValue }
         }
+    }
+    
+    func akMedia(_ media: AKPlayable,
+                 didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) {
     }
     
     func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) {

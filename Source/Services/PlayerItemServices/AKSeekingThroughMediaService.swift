@@ -57,15 +57,15 @@ open class AKSeekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
         
         guard time.isValid
                 && time.isNumeric
-                && time.seconds >= 0 else { return (false, .seekPositionNotAvailable)}
+                && CMTimeGetSeconds(time) >= 0 else { return (false, .seekPositionNotAvailable)}
         
-        let duration = playerItem.duration.seconds
+        let duration = CMTimeGetSeconds(playerItem.duration)
         guard duration.isNormal else {
             let ranges = getRangesAvailable()
             return isTimeInRanges(time, ranges) ? (true, nil) : (false, .seekPositionNotAvailable)
         }
         
-        guard time.seconds < duration else { return (false, .seekOverstepPosition) }
+        guard CMTimeGetSeconds(time) < duration else { return (false, .seekOverstepPosition) }
         
         return (true, nil)
     }

@@ -175,6 +175,22 @@ public extension AKPlayable {
     }
 }
 
+public extension AKPlayable {
+    
+    var automaticallyPreservesTimeOffsetFromLive: Bool {
+        get { playerItem?.automaticallyPreservesTimeOffsetFromLive ?? false }
+        set { playerItem?.automaticallyPreservesTimeOffsetFromLive = newValue }
+    }
+    
+    var recommendedTimeOffsetFromLive: CMTime {
+        return playerItem?.recommendedTimeOffsetFromLive ?? .invalid
+    }
+    
+    var configuredTimeOffsetFromLive: CMTime {
+        get { playerItem?.configuredTimeOffsetFromLive ?? .invalid }
+        set { playerItem?.configuredTimeOffsetFromLive = newValue }
+    }
+}
 
 public extension AKPlayable {
     
@@ -232,7 +248,7 @@ public extension AKPlayable {
         guard loadedTimeRange.end.isNumeric,
               duration.isNumeric,
               duration != .zero else { return 0 }
-        return Float(loadedTimeRange.end.seconds / duration.seconds)
+        return Float(CMTimeGetSeconds(loadedTimeRange.end) / CMTimeGetSeconds(duration))
     }
 }
 
@@ -259,5 +275,24 @@ public extension AKPlayable {
     
     var automaticallyLoadedAssetKeysStrings: [String] {
         return playerItem?.automaticallyLoadedAssetKeys ?? []
+    }
+}
+
+public extension AKPlayable {
+    
+    func getLivePosition() -> CMTime {
+        guard let timeRangeValue = seekableTimeRanges.last?.timeRangeValue else { return .indefinite }
+        let start = CMTimeGetSeconds(timeRangeValue.start)
+        let duration = CMTimeGetSeconds(timeRangeValue.duration)
+        return CMTime(seconds: Double(start + duration),
+                      preferredTimescale: timeRangeValue.duration.timescale)
+    }
+    
+    var livePositionOffset: CMTime {
+        return CMTimeSubtract(getLivePosition(), currentTime)
+    }
+    
+    func isLivePositionCloseToLive() -> Bool {
+        return CMTimeGetSeconds(recommendedTimeOffsetFromLive) >= CMTimeGetSeconds(livePositionOffset)
     }
 }
