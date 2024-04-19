@@ -277,8 +277,9 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         
         timer = Timer.scheduledTimer(withTimeInterval: playerController.configuration.bufferObservingTimeInterval,
                                      repeats: true,
-                                     block: { [unowned self] (_) in
-            guard timer?.isValid ?? false else { return }
+                                     block: { [weak self] (_) in
+            guard let self,
+                  timer?.isValid ?? false else { return }
             remainingTime -= playerController.configuration.bufferObservingTimeInterval
             
             if remainingTime <= 0 {

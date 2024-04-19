@@ -429,7 +429,6 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
             if media.isLive() {
-                print("didChangeCurrentTimeTo ", currentTime.seconds)
                 self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.stringValue ?? currentTime.stringValue)"
                 
                 self.currentTimeLabel.textColor = media.isLivePositionCloseToLive() ? .red : .green

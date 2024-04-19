@@ -109,7 +109,6 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
         }
         
         let reason = AVPlayer.RateDidChangeReason(rawValue: key)
-        print("reason : ", reason, "Old: ", oldRate.rate, "New Rate: ", newRate.rate)
         delegate?.playerRateObserver(self,
                                      didChangePlaybackRateTo: newRate,
                                      from: oldRate,

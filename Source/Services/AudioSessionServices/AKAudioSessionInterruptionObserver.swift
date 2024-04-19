@@ -111,7 +111,6 @@ open class AKAudioSessionInterruptionObserver: AKAudioSessionInterruptionObserve
                 interruptionReason = reason
             }
             isInterrupted = true
-            print("Audio session interrupted", true)
             guard let delegate = delegate else { return }
             delegate.audioSessionInterruptionObserver(self,
                                                       didBeginInterruptionWith: interruptionReason,
@@ -120,7 +119,6 @@ open class AKAudioSessionInterruptionObserver: AKAudioSessionInterruptionObserve
             // An interruption ended. Resume playback, if appropriate.
             guard let optionsValue = userInfo[AVAudioSessionInterruptionOptionKey] as? UInt else { return }
             isInterrupted = false
-            print("Audio session interrupted", false)
             let options = AVAudioSession.InterruptionOptions(rawValue: optionsValue)
             guard let delegate = delegate else { return }
             delegate.audioSessionInterruptionObserver(self,
