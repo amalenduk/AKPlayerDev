@@ -60,12 +60,6 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
         self.autoPlay = autoPlay
         self.position = position
         self.rate = rate
-        
-        cancellable = media.statePublisher
-            .receive(on: DispatchQueue.main)
-            .sink { [unowned self] state in
-                handleMediaSteChange(with: state)
-            }
     }
     
     deinit { }
@@ -74,6 +68,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
         resetPlayer()
         playerController.delegate?.playerController(playerController,
                                                     didChangeMediaTo: media)
+        cancellable = media.statePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] state in
+                handleMediaSteChange(with: state)
+            }
         
         handleMediaSteChange(with: media.state)
     }
@@ -328,12 +327,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func resetPlayer() {
-        /*
-         Loading a clip media from playing state, play automatically the new clip media
-         Ensure player will play only when we ask
-         */
-        if playerController.player.timeControlStatus == .playing
-            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+        if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
         

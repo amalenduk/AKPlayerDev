@@ -63,8 +63,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
-        if playerController.player.timeControlStatus == .playing
-            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+        if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
         
@@ -112,7 +111,6 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     public func play() {
         guard playerController.networkStatusMonitor.isConnected else {
-            autoPlay = true
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .waitingForEstablishedNetwork)
             return
@@ -127,7 +125,6 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     public func play(at rate: AKPlaybackRate) {
         guard playerController.networkStatusMonitor.isConnected else {
-            autoPlay = true
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .waitingForEstablishedNetwork)
             return
@@ -159,8 +156,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     public func stop() {
-        let controller = AKStoppedState(playerController: playerController,
-                                        seekToZero: true)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     

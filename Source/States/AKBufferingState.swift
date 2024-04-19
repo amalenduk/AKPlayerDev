@@ -68,8 +68,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func didChangeState() {
-        if playerController.player.timeControlStatus == .playing
-            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+        if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
         
@@ -150,8 +149,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func stop() {
-        let controller = AKStoppedState(playerController: playerController,
-                                        seekToZero: true)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     
@@ -301,8 +299,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private func changeToPreviousState() {
         guard !playerController.isSeeking
-                && (playerController.currentItem?.isPlaybackBufferFull ?? false
-                    || playerController.currentItem?.isPlaybackLikelyToKeepUp ?? false) else { return }
+                && (playerController.currentMedia!.isPlaybackBufferFull
+                    || playerController.currentMedia!.isPlaybackLikelyToKeepUp) else { return }
         
         switch stateToNavigateAfterBuffering {
         case .loaded:
@@ -311,10 +309,6 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
             return change(controller)
         case .paused:
             let controller = AKPausedState(playerController: playerController)
-            return change(controller)
-        case .stopped:
-            let controller = AKStoppedState(playerController: playerController,
-                                            seekToZero: false)
             return change(controller)
         default: break
         }
@@ -334,7 +328,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         playerController.networkStatusMonitor.networkStatusPublisher
             .receive(on: RunLoop.main)
             .prepend(playerController.networkStatusMonitor.currentNetworkStatus)
-            .sink { [unowned self] status in
+            .sink { [weak self] status in
+                guard let self else { return }
                 if !(status == .satisfied) {
                     let controller = AKWaitingForNetworkState(playerController: playerController,
                                                               autoPlay: autoPlay,

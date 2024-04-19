@@ -89,7 +89,6 @@ public enum AKPlayerState: String, CustomStringConvertible {
         return isLoading || isLoaded
     }
     
-    /// Cheks `isIdle || isPaused || isStopped || isFailed`
     var isPlaybackInactive: Bool {
         return isIdle || isPaused || isStopped || isFailed
     }

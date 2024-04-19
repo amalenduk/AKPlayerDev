@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		0410711B27402583009EA93E /* AKApplicationLifeCycleEventsObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0410711A27402583009EA93E /* AKApplicationLifeCycleEventsObserver.swift */; };
 		0416BE3B263D8CF900D2ECA6 /* AKPlayerItemTracksObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0416BE3A263D8CF900D2ECA6 /* AKPlayerItemTracksObserver.swift */; };
+		041B1CD42BD11CFB0093FB25 /* AKStoppedStateBackup.swift in Sources */ = {isa = PBXBuildFile; fileRef = 041B1CD32BD11CFB0093FB25 /* AKStoppedStateBackup.swift */; };
 		04262CCF2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04262CCE2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift */; };
 		04262CD12A86873F00AE4468 /* Runtime.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04262CD02A86873F00AE4468 /* Runtime.swift */; };
 		04267CB02BAB530500738B04 /* Dictionary+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04267CAF2BAB530500738B04 /* Dictionary+Extensions.swift */; };
@@ -117,6 +118,7 @@
 		00747DA8B9E381E0EBDB2A9EF6F01321 /* Pods-AKPlayer_Tests-umbrella.h */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.h; path = "Pods-AKPlayer_Tests-umbrella.h"; sourceTree = "<group>"; };
 		0410711A27402583009EA93E /* AKApplicationLifeCycleEventsObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKApplicationLifeCycleEventsObserver.swift; sourceTree = "<group>"; };
 		0416BE3A263D8CF900D2ECA6 /* AKPlayerItemTracksObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKPlayerItemTracksObserver.swift; sourceTree = "<group>"; };
+		041B1CD32BD11CFB0093FB25 /* AKStoppedStateBackup.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKStoppedStateBackup.swift; sourceTree = "<group>"; };
 		04262CCE2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AVPlayerItem+Extensions.swift"; sourceTree = "<group>"; };
 		04262CD02A86873F00AE4468 /* Runtime.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Runtime.swift; sourceTree = "<group>"; };
 		04267CAF2BAB530500738B04 /* Dictionary+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Dictionary+Extensions.swift"; sourceTree = "<group>"; };
@@ -416,6 +418,7 @@
 				ABFEA6FFF855B526EFC6F17EDBB9C70E /* AKPlayingState.swift */,
 				EA0DE00DC075334D0DDE01B9F78625D7 /* AKPausedState.swift */,
 				624F89AA48FE6295A6B1912A63EE976F /* AKStoppedState.swift */,
+				041B1CD32BD11CFB0093FB25 /* AKStoppedStateBackup.swift */,
 				86C3BB6A54D1EB700E09D17490914953 /* AKFailedState.swift */,
 			);
 			name = States;
@@ -753,6 +756,7 @@
 				94363B52AB1CF88F59CDB3081BAE369F /* AKPlayerItemNotificationsObserver.swift in Sources */,
 				045431CB299B986900DB374E /* AKAudioSessionSpatialPlaybackCapabilitiesObserver.swift in Sources */,
 				A8793FB34AA6B842045CAA3981D8778A /* AKPlayerRateObserver.swift in Sources */,
+				041B1CD42BD11CFB0093FB25 /* AKStoppedStateBackup.swift in Sources */,
 				7DB591584BCF68BB91D56A847CEA8ECB /* AKAudioSessionRouteChangesObserver.swift in Sources */,
 				55D8680E657F343D7D8B13244E691310 /* AKSeekingThroughMediaService.swift in Sources */,
 				04262CCF2A8620BC00AE4468 /* AVPlayerItem+Extensions.swift in Sources */,

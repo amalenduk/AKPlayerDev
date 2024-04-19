@@ -143,8 +143,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     public func stop() {
-        let controller = AKStoppedState(playerController: playerController,
-                                        seekToZero: true)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     

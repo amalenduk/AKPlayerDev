@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-public protocol AKPlayerProtocol: AnyObject {
+public protocol AKPlayerProtocol: AnyObject, AKPlayerCommandsProtocol {
     var player: AVPlayer { get }
     var state: AKPlayerState { get }
     var defaultRate: AKPlaybackRate { get set }
@@ -41,4 +41,6 @@ public protocol AKPlayerProtocol: AnyObject {
     var volume: Float { get set }
     var isMuted: Bool { get set }
     var error: AKPlayerError? { get }
+    
+    
 }

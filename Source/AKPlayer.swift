@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-open class AKPlayer: NSObject, AKPlayerProtocol, AKPlayerCommandsProtocol {
+open class AKPlayer: NSObject, AKPlayerProtocol {
     
     // MARK: - Properties
     

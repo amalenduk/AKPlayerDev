@@ -93,11 +93,9 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open private(set) var controller: AKPlayerStateControllerProtocol {
         get { return _controller }
         set {
-            let oldState: AKPlayerState = _controller?.state ?? .idle
-            beforeStateChange(with: newValue.state)
             _controller = newValue
             controller.didChangeState()
-            afterStateChange(with: oldState)
+            handleStateChange()
             delegate?.playerController(self, didChangeStateTo: controller.state)
         }
     }
@@ -146,16 +144,15 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     deinit {
         print("AKPlayerController: Deinit called from the AKPlayerController ✌🏼")
+        networkStatusMonitor.stopObserving()
         stopPlayerObservers()
     }
     
     // MARK: - Commands
     
     open func load(media: AKPlayable) {
-        if !state.isIdle
-            && !state.isStopped
-            && !state.isFailed {
-            stop()
+        if !state.isPlaybackInactive {
+            pause()
         }
         currentMedia = media
         
@@ -164,10 +161,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     open func load(media: AKPlayable,
                    autoPlay: Bool) {
-        if !state.isIdle
-            && !state.isStopped
-            && !state.isFailed {
-            stop()
+        if !state.isPlaybackInactive {
+            pause()
         }
         currentMedia = media
         
@@ -178,10 +173,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open func load(media: AKPlayable,
                    autoPlay: Bool,
                    at position: CMTime) {
-        if !state.isIdle
-            && !state.isStopped
-            && !state.isFailed {
-            stop()
+        if !state.isPlaybackInactive {
+            pause()
         }
         currentMedia = media
         
@@ -193,10 +186,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open func load(media: AKPlayable,
                    autoPlay: Bool,
                    at position: Double) {
-        if !state.isIdle
-            && !state.isStopped
-            && !state.isFailed {
-            stop()
+        if !state.isPlaybackInactive {
+            pause()
         }
         currentMedia = media
         
@@ -397,31 +388,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         self.controller = controller
     }
     
-    open func beforeStateChange(with newState: AKPlayerState) {
-        guard !newState.isIdle else { return }
-        switch newState {
-        case .idle:
-            break
-        case .loading:
-            break
-        case .loaded:
-            break
-        case .buffering:
-            break
-        case .paused:
-            break
-        case .playing:
-            break
-        case .stopped:
-            break
-        case .waitingForNetwork:
-            break
-        case .failed:
-            break
-        }
-    }
-    
-    open func afterStateChange(with oldState: AKPlayerState) {
+    open func handleStateChange() {
         switch state {
         case .idle:
             break
@@ -450,15 +417,16 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerPlaybackTimeObserver.startObservingPeriodicTime(for: configuration.getPeriodicTimeInterval())
         playerWaitingBehaviorObserver.startObserving()
         playerAudioBehaviorObserver.startObserving()
+        playerAudioBehaviorObserver.startObserving()
     }
     
     private func stopPlayerObservers() {
         playerRateObserver.stopObserving()
         playerReadinessObserver.stopObserving()
         playerPlaybackTimeObserver.stopObservingPeriodicTime()
+        playerPlaybackTimeObserver.stopObservingBoundaryTime()
         playerWaitingBehaviorObserver.stopObserving()
         playerAudioBehaviorObserver.stopObserving()
-        networkStatusMonitor.stopObserving()
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {
@@ -577,7 +545,6 @@ extension AKPlayerController: AKPlayerPlaybackTimeObserverDelegate {
     public func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
                                            didInvokePeriodicTimeObserverAt time: CMTime,
                                            for player: AVPlayer) {
-        print("didInvokePeriodicTimeObserverAt", time.seconds)
         delegate?.playerController(self,
                                    didChangeCurrentTimeTo: time,
                                    for: currentMedia!)

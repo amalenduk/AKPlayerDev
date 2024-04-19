@@ -53,7 +53,7 @@ public protocol AKPlayerControllerDelegate: AnyObject {
                           didFailWith error: AKPlayerError)
 }
 
-public protocol AKPlayerControllerProtocol: AKPlayerProtocol, AKPlayerCommandsProtocol {
+public protocol AKPlayerControllerProtocol: AKPlayerProtocol {
     var configuration: AKPlayerConfigurationProtocol { get }
     var controller: AKPlayerStateControllerProtocol { get }
     var delegate: AKPlayerControllerDelegate? { get set }
@@ -63,6 +63,5 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol, AKPlayerCommandsPr
     
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)
-    func beforeStateChange(with newState: AKPlayerState)
-    func afterStateChange(with oldState: AKPlayerState)
+    func handleStateChange()
 }

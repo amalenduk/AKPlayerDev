@@ -33,18 +33,31 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     public let state: AKPlayerState = .paused
     
+    private let playerItemDidPlayToEndTime: Bool
+    
+    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
+    
     // MARK: - Init
     
-    public init(playerController: AKPlayerControllerProtocol) {
+    public init(playerController: AKPlayerControllerProtocol,
+                playerItemDidPlayToEndTime: Bool = false) {
         self.playerController = playerController
+        self.playerItemDidPlayToEndTime = playerItemDidPlayToEndTime
+        
+        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
     deinit { }
     
     public func didChangeState() {
-        if playerController.player.timeControlStatus == .playing
-            || playerController.player.timeControlStatus == .waitingToPlayAtSpecifiedRate {
+        startPlayerItemObservingNotificationsService()
+        if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
+        }
+        if playerItemDidPlayToEndTime {
+            playerController.delegate?.playerController(playerController,
+                                                        playerItemDidReachEnd: playerController.currentTime,
+                                                        for: playerController.currentMedia!)
         }
     }
     
@@ -96,6 +109,9 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true)
         change(controller)
+        playerItemDidPlayToEndTime ? controller.seek(to: .zero,
+                                                     toleranceBefore: .zero,
+                                                     toleranceAfter: .zero) : nil
     }
     
     public func play(at rate: AKPlaybackRate) {
@@ -117,6 +133,9 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
                                           autoPlay: true,
                                           rate: rate)
         change(controller)
+        playerItemDidPlayToEndTime ? controller.seek(to: .zero,
+                                                     toleranceBefore: .zero,
+                                                     toleranceAfter: .zero) : nil
     }
     
     public func pause() {
@@ -129,8 +148,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     }
     
     public func stop() {
-        let controller = AKStoppedState(playerController: playerController,
-                                        seekToZero: true)
+        let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     
@@ -258,7 +276,32 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Additional Helper Functions
     
+    private func startPlayerItemObservingNotificationsService() {
+        playerItemNotificationsObserver.delegate = self
+        playerItemNotificationsObserver.startObserving()
+    }
+    
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)
+    }
+}
+
+// MARK: - AKPlayerItemNotificationsObserverDelegate
+
+extension AKPausedState: AKPlayerItemNotificationsObserverDelegate {
+    
+    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
+                                                didFailToPlayToEndTimeWith error: AKPlayerError,
+                                                for playerItem: AVPlayerItem) {
+        
+        guard error.underlyingError is URLError else {
+            let controller = AKFailedState(playerController: playerController,
+                                           error: .itemFailedToPlayToEndTime)
+            return change(controller)
+        }
+        
+        let controller = AKWaitingForNetworkState(playerController: playerController,
+                                                  autoPlay: false)
+        change(controller)
     }
 }

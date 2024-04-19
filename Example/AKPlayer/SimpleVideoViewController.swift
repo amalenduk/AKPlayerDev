@@ -267,7 +267,7 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func progressSliderDidEndTracking(_ slider: UISlider) {
-        if player.currentMedia!.isLive() {
+        if player.currentMedia?.isLive() ?? false {
             player.seek(to: CMTimeMakeWithSeconds((player.currentMedia!.getLivePosition().seconds * Double(slider.value)), preferredTimescale: CMTimeScale(NSEC_PER_SEC))) { _ in
                 self.isTracking = false
             }
@@ -302,6 +302,7 @@ class SimpleVideoViewController: UIViewController {
     
     @IBAction func load(_ sender: Any) {
         let index = Int.random(in: 0..<4)
+        // "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8"
         let url =  URL(string: "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
         let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: true, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
         let media = AKMedia(url: url, type: .stream(isLive: true), automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata], staticMetadata: staticMetadata)
@@ -435,7 +436,8 @@ extension SimpleVideoViewController: AKPlayerDelegate {
                 
                 self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
             } else {
-                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.seconds ?? currentTime.seconds)"
+                print("\(currentTime.seconds)")
+                self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
                 self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
             }
         }
