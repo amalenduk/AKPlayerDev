@@ -282,10 +282,8 @@ public extension AKPlayable {
     
     func getLivePosition() -> CMTime {
         guard let timeRangeValue = seekableTimeRanges.last?.timeRangeValue else { return .indefinite }
-        let start = CMTimeGetSeconds(timeRangeValue.start)
-        let duration = CMTimeGetSeconds(timeRangeValue.duration)
-        return CMTime(seconds: Double(start + duration),
-                      preferredTimescale: timeRangeValue.duration.timescale)
+        return CMTimeRangeGetEnd(timeRangeValue) // CMTimeAdd(timeRangeValue.start, timeRangeValue.duration)
+        
     }
     
     var livePositionOffset: CMTime {
@@ -294,5 +292,55 @@ public extension AKPlayable {
     
     func isLivePositionCloseToLive() -> Bool {
         return CMTimeGetSeconds(recommendedTimeOffsetFromLive) >= CMTimeGetSeconds(livePositionOffset)
+    }
+}
+
+public extension AKPlayable {
+    
+    var externalMetadata: [AVMetadataItem] {
+        get { playerItem?.externalMetadata ?? [] }
+        set { playerItem?.externalMetadata = newValue }
+    }
+}
+
+public extension AKPlayable {
+    
+    var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+        return manager.playerItemDidPlayToEndTimePublisher
+    }
+    
+    var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+        return manager.playerItemFailedToPlayToEndTimePublisher
+    }
+    
+    var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
+        return manager.playerItemPlaybackStalledPublisher
+    }
+    
+    var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
+        return manager.playerItemTimeJumpedPublisher
+    }
+    
+    var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+        return manager.playerItemMediaSelectionDidChangePublisher
+    }
+    
+    var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+        return manager.playerItemRecommendedTimeOffsetFromLiveDidChangePublisher
+    }
+}
+
+public extension AKPlayable {
+    
+    var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> {
+        return manager.playbackLikelyToKeepUpPublisher
+    }
+    
+    var playbackBufferFullPublisher: AnyPublisher<Bool, Never> {
+        return manager.playbackBufferFullPublisher
+    }
+    
+    var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> {
+        return manager.playbackBufferEmptyPublisher
     }
 }

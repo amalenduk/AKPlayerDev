@@ -24,46 +24,17 @@
 //
 
 import AVFoundation
-
-public protocol AKPlayerItemNotificationsObserverDelegate: AnyObject {
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didPlayToEndTimeAt time: CMTime,
-                                         for playerItem: AVPlayerItem)
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didFailToPlayToEndTimeWith error: AKPlayerError,
-                                         for playerItem: AVPlayerItem)
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didStallPlaybackFor playerItem: AVPlayerItem)
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didTimeJumpFor playerItem: AVPlayerItem)
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didChangeMediaSelectionFor playerItem: AVPlayerItem)
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didChangeRecommendedTimeOffsetFromLiveTo recommendedTimeOffsetFromLive: CMTime,
-                                         for playerItem: AVPlayerItem)
-}
-
-public extension AKPlayerItemNotificationsObserverDelegate {
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didPlayToEndTimeAt time: CMTime,
-                                         for playerItem: AVPlayerItem) { }
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didFailToPlayToEndTimeWith error: AKPlayerError,
-                                         for playerItem: AVPlayerItem) { }
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didStallPlaybackFor playerItem: AVPlayerItem) { }
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didTimeJumpFor playerItem: AVPlayerItem) { }
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didChangeMediaSelectionFor playerItem: AVPlayerItem) { }
-    func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                         didChangeRecommendedTimeOffsetFromLiveTo recommendedTimeOffsetFromLive: CMTime,
-                                         for playerItem: AVPlayerItem) { }
-}
+import Combine
 
 public protocol AKPlayerItemNotificationsObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemNotificationsObserverDelegate? { get set }
+
+    var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
+    var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
+    var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> { get }
+    var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> { get }
+    var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> { get }
+    var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -75,9 +46,39 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemNotificationsObserverDelegate?
-    
     private var isObserving = false
+    
+    private var cancellables = Set<AnyCancellable>()
+    
+    public var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+        _playerItemDidPlayToEndTimePublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemDidPlayToEndTimePublisher = PassthroughSubject<CMTime, Never>()
+    
+    public var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+        _playerItemFailedToPlayToEndTimePublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemFailedToPlayToEndTimePublisher = PassthroughSubject<AKPlayerError, Never>()
+    
+    public var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
+        _playerItemPlaybackStalledPublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemPlaybackStalledPublisher = PassthroughSubject<Void, Never>()
+    
+    public var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
+        _playerItemTimeJumpedPublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemTimeJumpedPublisher = PassthroughSubject<Void, Never>()
+    
+    public var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+        _playerItemMediaSelectionDidChangePublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemMediaSelectionDidChangePublisher = PassthroughSubject<Void, Never>()
+    
+    public var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+        _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher.eraseToAnyPublisher()
+    }
+    private let _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher = PassthroughSubject<CMTime, Never>()
     
     // MARK: - Init
     
@@ -93,129 +94,62 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
         guard !isObserving else { return }
         
         /* When the player item has played to its end time */
-        NotificationCenter.default.addObserver(self, selector:
-                                                #selector(handlePlayerItemDidPlayToEndTimeNotification(_ :)),
-                                               name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-                                               object: playerItem)
+        NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                _playerItemDidPlayToEndTimePublisher.send(playerItem.currentTime())
+            }
+            .store(in: &cancellables)
         
         /* When the player item has failed to play to its end time */
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handlePlayerItemFailedToPlayToEndTime(_ :)),
-                                               name: NSNotification.Name.AVPlayerItemFailedToPlayToEndTime,
-                                               object: playerItem)
+        NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
+            .sink { [weak self] notification in
+                guard let self,
+                      let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
+                _playerItemFailedToPlayToEndTimePublisher.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
+            }
+            .store(in: &cancellables)
         
         /* A notification that’s posted when some media doesn’t arrive in time to continue playback.
          
          The notification’s object is the player item whose playback is unable to continue due to network delays. Streaming-media playback continues once the player receives a sufficient amount of data. File-based playback doesn’t continue.
          */
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handlePlayerItemPlaybackStalled(_ :)),
-                                               name: NSNotification.Name.AVPlayerItemPlaybackStalled,
-                                               object: playerItem)
+        NotificationCenter.default.publisher(for: .AVPlayerItemPlaybackStalled, object: playerItem)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                _playerItemPlaybackStalledPublisher.send()
+            }
+            .store(in: &cancellables)
         
         /* A notification the system posts when a player item’s time changes discontinuously. */
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handlePlayerItemtTimeJumped(_ :)),
-                                               name: AVPlayerItem.timeJumpedNotification,
-                                               object: playerItem)
+        NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification, object: playerItem)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                _playerItemTimeJumpedPublisher.send()
+            }
+            .store(in: &cancellables)
         
         /* A notification the player item posts when its media selection changes. */
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleMediaSelectionDidChange(_ :)),
-                                               name: AVPlayerItem.mediaSelectionDidChangeNotification,
-                                               object: playerItem)
+        NotificationCenter.default.publisher(for: AVPlayerItem.mediaSelectionDidChangeNotification, object: playerItem)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                _playerItemMediaSelectionDidChangePublisher.send()
+            }
+            .store(in: &cancellables)
         
         /* A notification the player item posts when its offset from the live time changes. */
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleRecommendedTimeOffsetFromLiveDidChange(_ :)),
-                                               name: AVPlayerItem.recommendedTimeOffsetFromLiveDidChangeNotification,
-                                               object: playerItem)
-        
+        NotificationCenter.default.publisher(for: AVPlayerItem.recommendedTimeOffsetFromLiveDidChangeNotification, object: playerItem)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher.send(playerItem.recommendedTimeOffsetFromLive)
+            }
+            .store(in: &cancellables)
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        NotificationCenter.default.removeObserver(self,
-                                                  name: NSNotification.Name.AVPlayerItemDidPlayToEndTime,
-                                                  object: playerItem)
-        NotificationCenter.default.removeObserver(self,
-                                                  name: NSNotification.Name.AVPlayerItemFailedToPlayToEndTime,
-                                                  object: playerItem)
-        NotificationCenter.default.removeObserver(self,
-                                                  name: NSNotification.Name.AVPlayerItemPlaybackStalled,
-                                                  object: playerItem)
-        NotificationCenter.default.removeObserver(self,
-                                                  name: AVPlayerItem.timeJumpedNotification,
-                                                  object: playerItem)
-        NotificationCenter.default.removeObserver(self,
-                                                  name: AVPlayerItem.mediaSelectionDidChangeNotification,
-                                                  object: playerItem)
-        NotificationCenter.default.removeObserver(self,
-                                                  name: AVPlayerItem.recommendedTimeOffsetFromLiveDidChangeNotification,
-                                                  object: playerItem)
-        
+        cancellables.removeAll()
         isObserving = false
-    }
-    
-    /* Called when the player item has played to its end time. */
-    @objc private func handlePlayerItemDidPlayToEndTimeNotification(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate else { return }
-        delegate.playerItemNotificationsObserver(self,
-                                                 didPlayToEndTimeAt: item.currentTime(),
-                                                 for: item)
-    }
-    
-    /* When the player item has failed to play to its end time */
-    @objc private func handlePlayerItemFailedToPlayToEndTime(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate  else { return }
-        
-        if let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError {
-            delegate.playerItemNotificationsObserver(self,
-                                                     didFailToPlayToEndTimeWith: AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)),
-                                                     for: item)
-        } else {
-            
-            delegate.playerItemNotificationsObserver(self,
-                                                     didFailToPlayToEndTimeWith: AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: item.error!)),
-                                                     for: item)
-        }
-    }
-    
-    /* A notification that’s posted when some media doesn’t arrive in time to continue playback. */
-    @objc private func handlePlayerItemPlaybackStalled(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate  else { return }
-        delegate.playerItemNotificationsObserver(self,
-                                                 didStallPlaybackFor: item)
-    }
-    
-    @objc private func handlePlayerItemtTimeJumped(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate  else { return }
-        delegate.playerItemNotificationsObserver(self, didTimeJumpFor: item)
-    }
-    
-    @objc private func handleMediaSelectionDidChange(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate  else { return }
-        delegate.playerItemNotificationsObserver(self,
-                                                 didChangeMediaSelectionFor: item)
-    }
-    
-    @objc private func handleRecommendedTimeOffsetFromLiveDidChange(_ notification: Notification) {
-        guard let item = notification.object as? AVPlayerItem,
-              item == playerItem,
-              let delegate = delegate  else { return }
-        delegate.playerItemNotificationsObserver(self,
-                                                 didChangeRecommendedTimeOffsetFromLiveTo: item.recommendedTimeOffsetFromLive,
-                                                 for: item)
     }
 }

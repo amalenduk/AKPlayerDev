@@ -331,6 +331,7 @@
 				3DFCE490635A43D4E4445D2DEFB7279B /* AKMediaMetadata.swift */,
 				044EE0DE29A87FE300A77A3A /* AKMediaManager.swift */,
 				04B3CDA92AB35A4B00481C3B /* AKPlayable+Extensions.swift */,
+				04569F632AC1E2DF0080164B /* AKMediaManagerProtocol.swift */,
 			);
 			path = Media;
 			sourceTree = "<group>";
@@ -399,7 +400,6 @@
 				049DCCB326F1D2E600BD812D /* AKPlayerState.swift */,
 				042977B32997FF18006858F8 /* AKTIme.swift */,
 				04262CD02A86873F00AE4468 /* Runtime.swift */,
-				04569F632AC1E2DF0080164B /* AKMediaManagerProtocol.swift */,
 				04BF4BC82BC32B0700CD04AE /* AKNetworkStatusMonitor.swift */,
 				04BF4BCA2BC3ABAA00CD04AE /* AKSeek.swift */,
 			);

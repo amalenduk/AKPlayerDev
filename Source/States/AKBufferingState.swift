@@ -44,10 +44,6 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
-    private var playerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObserverProtocol!
-    
-    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
-    
     // MARK: - Init
     
     public init(playerController: AKPlayerControllerProtocol,
@@ -58,9 +54,6 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         self.playerController = playerController
         self.autoPlay = autoPlay
         self.rate = rate
-        
-        playerItemBufferingStatusObserver = AKPlayerItemBufferingStatusObserver(with: playerController.currentMedia!.playerItem!)
-        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentMedia!.playerItem!)
     }
     
     deinit {
@@ -72,8 +65,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
             playerController.player.pause()
         }
         
-        startPlayerItemBufferingStatusObserver()
-        startPlayerItemNotificationsObserver()
+        startObservingPlayerItemBufferingStatus()
+        startObservingPlayerItemNotifications()
         startBufferTimeoutWatcher()
         observeNetworkChanges()
     }
@@ -128,10 +121,11 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .alreadyTryingToPlay)
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
             return
         }
         self.rate = rate
+        autoPlay = true
     }
     
     public func pause() {
@@ -143,9 +137,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         if autoPlay {
             pause()
         } else {
-            self.autoPlay = true
+            play()
         }
-        
     }
     
     public func stop() {
@@ -206,13 +199,15 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
@@ -251,24 +246,52 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     // MARK: - Additional Helper Functions
     
-    private func startPlayerItemNotificationsObserver() {
-        playerItemNotificationsObserver.delegate = self
-        playerItemNotificationsObserver.startObserving()
+    private func startObservingPlayerItemNotifications() {
+        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                guard error.underlyingError is URLError else {
+                    let controller = AKFailedState(playerController: playerController,
+                                                   error: .itemFailedToPlayToEndTime)
+                    return change(controller)
+                }
+                
+                let controller = AKWaitingForNetworkState(playerController: playerController,
+                                                          autoPlay: autoPlay,
+                                                          rate: rate,
+                                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
+                change(controller)
+            }.store(in: &cancellables)
     }
     
-    private func startPlayerItemBufferingStatusObserver() {
-        playerItemBufferingStatusObserver.delegate = self
-        playerItemBufferingStatusObserver.startObserving(with: playerController.configuration.bufferObservingTimeout,
-                                                         bufferObservingTimeInterval: playerController.configuration.bufferObservingTimeInterval)
+    private func startObservingPlayerItemBufferingStatus() {
+        playerController.currentMedia!.playbackLikelyToKeepUpPublisher
+            .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
+                if autoPlay {
+                    startPlayingIfPossible()
+                } else {
+                    changeToPreviousState()
+                }
+            })
+            .store(in: &cancellables)
+        
+        playerController.currentMedia!.playbackBufferFullPublisher
+            .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
+                if autoPlay {
+                    startPlayingIfPossible()
+                } else {
+                    changeToPreviousState()
+                }
+            })
+            .store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         
         timer?.invalidate()
         timer = nil
         
-        playerItemBufferingStatusObserver.stopObserving()
         playerController.change(controller)
     }
     
@@ -316,9 +339,9 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     private func startPlayingIfPossible() {
-        guard (playerController.currentItem!.isPlaybackBufferFull
-               || playerController.currentItem!.isPlaybackLikelyToKeepUp)
-                && !playerController.isSeeking else { return }
+        guard !playerController.isSeeking
+                && (playerController.currentMedia!.isPlaybackBufferFull
+                    || playerController.currentMedia!.isPlaybackLikelyToKeepUp) else { return }
         
         let controller = AKPlayingState(playerController: playerController,
                                         rate: rate)
@@ -340,53 +363,5 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                 }
             }
             .store(in: &cancellables)
-    }
-    
-}
-
-// MARK: - AKPlayerItemBufferingStatusObserverDelegate
-
-extension AKBufferingState: AKPlayerItemBufferingStatusObserverDelegate {
-    
-    public func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                                  didChangePlaybackLikelyToKeepUpStatusTo isPlaybackLikelyToKeepUp: Bool,
-                                                  for playerItem: AVPlayerItem) {
-        if autoPlay {
-            startPlayingIfPossible()
-        } else {
-            changeToPreviousState()
-        }
-    }
-    
-    public func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                                  didChangePlaybackBufferFullStatusTo isPlaybackBufferFull: Bool,
-                                                  for playerItem: AVPlayerItem) {
-        if autoPlay {
-            startPlayingIfPossible()
-        } else {
-            changeToPreviousState()
-        }
-    }
-}
-
-// MARK: - AKPlayerItemNotificationsObserverDelegate
-
-extension AKBufferingState: AKPlayerItemNotificationsObserverDelegate {
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didFailToPlayToEndTimeWith error: AKPlayerError,
-                                                for playerItem: AVPlayerItem) {
-        
-        guard error.underlyingError is URLError else {
-            let controller = AKFailedState(playerController: playerController,
-                                           error: .itemFailedToPlayToEndTime)
-            return change(controller)
-        }
-        
-        let controller = AKWaitingForNetworkState(playerController: playerController,
-                                                  autoPlay: autoPlay,
-                                                  rate: rate,
-                                                  stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-        change(controller)
     }
 }

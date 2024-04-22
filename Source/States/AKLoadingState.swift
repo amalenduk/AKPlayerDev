@@ -68,6 +68,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
         resetPlayer()
         playerController.delegate?.playerController(playerController,
                                                     didChangeMediaTo: media)
+        
         cancellable = media.statePublisher
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
@@ -120,13 +121,12 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     public func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+        autoPlay = true
     }
     
     public func play(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+        autoPlay = true
+        self.rate = rate
     }
     
     public func pause() {
@@ -138,7 +138,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     public func togglePlayPause() {
-        pause()
+        if autoPlay {
+            pause()
+        } else {
+            play()
+        }
     }
     
     public func stop() {

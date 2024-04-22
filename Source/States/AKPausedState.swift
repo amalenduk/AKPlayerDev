@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import Combine
 
 public class AKPausedState: AKPlayerStateControllerProtocol {
     
@@ -35,7 +36,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     private let playerItemDidPlayToEndTime: Bool
     
-    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -43,14 +44,12 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
                 playerItemDidPlayToEndTime: Bool = false) {
         self.playerController = playerController
         self.playerItemDidPlayToEndTime = playerItemDidPlayToEndTime
-        
-        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
     deinit { }
     
     public func didChangeState() {
-        startPlayerItemObservingNotificationsService()
+        startObservingPlayerItemNotifications()
         if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
@@ -223,13 +222,15 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
@@ -276,32 +277,23 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Additional Helper Functions
     
-    private func startPlayerItemObservingNotificationsService() {
-        playerItemNotificationsObserver.delegate = self
-        playerItemNotificationsObserver.startObserving()
+    private func startObservingPlayerItemNotifications() {
+        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                guard error.underlyingError is URLError else {
+                    let controller = AKFailedState(playerController: playerController,
+                                                   error: .itemFailedToPlayToEndTime)
+                    return change(controller)
+                }
+                
+                let controller = AKWaitingForNetworkState(playerController: playerController,
+                                                          autoPlay: false)
+                change(controller)
+            }.store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)
-    }
-}
-
-// MARK: - AKPlayerItemNotificationsObserverDelegate
-
-extension AKPausedState: AKPlayerItemNotificationsObserverDelegate {
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didFailToPlayToEndTimeWith error: AKPlayerError,
-                                                for playerItem: AVPlayerItem) {
-        
-        guard error.underlyingError is URLError else {
-            let controller = AKFailedState(playerController: playerController,
-                                           error: .itemFailedToPlayToEndTime)
-            return change(controller)
-        }
-        
-        let controller = AKWaitingForNetworkState(playerController: playerController,
-                                                  autoPlay: false)
-        change(controller)
     }
 }

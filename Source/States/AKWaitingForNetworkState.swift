@@ -44,8 +44,6 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
-    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
-    
     // MARK: - Init
     
     public init(playerController: AKPlayerControllerProtocol,
@@ -56,8 +54,6 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         self.playerController = playerController
         self.autoPlay = autoPlay
         self.rate = rate
-        
-        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentMedia!.playerItem!)
     }
     
     deinit { }
@@ -67,7 +63,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
             playerController.player.pause()
         }
         
-        startPlayerItemObservingNotificationsService()
+        startObservingPlayerItemNotifications()
         observeNetworkChanges()
     }
     
@@ -110,36 +106,22 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     public func play() {
-        guard playerController.networkStatusMonitor.isConnected else {
+        if autoPlay {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .waitingForEstablishedNetwork)
-            return
+                                                        unavailableActionWith: .alreadyTryingToPlay)
+        } else {
+            self.autoPlay = true
         }
-        
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: autoPlay,
-                                          rate: rate,
-                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-        change(controller)
     }
     
     public func play(at rate: AKPlaybackRate) {
-        guard playerController.networkStatusMonitor.isConnected else {
-            playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .waitingForEstablishedNetwork)
-            return
-        }
-        
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .canNotPlayAtSpecifiedRate)
             return
         }
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: autoPlay,
-                                          rate: rate,
-                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-        change(controller)
+        self.rate = rate
+        autoPlay = true
     }
     
     public func pause() {
@@ -151,7 +133,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         if autoPlay {
             pause()
         } else {
-            self.autoPlay = true
+            play()
         }
     }
     
@@ -213,13 +195,15 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
@@ -259,9 +243,20 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     // MARK: - Additional Helper Functions
     
-    private func startPlayerItemObservingNotificationsService() {
-        playerItemNotificationsObserver.delegate = self
-        playerItemNotificationsObserver.startObserving()
+    private func startObservingPlayerItemNotifications() {
+        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                guard error.underlyingError is URLError else {
+                    let controller = AKFailedState(playerController: playerController,
+                                                   error: .itemFailedToPlayToEndTime)
+                    return change(controller)
+                }
+                
+                /*
+                 If playback failed for internet issue will wait till internet gets activated
+                 */
+            }.store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
@@ -298,32 +293,12 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
             .sink { [unowned self] status in
                 if status == .satisfied {
                     let controller = AKBufferingState(playerController: playerController,
-                                                      autoPlay: true,
+                                                      autoPlay: autoPlay,
                                                       rate: rate,
                                                       stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
                     change(controller)
                 }
             }
             .store(in: &cancellables)
-    }
-}
-
-// MARK: - AKPlayerItemNotificationsObserverDelegate
-
-extension AKWaitingForNetworkState: AKPlayerItemNotificationsObserverDelegate {
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didFailToPlayToEndTimeWith error: AKPlayerError,
-                                                for playerItem: AVPlayerItem) {
-        
-        guard error.underlyingError is URLError else {
-            let controller = AKFailedState(playerController: playerController,
-                                           error: .itemFailedToPlayToEndTime)
-            return change(controller)
-        }
-        
-        /*
-         If playback failed for internet issue will wait till internet gets activated
-         */
     }
 }

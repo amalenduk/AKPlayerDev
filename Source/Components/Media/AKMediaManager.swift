@@ -27,7 +27,7 @@ import AVFoundation
 import Combine
 
 open class AKMediaManager: NSObject, AKMediaManagerProtocol {
-    
+
     // MARK: - Properties
     
     public unowned let media: AKPlayable
@@ -40,15 +40,53 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     public private(set) var state: AKPlayableState = .idle {
         didSet {
-            stateSubject.send(state)
+            _statePublisher.send(state)
             media.delegate?.akMedia(media,
                                     didChangedState: state)
         }
     }
     
     public var statePublisher: AnyPublisher<AKPlayableState, Never> {
-        return stateSubject.eraseToAnyPublisher()
+        return _statePublisher.eraseToAnyPublisher()
     }
+    
+    public var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+        return playerItemNotificationsObserver.playerItemDidPlayToEndTimePublisher
+    }
+    
+    public var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+        return playerItemNotificationsObserver.playerItemFailedToPlayToEndTimePublisher
+    }
+    
+    public var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
+        return playerItemNotificationsObserver.playerItemPlaybackStalledPublisher
+    }
+    
+    public var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
+        return playerItemNotificationsObserver.playerItemTimeJumpedPublisher
+    }
+    
+    public var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+        return playerItemNotificationsObserver.playerItemMediaSelectionDidChangePublisher
+    }
+    
+    public var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+        return playerItemNotificationsObserver.playerItemRecommendedTimeOffsetFromLiveDidChangePublisher
+    }
+    
+    public var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> {
+        return playerItemBufferingStatusObserver.playbackLikelyToKeepUpPublisher
+    }
+    
+    public var playbackBufferFullPublisher: AnyPublisher<Bool, Never> {
+        return playerItemBufferingStatusObserver.playbackBufferFullPublisher
+    }
+    
+    public var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> {
+        return playerItemBufferingStatusObserver.playbackBufferEmptyPublisher
+    }
+    
+    private let _statePublisher = PassthroughSubject<AKPlayableState, Never>()
     
     private var playerItemInitService: AKPlayerItemInitServiceProtocol!
     
@@ -70,7 +108,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     private var playerItemPresentationObserver: AKPlayerItemPresentationObserverProtocol!
     
-    private let stateSubject = PassthroughSubject<AKPlayableState, Never>()
+    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
+    
+    private var playerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObserverProtocol!
     
     // MARK: - Init
     
@@ -149,6 +189,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItemAvailableTimeRangesObserver.startObserving()
         playerItemTracksObserver.startObserving()
         playerItemPresentationObserver.startObserving()
+        playerItemNotificationsObserver.startObserving()
+        playerItemBufferingStatusObserver.startObserving()
     }
     
     open func stopPlayerItemAssetKeysObserver() {
@@ -158,6 +200,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItemAvailableTimeRangesObserver?.stopObserving()
         playerItemTracksObserver?.stopObserving()
         playerItemPresentationObserver?.stopObserving()
+        playerItemNotificationsObserver?.stopObserving()
+        playerItemBufferingStatusObserver?.stopObserving()
     }
     
     open func canStep(by count: Int) -> Bool {
@@ -220,6 +264,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItemTracksObserver = AKPlayerItemTracksObserver(with: playerItem)
         playerItemPresentationObserver = AKPlayerItemPresentationObserver(with: playerItem)
         seekingThroughMediaService = AKSeekingThroughMediaService(with: playerItem)
+        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerItem)
+        playerItemBufferingStatusObserver = AKPlayerItemBufferingStatusObserver(with: playerItem)
         
         playerItemReadinessObserver.delegate = self
         playerItemTracksObserverProtocol.delegate = self

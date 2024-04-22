@@ -94,10 +94,10 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         assert(!(asset == nil),
                "Asset must be created before calling this function.")
         do {
-            let (_, _, _, _) = try await asset!.load(.duration,
-                                                     .metadata,
-                                                     .commonMetadata,
-                                                     .lyrics)
+            let (duration, metadata, commonMetadata, lyrics) = try await asset!.load(.duration,
+                                                                                     .metadata,
+                                                                                     .commonMetadata,
+                                                                                     .lyrics)
             
         } catch (let error) {
             guard let err = error as? URLError,

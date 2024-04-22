@@ -273,6 +273,14 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return .success
     }
     
+    open func addBoundaryTimeObserver(for times: [CMTime]) {
+        playerController.addBoundaryTimeObserver(for: times)
+    }
+    
+    open func removeBoundaryTimeObserver() {
+        playerController.removeBoundaryTimeObserver()
+    }
+    
     // MARK: - Commands
     
     open func load(media: AKPlayable) {

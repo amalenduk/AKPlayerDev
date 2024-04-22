@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import Combine
 
 public class AKPlayingState: AKPlayerStateControllerProtocol {
     
@@ -35,7 +36,9 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
     
     private var rate: AKPlaybackRate?
     
-    private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
+    private var playerReadinessObserver: AKPlayerReadinessObserverProtocol!
+    
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -43,15 +46,15 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
                 rate: AKPlaybackRate? = nil) {
         self.playerController = playerController
         self.rate = rate
-        
-        playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerController.currentItem!)
     }
     
     deinit { }
     
     public func didChangeState() {
-        startPlayerItemObservingNotificationsService()
-        playerController.player.play()
+        startObservingPlayerItemNotifications()
+        if !(playerController.player.timeControlStatus == .playing) {
+            playerController.player.play()
+        }
         
         guard let rate = rate,
               playerController.player.rate != rate.rate else { return }
@@ -202,13 +205,15 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
@@ -247,49 +252,41 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
     
     // MARK: - Additional Helper Functions
     
-    private func startPlayerItemObservingNotificationsService() {
-        playerItemNotificationsObserver.delegate = self
-        playerItemNotificationsObserver.startObserving()
+    private func startObservingPlayerItemNotifications() {
+        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                guard error.underlyingError is URLError else {
+                    let controller = AKFailedState(playerController: playerController,
+                                                   error: .itemFailedToPlayToEndTime)
+                    return change(controller)
+                }
+                
+                let controller = AKWaitingForNetworkState(playerController: playerController,
+                                                          autoPlay: true,
+                                                          rate: rate)
+                change(controller)
+            }.store(in: &cancellables)
+        
+        playerController.currentMedia!.playerItemDidPlayToEndTimePublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                let controller = AKPausedState(playerController: playerController,
+                                               playerItemDidPlayToEndTime: true)
+                change(controller)
+            }.store(in: &cancellables)
+        
+        playerController.currentMedia!.playerItemPlaybackStalledPublisher
+            .sink { [weak self] error in
+                guard let self else { return }
+                let controller = AKBufferingState(playerController: playerController,
+                                                  autoPlay: true,
+                                                  rate: rate)
+                change(controller)
+            }.store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)
-    }
-}
-
-// MARK: - AKPlayerItemNotificationsObserverDelegate
-
-extension AKPlayingState: AKPlayerItemNotificationsObserverDelegate {
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didPlayToEndTimeAt time: CMTime,
-                                                for playerItem: AVPlayerItem) {
-        let controller = AKPausedState(playerController: playerController,
-                                       playerItemDidPlayToEndTime: true)
-        change(controller)
-    }
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didFailToPlayToEndTimeWith error: AKPlayerError,
-                                                for playerItem: AVPlayerItem) {
-        
-        guard error.underlyingError is URLError else {
-            let controller = AKFailedState(playerController: playerController,
-                                           error: .itemFailedToPlayToEndTime)
-            return change(controller)
-        }
-        
-        let controller = AKWaitingForNetworkState(playerController: playerController,
-                                                  autoPlay: true,
-                                                  rate: rate)
-        change(controller)
-    }
-    
-    public func playerItemNotificationsObserver(_ observer: AKPlayerItemNotificationsObserverProtocol,
-                                                didStallPlaybackFor playerItem: AVPlayerItem) {
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: true,
-                                          rate: rate)
-        change(controller)
     }
 }

@@ -93,7 +93,7 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
         return manager.player
     }
     
-    private var manager: AKPlayerManager
+    private var manager: AKPlayerManagerProtocol
     
     open weak var delegate: AKPlayerDelegate?
     
@@ -113,6 +113,14 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
     
     open func prepare() throws {
         try manager.prepare()
+    }
+    
+    open func addBoundaryTimeObserver(for times: [CMTime]) {
+        manager.addBoundaryTimeObserver(for: times)
+    }
+    
+    open func removeBoundaryTimeObserver() {
+        manager.removeBoundaryTimeObserver()
     }
     
     // MARK: - Commands

@@ -303,9 +303,9 @@ class SimpleVideoViewController: UIViewController {
     @IBAction func load(_ sender: Any) {
         let index = Int.random(in: 0..<4)
         // "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8"
-        let url =  URL(string: "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
-        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: true, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
-        let media = AKMedia(url: url, type: .stream(isLive: true), automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata], staticMetadata: staticMetadata)
+        let url =  URL(string: "https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
+        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
+        let media = AKMedia(url: url, type: .stream(isLive: false), automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata, .commonMetadata, .metadata, .availableMetadataFormats], staticMetadata: staticMetadata)
         media.delegate = self
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
@@ -324,8 +324,11 @@ class SimpleVideoViewController: UIViewController {
         //                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
         //            ])
         
-        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
-        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
+        player.player.replaceCurrentItem(with: nil)
+//        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
+//        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
+        
+        
     }
     
     @IBAction func testTwoButtonAction(_ sender: Any) {
@@ -337,7 +340,10 @@ class SimpleVideoViewController: UIViewController {
         //                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
         //            ])
         
-        player.player.replaceCurrentItem(with: nil)
+        player.player.play()
+        
+        // player.addBoundaryTimeObserver(for: [CMTime(seconds: 100, preferredTimescale: CMTimeScale(NSEC_PER_SEC))])
+        //player.player.replaceCurrentItem(with: nil)
     }
     
     @IBAction func changeAudioTrackButtonAction(_ sender: Any) {
@@ -435,11 +441,13 @@ extension SimpleVideoViewController: AKPlayerDelegate {
                 
                 self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
             } else {
-                print("\(currentTime.seconds)")
                 self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
                 self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
             }
         }
+    }
+    
+    func akPlayer(_ player: AKPlayer, didInvokeBoundaryTimeObserverAt time: CMTime, for media: AKPlayable) {
     }
     
     

@@ -31,30 +31,14 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemBufferingStatusObserverDelegate: AnyObject {
-    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                           didChangePlaybackLikelyToKeepUpStatusTo isPlaybackLikelyToKeepUp: Bool,
-                                           for playerItem: AVPlayerItem)
-    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                           didChangePlaybackBufferFullStatusTo isPlaybackBufferFull: Bool,
-                                           for playerItem: AVPlayerItem)
-    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                           didChangePlaybackBufferEmptyStatusTo isPlaybackBufferEmpty: Bool,
-                                           for playerItem: AVPlayerItem)
-}
-
-public extension AKPlayerItemBufferingStatusObserverDelegate {
-    func playerItemBufferingStatusObserver(_ observer: AKPlayerItemBufferingStatusObserverProtocol,
-                                           didChangePlaybackBufferEmptyStatusTo isPlaybackBufferEmpty: Bool,
-                                           for playerItem: AVPlayerItem) { }
-}
-
 public protocol AKPlayerItemBufferingStatusObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemBufferingStatusObserverDelegate? { get set }
     
-    func startObserving(with bufferObservingTimeout: TimeInterval,
-                        bufferObservingTimeInterval: TimeInterval)
+    var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> { get }
+    var playbackBufferFullPublisher: AnyPublisher<Bool, Never> { get }
+    var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> { get }
+    
+    func startObserving()
     func stopObserving()
 }
 
@@ -64,7 +48,23 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemBufferingStatusObserverDelegate?
+    public var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> {
+        _playbackLikelyToKeepUpPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _playbackLikelyToKeepUpPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
+    
+    public var playbackBufferFullPublisher: AnyPublisher<Bool, Never> {
+        _playbackBufferFullPublisher.eraseToAnyPublisher()
+    }
+    
+    public var _playbackBufferFullPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
+    
+    public var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> {
+        _playbackBufferEmptyPublisher.eraseToAnyPublisher()
+    }
+    
+    public var _playbackBufferEmptyPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -80,8 +80,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
         stopObserving()
     }
     
-    open func startObserving(with bufferObservingTimeout: TimeInterval,
-                             bufferObservingTimeInterval: TimeInterval) {
+    open func startObserving() {
         guard !isObserving else { return }
         
         
@@ -89,10 +88,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                              options: [.initial, .new])
         .receive(on: DispatchQueue.main)
         .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
-            guard let delegate = delegate else { return }
-            delegate.playerItemBufferingStatusObserver(self,
-                                                       didChangePlaybackLikelyToKeepUpStatusTo: isPlaybackLikelyToKeepUp,
-                                                       for: playerItem)
+            _playbackLikelyToKeepUpPublisher.send(isPlaybackLikelyToKeepUp)
         })
         .store(in: &cancellables)
         
@@ -100,10 +96,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                              options: [.initial, .new])
         .receive(on: DispatchQueue.main)
         .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
-            guard let delegate = delegate else { return }
-            delegate.playerItemBufferingStatusObserver(self,
-                                                       didChangePlaybackBufferFullStatusTo: isPlaybackBufferFull,
-                                                       for: playerItem)
+            _playbackBufferFullPublisher.send(isPlaybackBufferFull)
         })
         .store(in: &cancellables)
         
@@ -111,10 +104,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                              options: [.initial, .new])
         .receive(on: DispatchQueue.main)
         .sink(receiveValue: { [unowned self] isPlaybackBufferEmpty in
-            guard let delegate = delegate else { return }
-            delegate.playerItemBufferingStatusObserver(self,
-                                                       didChangePlaybackBufferEmptyStatusTo: isPlaybackBufferEmpty,
-                                                       for: playerItem)
+            _playbackBufferEmptyPublisher.send(isPlaybackBufferEmpty)
         })
         .store(in: &cancellables)
         
@@ -123,9 +113,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
     
     open func stopObserving() {
         guard isObserving else { return }
-        
-        cancellables.forEach({ $0.cancel() })
-        
+        cancellables.removeAll()
         isObserving = false
     }
 }

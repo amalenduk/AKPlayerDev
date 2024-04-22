@@ -42,5 +42,6 @@ public protocol AKPlayerProtocol: AnyObject, AKPlayerCommandsProtocol {
     var isMuted: Bool { get set }
     var error: AKPlayerError? { get }
     
-    
+    func addBoundaryTimeObserver(for times: [CMTime])
+    func removeBoundaryTimeObserver()
 }
