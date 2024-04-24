@@ -57,7 +57,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
-        startObservingPlayerStatus()
+        startObservingPlayerProperties()
         
         playerController.delegate?.playerController(playerController,
                                                     didChangeCurrentTimeTo: playerController.currentTime,
@@ -267,7 +267,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Additional Helper Functions
     
-    private func startObservingPlayerStatus() {
+    private func startObservingPlayerProperties() {
         playerController.playerStatusPublisher
             .prepend(playerController.player.status)
             .receive(on: DispatchQueue.global(qos: .background))
@@ -276,6 +276,14 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                 let controller = AKFailedState(playerController: playerController,
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
+            }.store(in: &cancellables)
+        
+        playerController.playerTimeControlStatusPublisher
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] timeControlStatus in
+                guard timeControlStatus == .playing
+                        || timeControlStatus == .waitingToPlayAtSpecifiedRate else { return pause() }
+                play()
             }.store(in: &cancellables)
     }
     

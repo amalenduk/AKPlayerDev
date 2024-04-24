@@ -61,6 +61,7 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol {
     var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol { get }
     var networkStatusMonitor: AKNetworkStatusMonitorProtocol { get }
     var playerStatusPublisher: AnyPublisher<AVPlayer.Status, Never> { get }
+    var playerTimeControlStatusPublisher: AnyPublisher<AVPlayer.TimeControlStatus, Never> { get }
     
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)
