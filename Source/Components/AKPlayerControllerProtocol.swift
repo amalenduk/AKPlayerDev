@@ -23,8 +23,8 @@
 //  SOFTWARE.
 //
 
-import Foundation
 import AVFoundation
+import Combine
 
 public protocol AKPlayerControllerDelegate: AnyObject {
     func playerController(_ playerController: AKPlayerControllerProtocol,
@@ -60,6 +60,7 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol {
     
     var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol { get }
     var networkStatusMonitor: AKNetworkStatusMonitorProtocol { get }
+    var playerStatusPublisher: AnyPublisher<AVPlayer.Status, Never> { get }
     
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)

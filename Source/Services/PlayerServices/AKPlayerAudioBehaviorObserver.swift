@@ -26,18 +26,10 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerAudioBehaviorObserverDelegate: AnyObject {
-    func audioBehaviorObserver(_ observer: AKPlayerAudioBehaviorObserverProtocol,
-                               didChangeVolumeTo volume: Float,
-                               for player: AVPlayer)
-    func audioBehaviorObserver(_ observer: AKPlayerAudioBehaviorObserverProtocol,
-                               didChangeMutedStatusTo isMuted: Bool,
-                               for player: AVPlayer)
-}
-
 public protocol AKPlayerAudioBehaviorObserverProtocol {
     var player: AVPlayer { get }
-    var delegate: AKPlayerAudioBehaviorObserverDelegate? { get set }
+    var volumePublisher: AnyPublisher<Float, Never> { get }
+    var muteStatusPublisher: AnyPublisher<Bool, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -49,7 +41,16 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
     
     public let player: AVPlayer
     
-    public weak var delegate: AKPlayerAudioBehaviorObserverDelegate?
+    public var volumePublisher: AnyPublisher<Float, Never> {
+        return _volumePublisher.eraseToAnyPublisher()
+    }
+    
+    public var muteStatusPublisher: AnyPublisher<Bool, Never> {
+        return _muteStatusPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _volumePublisher = PassthroughSubject<Float, Never>()
+    private var _muteStatusPublisher = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -73,12 +74,9 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
          */
         player.publisher(for: \.volume,
                          options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] volume in
-            guard let delegate = delegate else { return }
-            delegate.audioBehaviorObserver(self,
-                                           didChangeVolumeTo: volume,
-                                           for: player)
+            _volumePublisher.send(volume)
         }
         .store(in: &cancellables)
         
@@ -87,12 +85,9 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
          */
         player.publisher(for: \.isMuted,
                          options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] isMuted in
-            guard let delegate = delegate else { return }
-            delegate.audioBehaviorObserver(self,
-                                           didChangeMutedStatusTo: isMuted,
-                                           for: player)
+            _muteStatusPublisher.send(isMuted)
         }
         .store(in: &cancellables)
         
@@ -101,9 +96,7 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
     
     open func stopObserving() {
         guard isObserving else { return }
-        
-        cancellables.forEach({ $0.cancel() })
-        
+        cancellables.removeAll()
         isObserving = false
     }
 }

@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import Combine
 
 public class AKStoppedState: AKPlayerStateControllerProtocol {
     
@@ -32,6 +33,8 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     unowned public let playerController: AKPlayerControllerProtocol
     
     public let state: AKPlayerState = .stopped
+    
+    private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -42,9 +45,12 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
+        startObservingPlayerStatus()
+        
         if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
+        
         playerController.currentMedia?.playerItem?.cancelPendingSeeks()
         playerController.player.replaceCurrentItem(with: nil)
     }
@@ -214,6 +220,18 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     }
     
     // MARK: - Additional Helper Functions
+    
+    private func startObservingPlayerStatus() {
+        playerController.playerStatusPublisher
+            .prepend(playerController.player.status)
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] status in
+                guard status == .failed else { return }
+                let controller = AKFailedState(playerController: playerController,
+                                               error: .playerCanNoLongerPlay(error: playerController.player.error))
+                change(controller)
+            }.store(in: &cancellables)
+    }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)

@@ -31,27 +31,13 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlaybackCapabilitiesObserverDelegate: AnyObject {
-    func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                      didChangeCanPlayReverseStatusTo canPlayReverse: Bool,
-                                      for playerItem: AVPlayerItem)
-    func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                      didChangeCanPlayFastForwardStatusTo canPlayFastForward: Bool,
-                                      for playerItem: AVPlayerItem)
-    func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                      didChangeCanPlayFastReverseStatusTo canPlayFastReverse: Bool,
-                                      for playerItem: AVPlayerItem)
-    func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                      didChangeCanPlaySlowForwardStatusTo canPlaySlowForward: Bool,
-                                      for playerItem: AVPlayerItem)
-    func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                      didChangeCanPlaySlowReverseStatusTo canPlaySlowReverse: Bool,
-                                      for playerItem: AVPlayerItem)
-}
-
 public protocol AKPlaybackCapabilitiesObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlaybackCapabilitiesObserverDelegate? { get set }
+    var canPlayReversePublisher: AnyPublisher<Bool, Never> { get }
+    var canPlayFastForwardPublisher: AnyPublisher<Bool, Never> { get }
+    var canPlayFastReversePublisher: AnyPublisher<Bool, Never> { get }
+    var canPlaySlowForwardPublisher: AnyPublisher<Bool, Never> { get }
+    var canPlaySlowReversePublisher: AnyPublisher<Bool, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -63,7 +49,31 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlaybackCapabilitiesObserverDelegate?
+    public var canPlayReversePublisher: AnyPublisher<Bool, Never> {
+        return _canPlayReversePublisher.eraseToAnyPublisher()
+    }
+    
+    public var canPlayFastForwardPublisher: AnyPublisher<Bool, Never> {
+        return _canPlayFastForwardPublisher.eraseToAnyPublisher()
+    }
+    
+    public var canPlayFastReversePublisher: AnyPublisher<Bool, Never> {
+        return _canPlayFastReversePublisher.eraseToAnyPublisher()
+    }
+    
+    public var canPlaySlowForwardPublisher: AnyPublisher<Bool, Never> {
+        return _canPlaySlowForwardPublisher.eraseToAnyPublisher()
+    }
+    
+    public var canPlaySlowReversePublisher: AnyPublisher<Bool, Never> {
+        return _canPlaySlowReversePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _canPlayReversePublisher = PassthroughSubject<Bool, Never>()
+    private var _canPlayFastForwardPublisher = PassthroughSubject<Bool, Never>()
+    private var _canPlayFastReversePublisher = PassthroughSubject<Bool, Never>()
+    private var _canPlaySlowForwardPublisher = PassthroughSubject<Bool, Never>()
+    private var _canPlaySlowReversePublisher = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -84,56 +94,41 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
         
         playerItem.publisher(for: \.canPlayReverse,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayReverse in
-            guard let delegate = delegate else { return }
-            delegate.playbackCapabilitiesObserver(self,
-                                                  didChangeCanPlayReverseStatusTo: canPlayReverse,
-                                                  for: playerItem)
+            _canPlayReversePublisher.send(canPlayReverse)
         })
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlayFastForward,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayFastForward in
-            guard let delegate = delegate else { return }
-            delegate.playbackCapabilitiesObserver(self,
-                                                  didChangeCanPlayFastForwardStatusTo: canPlayFastForward,
-                                                  for: playerItem)
+            _canPlayFastForwardPublisher.send(canPlayFastForward)
         })
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlayFastReverse,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayFastReverse in
-            guard let delegate = delegate else { return }
-            delegate.playbackCapabilitiesObserver(self,
-                                                  didChangeCanPlayFastReverseStatusTo: canPlayFastReverse,
-                                                  for: playerItem)
+            _canPlayFastReversePublisher.send(canPlayFastReverse)
         })
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlaySlowForward,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlaySlowForward in
-            guard let delegate = delegate else { return }
-            delegate.playbackCapabilitiesObserver(self,
-                                                  didChangeCanPlaySlowForwardStatusTo: canPlaySlowForward,
-                                                  for: playerItem)
+            _canPlaySlowForwardPublisher.send(canPlaySlowForward)
         })
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.canPlaySlowReverse,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlaySlowReverse in
-            guard let delegate = delegate else { return }
-            delegate.playbackCapabilitiesObserver(self,
-                                                  didChangeCanPlaySlowReverseStatusTo: canPlaySlowReverse,
-                                                  for: playerItem)
+            _canPlaySlowReversePublisher.send(canPlaySlowReverse)
         })
         .store(in: &cancellables)
         
@@ -142,7 +137,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

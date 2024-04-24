@@ -26,16 +26,9 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlyerItemTimeOffsetsObserverDelegate: AnyObject {
-    func plyerItemTimeOffsetsObserver(_ observer: AKPlyerItemTimeOffsetsObserverProtocol,
-                                      didChangeRecommendedTimeOffsetFromLiveTo recommendedTimeOffsetFromLive: CMTime,
-                                      for playerItem: AVPlayerItem)
-    
-}
-
 public protocol AKPlyerItemTimeOffsetsObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlyerItemTimeOffsetsObserverDelegate? { get set }
+    var recommendedTimeOffsetFromLivePublisher: AnyPublisher<CMTime, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -47,7 +40,11 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlyerItemTimeOffsetsObserverDelegate?
+    public var recommendedTimeOffsetFromLivePublisher: AnyPublisher<CMTime, Never> {
+        return _recommendedTimeOffsetFromLivePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _recommendedTimeOffsetFromLivePublisher = PassthroughSubject<CMTime, Never>()
     
     private var isObserving = false
     
@@ -68,12 +65,9 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
         
         playerItem.publisher(for: \.recommendedTimeOffsetFromLive,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] recommendedTimeOffsetFromLive in
-            guard let delegate = delegate else { return }
-            delegate.plyerItemTimeOffsetsObserver(self,
-                                                  didChangeRecommendedTimeOffsetFromLiveTo: recommendedTimeOffsetFromLive,
-                                                  for: playerItem)
+            _recommendedTimeOffsetFromLivePublisher.send(recommendedTimeOffsetFromLive)
         })
         .store(in: &cancellables)
         
@@ -82,7 +76,7 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

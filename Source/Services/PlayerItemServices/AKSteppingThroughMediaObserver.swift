@@ -26,18 +26,10 @@
 import AVFoundation
 import Combine
 
-public protocol AKSteppingThroughMediaObserverDelegate: AnyObject {
-    func steppingThroughMediaObserver(_ observer: AKSteppingThroughMediaObserverProtocol,
-                                      didChangeCanStepForwardStatusTo canStepForward: Bool,
-                                      for playerItem: AVPlayerItem)
-    func steppingThroughMediaObserver(_ observer: AKSteppingThroughMediaObserverProtocol,
-                                      didChangeCanStepBackwardStatusTo canStepBackward: Bool,
-                                      for playerItem: AVPlayerItem)
-}
-
 public protocol AKSteppingThroughMediaObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKSteppingThroughMediaObserverDelegate? { get set }
+    var canStepForwardPublisher: AnyPublisher<Bool, Never> { get }
+    var canStepBackwardPublisher: AnyPublisher<Bool, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -49,7 +41,16 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKSteppingThroughMediaObserverDelegate?
+    public var canStepForwardPublisher: AnyPublisher<Bool, Never> {
+        return _canStepForwardPublisher.eraseToAnyPublisher()
+    }
+    
+    public var canStepBackwardPublisher: AnyPublisher<Bool, Never> {
+        return _canStepBackwardPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _canStepForwardPublisher = PassthroughSubject<Bool, Never>()
+    private var _canStepBackwardPublisher = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -92,23 +93,17 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
         
         playerItem.publisher(for: \.canStepForward,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] canStepForward in
-            guard let delegate = delegate else { return }
-            delegate.steppingThroughMediaObserver(self,
-                                                  didChangeCanStepForwardStatusTo: canStepForward,
-                                                  for: playerItem)
+            _canStepForwardPublisher.send(canStepForward)
         }
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.canStepBackward,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] canStepBackward in
-            guard let delegate = delegate else { return }
-            delegate.steppingThroughMediaObserver(self,
-                                                  didChangeCanStepBackwardStatusTo: canStepBackward,
-                                                  for: playerItem)
+            _canStepBackwardPublisher.send(canStepBackward)
         }
         .store(in: &cancellables)
         
@@ -117,7 +112,7 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

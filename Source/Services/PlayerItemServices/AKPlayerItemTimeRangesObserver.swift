@@ -26,18 +26,10 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemTimeRangesObserverDelegate: AnyObject {
-    func playerItemTimeRangesObserver(_ observer: AKPlayerItemTimeRangesObserverProtocol,
-                                      didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue],
-                                      for playerItem: AVPlayerItem)
-    func playerItemTimeRangesObserver(_ observer: AKPlayerItemTimeRangesObserverProtocol,
-                                      didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue],
-                                      for playerItem: AVPlayerItem)
-}
-
 public protocol AKPlayerItemTimeRangesObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemTimeRangesObserverDelegate? { get set }
+    var loadedTimeRangesPublisher: AnyPublisher<[NSValue], Never> { get }
+    var seekableTimeRangesPublisher: AnyPublisher<[NSValue], Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -49,7 +41,16 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemTimeRangesObserverDelegate?
+    public var loadedTimeRangesPublisher: AnyPublisher<[NSValue], Never> {
+        return _loadedTimeRangesPublisher.eraseToAnyPublisher()
+    }
+    
+    public var seekableTimeRangesPublisher: AnyPublisher<[NSValue], Never> {
+        return _seekableTimeRangesPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _loadedTimeRangesPublisher = PassthroughSubject<[NSValue], Never>()
+    private var _seekableTimeRangesPublisher = PassthroughSubject<[NSValue], Never>()
     
     private var isObserving = false
     
@@ -70,23 +71,17 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
         
         playerItem.publisher(for: \.loadedTimeRanges,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] loadedTimeRanges in
-            guard let delegate = delegate else { return }
-            delegate.playerItemTimeRangesObserver(self,
-                                                  didChangeLoadedTimeRangesTo: loadedTimeRanges,
-                                                  for: playerItem)
+            _loadedTimeRangesPublisher.send(loadedTimeRanges)
         })
         .store(in: &cancellables)
         
         playerItem.publisher(for: \.seekableTimeRanges,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] seekableTimeRanges in
-            guard let delegate = delegate else { return }
-            delegate.playerItemTimeRangesObserver(self,
-                                                  didChangeSeekableTimeRangesTo: seekableTimeRanges,
-                                                  for: playerItem)
+            _seekableTimeRangesPublisher.send(seekableTimeRanges)
         })
         .store(in: &cancellables)
         
@@ -95,7 +90,7 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

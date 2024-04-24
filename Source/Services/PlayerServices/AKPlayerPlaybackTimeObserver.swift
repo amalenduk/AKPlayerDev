@@ -26,19 +26,12 @@
 // https://developer.apple.com/documentation/avfoundation/avplayer/1390404-currenttime
 
 import AVFoundation
-
-public protocol AKPlayerPlaybackTimeObserverDelegate: AnyObject {
-    func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
-                                    didInvokePeriodicTimeObserverAt time: CMTime,
-                                    for player: AVPlayer)
-    func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
-                                    didInvokeBoundaryTimeObserverAt time: CMTime,
-                                    for player: AVPlayer)
-}
+import Combine
 
 public protocol AKPlayerPlaybackTimeObserverProtocol {
     var player: AVPlayer { get }
-    var delegate: AKPlayerPlaybackTimeObserverDelegate? { get set }
+    var periodicTimePublisher: AnyPublisher<CMTime, Never> { get }
+    var boundaryTimePublisher: AnyPublisher<CMTime, Never> { get }
     
     func startObservingPeriodicTime(for interval: CMTime)
     func startObservingBoundaryTime(for times: [CMTime])
@@ -52,7 +45,16 @@ public class AKPlayerPlaybackTimeObserver: AKPlayerPlaybackTimeObserverProtocol 
     
     public let player: AVPlayer
     
-    public weak var delegate: AKPlayerPlaybackTimeObserverDelegate?
+    public var periodicTimePublisher: AnyPublisher<CMTime, Never> {
+        return _periodicTimePublisher.eraseToAnyPublisher()
+    }
+    
+    public var boundaryTimePublisher: AnyPublisher<CMTime, Never> {
+        return _boundaryTimePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _periodicTimePublisher = PassthroughSubject<CMTime, Never>()
+    private var _boundaryTimePublisher = PassthroughSubject<CMTime, Never>()
     
     private var periodicTimeObserverToken : Any?
     
@@ -74,11 +76,8 @@ public class AKPlayerPlaybackTimeObserver: AKPlayerPlaybackTimeObserverProtocol 
         // Add time observer. Invoke closure on the main queue.
         periodicTimeObserverToken = player.addPeriodicTimeObserver(forInterval: interval,
                                                                    queue: .main) { [weak self] time in
-            guard let self,
-                  let delegate = delegate else { return }
-            delegate.playerPlaybackTimeObserver(self,
-                                                didInvokePeriodicTimeObserverAt: time,
-                                                for: player)
+            guard let self else { return }
+            _periodicTimePublisher.send(time)
         }
     }
     
@@ -88,11 +87,8 @@ public class AKPlayerPlaybackTimeObserver: AKPlayerPlaybackTimeObserverProtocol 
         // Add time observer. Observe boundary time changes on the main queue.
         boundaryTimeObserverToken = player.addBoundaryTimeObserver(forTimes: boundaryTimes,
                                                                    queue: .main) { [weak self] in
-            guard let self,
-                  let delegate = delegate else { return }
-            delegate.playerPlaybackTimeObserver(self,
-                                                didInvokeBoundaryTimeObserverAt: player.currentTime(),
-                                                for: player)
+            guard let self else { return }
+            _boundaryTimePublisher.send(player.currentTime())
         }
     }
     

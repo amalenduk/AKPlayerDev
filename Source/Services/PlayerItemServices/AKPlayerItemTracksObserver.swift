@@ -26,15 +26,9 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemTracksObserverDelegate: AnyObject {
-    func playerItemTracksObserver(_ observer: AKPlayerItemTracksObserverProtocol,
-                                  didLoad tracks: [AVPlayerItemTrack],
-                                  for playerItem: AVPlayerItem)
-}
-
 public protocol AKPlayerItemTracksObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemTracksObserverDelegate? { get set }
+    var tracksPublisher: AnyPublisher<[AVPlayerItemTrack], Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -46,7 +40,11 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemTracksObserverDelegate?
+    public var tracksPublisher: AnyPublisher<[AVPlayerItemTrack], Never> {
+        return _tracksPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _tracksPublisher = PassthroughSubject<[AVPlayerItemTrack], Never>()
     
     private var isObserving = false
     
@@ -67,12 +65,9 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
         
         playerItem.publisher(for: \.tracks,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] tracks in
-            guard let delegate = delegate else { return }
-            delegate.playerItemTracksObserver(self,
-                                              didLoad: tracks,
-                                              for: playerItem)
+            _tracksPublisher.send(tracks)
         })
         .store(in: &cancellables)
         
@@ -81,7 +76,7 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

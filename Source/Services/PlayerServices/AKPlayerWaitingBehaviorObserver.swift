@@ -26,15 +26,9 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerWaitingBehaviorObserverDelegate: AnyObject {
-    func playerWaitingBehaviorObserver(_ observer: AKPlayerWaitingBehaviorObserverProtocol,
-                                       didChangeTimeControlStatusTo status: AVPlayer.TimeControlStatus,
-                                       for player: AVPlayer)
-}
-
 public protocol AKPlayerWaitingBehaviorObserverProtocol {
     var player: AVPlayer { get }
-    var delegate: AKPlayerWaitingBehaviorObserverDelegate? { get set }
+    var timeControlStatusPublisher: AnyPublisher<AVPlayer.TimeControlStatus, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -46,7 +40,11 @@ open class AKPlayerWaitingBehaviorObserver: AKPlayerWaitingBehaviorObserverProto
     
     public let player: AVPlayer
     
-    public weak var delegate: AKPlayerWaitingBehaviorObserverDelegate?
+    public var timeControlStatusPublisher: AnyPublisher<AVPlayer.TimeControlStatus, Never> {
+        return _timeControlStatusPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _timeControlStatusPublisher = PassthroughSubject<AVPlayer.TimeControlStatus, Never>()
     
     private var isObserving = false
     
@@ -64,18 +62,16 @@ open class AKPlayerWaitingBehaviorObserver: AKPlayerWaitingBehaviorObserverProto
     
     public func startObserving() {
         guard !isObserving else { return }
+        
         /*
          Create an observer to toggle the play/pause button control icon to
          reflect the playback state of the player's `timeControlStatus` property.
          */
         player.publisher(for: \.timeControlStatus,
                          options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] status in
-            guard let delegate = delegate else { return }
-            delegate.playerWaitingBehaviorObserver(self,
-                                                   didChangeTimeControlStatusTo: player.timeControlStatus,
-                                                   for: player)
+            _timeControlStatusPublisher.send(status)
         }
         .store(in: &cancellables)
         
@@ -84,9 +80,7 @@ open class AKPlayerWaitingBehaviorObserver: AKPlayerWaitingBehaviorObserverProto
     
     public func stopObserving() {
         guard isObserving else { return }
-        
-        cancellables.forEach({ $0.cancel() })
-        
+        cancellables.removeAll()
         isObserving = false
     }
 }

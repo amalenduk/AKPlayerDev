@@ -28,15 +28,9 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerReadinessObserverDelegate: AnyObject {
-    func playerReadinessObserver(_ observer: AKPlayerReadinessObserverProtocol,
-                                 didChangeStatusTo status: AVPlayer.Status,
-                                 for player: AVPlayer)
-}
-
 public protocol AKPlayerReadinessObserverProtocol {
     var player: AVPlayer { get }
-    var delegate: AKPlayerReadinessObserverDelegate? { get set }
+    var statusPublisher: AnyPublisher<AVPlayer.Status, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -48,7 +42,11 @@ open class AKPlayerReadinessObserver: AKPlayerReadinessObserverProtocol {
     
     public let player: AVPlayer
     
-    public weak var delegate: AKPlayerReadinessObserverDelegate?
+    public var statusPublisher: AnyPublisher<AVPlayer.Status, Never> {
+        return _statusPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _statusPublisher = PassthroughSubject<AVPlayer.Status, Never>()
     
     private var isObserving = false
     
@@ -72,12 +70,9 @@ open class AKPlayerReadinessObserver: AKPlayerReadinessObserverProtocol {
         /* The player’s status doesn’t indicate its readiness to play a specific player item. You should instead use the status property of AVPlayerItem to make that determination. */
         player.publisher(for: \.status,
                          options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] status in
-            guard let delegate = delegate else { return }
-            delegate.playerReadinessObserver(self,
-                                             didChangeStatusTo: status,
-                                             for: player)
+            _statusPublisher.send(status)
         }
         .store(in: &cancellables)
         
@@ -86,9 +81,7 @@ open class AKPlayerReadinessObserver: AKPlayerReadinessObserverProtocol {
     
     open func stopObserving() {
         guard isObserving else { return }
-        
-        cancellables.forEach({ $0.cancel() })
-        
+        cancellables.removeAll()
         isObserving = false
     }
 }

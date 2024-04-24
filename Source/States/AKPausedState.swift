@@ -49,10 +49,13 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
+        startObservingPlayerStatus()
         startObservingPlayerItemNotifications()
+        
         if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
         }
+        
         if playerItemDidPlayToEndTime {
             playerController.delegate?.playerController(playerController,
                                                         playerItemDidReachEnd: playerController.currentTime,
@@ -276,6 +279,18 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     }
     
     // MARK: - Additional Helper Functions
+    
+    private func startObservingPlayerStatus() {
+        playerController.playerStatusPublisher
+            .prepend(playerController.player.status)
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] status in
+                guard status == .failed else { return }
+                let controller = AKFailedState(playerController: playerController,
+                                               error: .playerCanNoLongerPlay(error: playerController.player.error))
+                change(controller)
+            }.store(in: &cancellables)
+    }
     
     private func startObservingPlayerItemNotifications() {
         playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher

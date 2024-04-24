@@ -26,16 +26,10 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemPresentationObserverDelegate: AnyObject {
-    func playerItemPresentationObserver(_ observer: AKPlayerItemPresentationObserverProtocol,
-                                        didChangePresentationSizeTo size: CGSize,
-                                        for playerItem: AVPlayerItem)
-    
-}
 
 public protocol AKPlayerItemPresentationObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemPresentationObserverDelegate? { get set }
+    var presentationSizePublisher: AnyPublisher<CGSize, Never>  { get }
     
     func startObserving()
     func stopObserving()
@@ -47,7 +41,11 @@ open class AKPlayerItemPresentationObserver: AKPlayerItemPresentationObserverPro
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemPresentationObserverDelegate?
+    public var presentationSizePublisher: AnyPublisher<CGSize, Never> {
+        return _presentationSizePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _presentationSizePublisher = PassthroughSubject<CGSize, Never>()
     
     private var isObserving = false
     
@@ -68,12 +66,9 @@ open class AKPlayerItemPresentationObserver: AKPlayerItemPresentationObserverPro
         
         playerItem.publisher(for: \.presentationSize,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] presentationSize in
-            guard let delegate = delegate else { return }
-            delegate.playerItemPresentationObserver(self,
-                                                    didChangePresentationSizeTo: presentationSize,
-                                                    for: playerItem)
+            _presentationSizePublisher.send(presentationSize)
         })
         .store(in: &cancellables)
         
@@ -82,7 +77,7 @@ open class AKPlayerItemPresentationObserver: AKPlayerItemPresentationObserverPro
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

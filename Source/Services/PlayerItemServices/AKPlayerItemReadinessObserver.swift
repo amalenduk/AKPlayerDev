@@ -26,16 +26,9 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemReadinessObserverDelegate: AnyObject {
-    func playerItemReadinessObserver(_ observer: AKPlayerItemReadinessObserverProtocol,
-                                     didChangeStatusTo status: AVPlayerItem.Status,
-                                     for playerItem: AVPlayerItem,
-                                     with error: AKPlayerError?)
-}
-
 public protocol AKPlayerItemReadinessObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemReadinessObserverDelegate? { get set }
+    var statusPublisher: AnyPublisher<(status: AVPlayerItem.Status, error: AKPlayerError?), Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -47,7 +40,11 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemReadinessObserverDelegate?
+    public var statusPublisher: AnyPublisher<(status: AVPlayerItem.Status, error: AKPlayerError?), Never> {
+        return _statusPublisher.eraseToAnyPublisher()
+    }
+    
+    private var _statusPublisher = PassthroughSubject<(status: AVPlayerItem.Status, error: AKPlayerError?), Never>()
     
     private var isObserving = false
     
@@ -68,20 +65,16 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
         
         playerItem.publisher(for: \.status,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] status in
-            guard let delegate = delegate else { return }
-            delegate.playerItemReadinessObserver(self,
-                                                 didChangeStatusTo: status,
-                                                 for: playerItem, 
-                                                 with: status == .failed ? AKPlayerError.playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil)
+            _statusPublisher.send((status, (status == .failed) ? .playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil))
         })
         .store(in: &cancellables)
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

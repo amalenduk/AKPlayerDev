@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import Combine
 
 public class AKLoadedState: AKPlayerStateControllerProtocol {
     
@@ -39,7 +40,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     
     private var rate: AKPlaybackRate?
     
-    private var isSeeking: Bool = false
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -56,6 +57,8 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     deinit { }
     
     public func didChangeState() {
+        startObservingPlayerStatus()
+        
         playerController.delegate?.playerController(playerController,
                                                     didChangeCurrentTimeTo: playerController.currentTime,
                                                     for: playerController.currentMedia!)
@@ -263,6 +266,18 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     // MARK: - Additional Helper Functions
+    
+    private func startObservingPlayerStatus() {
+        playerController.playerStatusPublisher
+            .prepend(playerController.player.status)
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] status in
+                guard status == .failed else { return }
+                let controller = AKFailedState(playerController: playerController,
+                                               error: .playerCanNoLongerPlay(error: playerController.player.error))
+                change(controller)
+            }.store(in: &cancellables)
+    }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
         playerController.change(controller)

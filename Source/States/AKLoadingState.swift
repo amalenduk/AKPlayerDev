@@ -46,7 +46,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private var task: Task<Void, Never>?
     
-    private var cancellable: AnyCancellable?
+    private var cancellables = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -69,11 +69,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
         playerController.delegate?.playerController(playerController,
                                                     didChangeMediaTo: media)
         
-        cancellable = media.statePublisher
+        media.statePublisher
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
                 handleMediaSteChange(with: state)
-            }
+            }.store(in: &cancellables)
         
         handleMediaSteChange(with: media.state)
     }
@@ -312,16 +312,31 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func becameReadyToPlay() {
-        let controller = AKLoadedState(playerController: playerController,
-                                       autoPlay: autoPlay,
-                                       position: position)
-        change(controller)
+        playerController.playerStatusPublisher
+            .prepend(playerController.player.status)
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] status in
+                switch status {
+                case .readyToPlay:
+                    let controller = AKLoadedState(playerController: playerController,
+                                                   autoPlay: autoPlay,
+                                                   position: position)
+                    change(controller)
+                case .failed:
+                    let controller = AKFailedState(playerController: playerController,
+                                                   error: .playerCanNoLongerPlay(error: playerController.player.error))
+                    change(controller)
+                default: break
+                }
+            }.store(in: &cancellables)
     }
+    
     
     private func abortAssetInitialization() {
         isCancelled = true
         task?.cancel()
-        cancellable?.cancel()
+        cancellables.forEach({$0.cancel()})
+        cancellables.removeAll()
         media.abortAssetInitialization()
     }
     

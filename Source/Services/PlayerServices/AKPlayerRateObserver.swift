@@ -24,20 +24,19 @@
 //
 
 import AVFoundation
+import Combine
 
 // https://developer.apple.com/documentation/avfoundation/media_playback/controlling_the_transport_behavior_of_a_player
 
-public protocol AKPlayerRateObserverDelegate: AnyObject {
-    func playerRateObserver(_ observer: AKPlayerRateObserverProtocol,
-                            didChangePlaybackRateTo newRate: AKPlaybackRate,
-                            from oldRate: AKPlaybackRate,
-                            for player: AVPlayer,
-                            with reason: AVPlayer.RateDidChangeReason)
+public struct AKPlaybackRateChange {
+    let oldRate: AKPlaybackRate
+    let newRate: AKPlaybackRate
+    let reason: AVPlayer.RateDidChangeReason
 }
 
 public protocol AKPlayerRateObserverProtocol {
     var player: AVPlayer { get }
-    var delegate: AKPlayerRateObserverDelegate? { get set }
+    var playbackRatePublisher: AnyPublisher<AKPlaybackRateChange, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -49,11 +48,17 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     
     public let player: AVPlayer
     
-    public weak var delegate: AKPlayerRateObserverDelegate?
+    public var playbackRatePublisher: AnyPublisher<AKPlaybackRateChange, Never> {
+        return _playbackRatePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _playbackRatePublisher = PassthroughSubject<AKPlaybackRateChange, Never>()
     
     private var isObserving = false
     
     private var playbackRateObserver: NSKeyValueObservation?
+    
+    private var cancellables = Set<AnyCancellable>()
     
     private var oldRate: AKPlaybackRate!
     
@@ -82,37 +87,29 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
             oldRate = AKPlaybackRate(rate: oldValue)
         })
         
-        NotificationCenter.default.addObserver(self,
-                                               selector: #selector(handleRateDidChangeNotification(_ :)),
-                                               name: AVPlayer.rateDidChangeNotification,
-                                               object: player)
+        NotificationCenter.default.publisher(for: AVPlayer.rateDidChangeNotification, object: player)
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] notification in
+                guard let userInfo = notification.userInfo,
+                      let key = userInfo[AVPlayer.rateDidChangeReasonKey] as? String else {
+                    return
+                }
+                
+                let reason = AVPlayer.RateDidChangeReason(rawValue: key)
+                let change = AKPlaybackRateChange(oldRate: oldRate,
+                                                  newRate: newRate,
+                                                  reason: reason)
+                _playbackRatePublisher.send(change)
+            }
+            .store(in: &cancellables)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        
-        NotificationCenter.default.removeObserver(self,
-                                                  name: AVPlayer.rateDidChangeNotification,
-                                                  object: player)
-        
         playbackRateObserver?.invalidate()
-        
+        cancellables.removeAll()
         isObserving = false
-    }
-    
-    @objc private func handleRateDidChangeNotification(_ notification: NSNotification) {
-        guard let userInfo = notification.userInfo,
-              let key = userInfo[AVPlayer.rateDidChangeReasonKey] as? String else {
-            return
-        }
-        
-        let reason = AVPlayer.RateDidChangeReason(rawValue: key)
-        delegate?.playerRateObserver(self,
-                                     didChangePlaybackRateTo: newRate,
-                                     from: oldRate,
-                                     for: player,
-                                     with: reason)
     }
 }

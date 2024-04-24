@@ -26,18 +26,10 @@
 import AVFoundation
 import Combine
 
-public protocol AKPlayerItemTimingInformationObserverDelegate: AnyObject {
-    func playerItemTimingInformationObserver(_ observer: AKPlayerItemTimingInformationObserverProtocol,
-                                             didChangeDurationTo duration: CMTime,
-                                             for playerItem: AVPlayerItem)
-    func accessingTimingInformationObserver(_ observer: AKPlayerItemTimingInformationObserverProtocol,
-                                            didChangeTimebaseTo timebase: CMTimebase?,
-                                            for playerItem: AVPlayerItem)
-}
-
 public protocol AKPlayerItemTimingInformationObserverProtocol {
     var playerItem: AVPlayerItem { get }
-    var delegate: AKPlayerItemTimingInformationObserverDelegate? { get set }
+    var durationPublisher: AnyPublisher<CMTime, Never> { get }
+    var timebasePublisher: AnyPublisher<CMTimebase?, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -49,7 +41,16 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
     
     public let playerItem: AVPlayerItem
     
-    public weak var delegate: AKPlayerItemTimingInformationObserverDelegate?
+    public var durationPublisher: AnyPublisher<CMTime, Never> {
+        return _durationPublisher.eraseToAnyPublisher()
+    }
+    
+    public var timebasePublisher: AnyPublisher<CMTimebase?, Never> {
+        return _timebasePublisher.eraseToAnyPublisher()
+    }
+    
+    private var _durationPublisher = PassthroughSubject<CMTime, Never>()
+    private var _timebasePublisher = PassthroughSubject<CMTimebase?, Never>()
     
     private var isObserving = false
     
@@ -70,24 +71,18 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
         
         playerItem.publisher(for: \.duration,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] duration in
-            guard let delegate = delegate else { return }
-            delegate.playerItemTimingInformationObserver(self,
-                                                         didChangeDurationTo: duration,
-                                                         for: playerItem)
+            _durationPublisher.send(duration)
         })
         .store(in: &cancellables)
         
         
         playerItem.publisher(for: \.timebase,
                              options: [.initial, .new])
-        .receive(on: DispatchQueue.main)
+        .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] timebase in
-            guard let delegate = delegate else { return }
-            delegate.accessingTimingInformationObserver(self,
-                                                        didChangeTimebaseTo: timebase,
-                                                        for: playerItem)
+            _timebasePublisher.send(timebase)
         })
         .store(in: &cancellables)
         
@@ -96,7 +91,7 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.forEach({ $0.cancel() })
+        cancellables.removeAll()
         isObserving = false
     }
 }

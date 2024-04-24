@@ -28,13 +28,13 @@ import Combine
 
 public protocol AKPlayerItemNotificationsObserverProtocol {
     var playerItem: AVPlayerItem { get }
-
-    var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
-    var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
-    var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> { get }
-    var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> { get }
-    var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> { get }
-    var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> { get }
+    
+    var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
+    var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
+    var playbackStalledPublisher: AnyPublisher<Void, Never> { get }
+    var timeJumpedPublisher: AnyPublisher<Void, Never> { get }
+    var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> { get }
+    var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -50,35 +50,36 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
     
     private var cancellables = Set<AnyCancellable>()
     
-    public var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
-        _playerItemDidPlayToEndTimePublisher.eraseToAnyPublisher()
+    public var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+        _didPlayToEndTimePublisher.eraseToAnyPublisher()
     }
-    private let _playerItemDidPlayToEndTimePublisher = PassthroughSubject<CMTime, Never>()
     
-    public var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
-        _playerItemFailedToPlayToEndTimePublisher.eraseToAnyPublisher()
+    public var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+        _failedToPlayToEndTimePublisher.eraseToAnyPublisher()
     }
-    private let _playerItemFailedToPlayToEndTimePublisher = PassthroughSubject<AKPlayerError, Never>()
     
-    public var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
-        _playerItemPlaybackStalledPublisher.eraseToAnyPublisher()
+    public var playbackStalledPublisher: AnyPublisher<Void, Never> {
+        _playbackStalledPublisher.eraseToAnyPublisher()
     }
-    private let _playerItemPlaybackStalledPublisher = PassthroughSubject<Void, Never>()
     
-    public var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
-        _playerItemTimeJumpedPublisher.eraseToAnyPublisher()
+    public var timeJumpedPublisher: AnyPublisher<Void, Never> {
+        _timeJumpedPublisher.eraseToAnyPublisher()
     }
-    private let _playerItemTimeJumpedPublisher = PassthroughSubject<Void, Never>()
     
-    public var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
-        _playerItemMediaSelectionDidChangePublisher.eraseToAnyPublisher()
+    public var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+        _mediaSelectionDidChangePublisher.eraseToAnyPublisher()
     }
-    private let _playerItemMediaSelectionDidChangePublisher = PassthroughSubject<Void, Never>()
     
-    public var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
-        _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher.eraseToAnyPublisher()
+    public var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+        _recommendedTimeOffsetFromLiveDidChangePublisher.eraseToAnyPublisher()
     }
-    private let _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher = PassthroughSubject<CMTime, Never>()
+    
+    private let _didPlayToEndTimePublisher = PassthroughSubject<CMTime, Never>()
+    private let _failedToPlayToEndTimePublisher = PassthroughSubject<AKPlayerError, Never>()
+    private let _playbackStalledPublisher = PassthroughSubject<Void, Never>()
+    private let _timeJumpedPublisher = PassthroughSubject<Void, Never>()
+    private let _mediaSelectionDidChangePublisher = PassthroughSubject<Void, Never>()
+    private let _recommendedTimeOffsetFromLiveDidChangePublisher = PassthroughSubject<CMTime, Never>()
     
     // MARK: - Init
     
@@ -95,18 +96,20 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
         
         /* When the player item has played to its end time */
         NotificationCenter.default.publisher(for: .AVPlayerItemDidPlayToEndTime, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playerItemDidPlayToEndTimePublisher.send(playerItem.currentTime())
+                _didPlayToEndTimePublisher.send(playerItem.currentTime())
             }
             .store(in: &cancellables)
         
         /* When the player item has failed to play to its end time */
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] notification in
                 guard let self,
                       let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
-                _playerItemFailedToPlayToEndTimePublisher.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
+                _failedToPlayToEndTimePublisher.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
             }
             .store(in: &cancellables)
         
@@ -115,35 +118,40 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
          The notification’s object is the player item whose playback is unable to continue due to network delays. Streaming-media playback continues once the player receives a sufficient amount of data. File-based playback doesn’t continue.
          */
         NotificationCenter.default.publisher(for: .AVPlayerItemPlaybackStalled, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playerItemPlaybackStalledPublisher.send()
+                _playbackStalledPublisher.send()
             }
             .store(in: &cancellables)
         
         /* A notification the system posts when a player item’s time changes discontinuously. */
         NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playerItemTimeJumpedPublisher.send()
+                _timeJumpedPublisher.send()
             }
             .store(in: &cancellables)
         
         /* A notification the player item posts when its media selection changes. */
         NotificationCenter.default.publisher(for: AVPlayerItem.mediaSelectionDidChangeNotification, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playerItemMediaSelectionDidChangePublisher.send()
+                _mediaSelectionDidChangePublisher.send()
             }
             .store(in: &cancellables)
         
         /* A notification the player item posts when its offset from the live time changes. */
         NotificationCenter.default.publisher(for: AVPlayerItem.recommendedTimeOffsetFromLiveDidChangeNotification, object: playerItem)
+            .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playerItemRecommendedTimeOffsetFromLiveDidChangePublisher.send(playerItem.recommendedTimeOffsetFromLive)
+                _recommendedTimeOffsetFromLiveDidChangePublisher.send(playerItem.recommendedTimeOffsetFromLive)
             }
             .store(in: &cancellables)
+        
         isObserving = true
     }
     

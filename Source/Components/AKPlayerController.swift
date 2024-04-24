@@ -118,6 +118,14 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private var playerReadinessObserver: AKPlayerReadinessObserverProtocol
     
+    public var playerStatusPublisher: AnyPublisher<AVPlayer.Status, Never> {
+        return playerReadinessObserver.statusPublisher
+    }
+    
+    public var playerTimeControlStatusPublisher: AnyPublisher<AVPlayer.TimeControlStatus, Never> {
+        return playerWaitingBehaviorObserver.timeControlStatusPublisher
+    }
+    
     private var cancellables : Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
@@ -134,12 +142,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerAudioBehaviorObserver = AKPlayerAudioBehaviorObserver(with: player)
         playerSeekingThroughMediaService = AKPlayerSeekingThroughMediaService(with: player)
         networkStatusMonitor = AKNetworkStatusMonitor()
-        
-        playerRateObserver.delegate = self
-        playerReadinessObserver.delegate = self
-        playerPlaybackTimeObserver.delegate = self
-        playerWaitingBehaviorObserver.delegate = self
-        playerAudioBehaviorObserver.delegate = self
     }
     
     deinit {
@@ -426,6 +428,54 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerWaitingBehaviorObserver.startObserving()
         playerAudioBehaviorObserver.startObserving()
         playerAudioBehaviorObserver.startObserving()
+        
+        playerRateObserver.playbackRatePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] change in
+                delegate?.playerController(self,
+                                           didChangePlaybackRateTo: change.newRate,
+                                           from: change.oldRate)
+            }
+            .store(in: &cancellables)
+        
+        playerAudioBehaviorObserver.volumePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] volume in
+                delegate?.playerController(self,
+                                           didChangeVolumeTo: volume)
+            }
+            .store(in: &cancellables)
+        
+        playerAudioBehaviorObserver.muteStatusPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] volume in
+                delegate?.playerController(self,
+                                           didChangeMutedStatusTo: isMuted)
+            }
+            .store(in: &cancellables)
+        
+        playerPlaybackTimeObserver.periodicTimePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] time in
+                delegate?.playerController(self,
+                                           didChangeCurrentTimeTo: time,
+                                           for: currentMedia!)
+            }
+            .store(in: &cancellables)
+        
+        playerPlaybackTimeObserver.boundaryTimePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] time in
+                delegate?.playerController(self,
+                                           didInvokeBoundaryTimeObserverAt: time,
+                                           for: currentMedia!)
+            }
+            .store(in: &cancellables)
     }
     
     private func stopPlayerObservers() {
@@ -543,122 +593,5 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         let result = currentMedia.canPlay(at: rate)
         
         return (flag: result, reason: result ? nil : .canNotPlayAtSpecifiedRate)
-    }
-}
-
-// MARK: - AKPlayerPlaybackTimeObserverDelegate
-
-extension AKPlayerController: AKPlayerPlaybackTimeObserverDelegate {
-    
-    public func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
-                                           didInvokePeriodicTimeObserverAt time: CMTime,
-                                           for player: AVPlayer) {
-        delegate?.playerController(self,
-                                   didChangeCurrentTimeTo: time,
-                                   for: currentMedia!)
-    }
-    
-    public func playerPlaybackTimeObserver(_ observer: AKPlayerPlaybackTimeObserverProtocol,
-                                           didInvokeBoundaryTimeObserverAt time: CMTime,
-                                           for player: AVPlayer) {
-        delegate?.playerController(self,
-                                   didInvokeBoundaryTimeObserverAt: time,
-                                   for: currentMedia!)
-    }
-}
-
-// MARK: - AKPlayerWaitingBehaviorObserverDelegate
-
-extension AKPlayerController: AKPlayerWaitingBehaviorObserverDelegate {
-    
-    public func playerWaitingBehaviorObserver(_ observer: AKPlayerWaitingBehaviorObserverProtocol,
-                                              didChangeTimeControlStatusTo status: AVPlayer.TimeControlStatus,
-                                              for player: AVPlayer) {
-        
-        switch status {
-        case .paused:
-            //            if state.isPlaying {
-            //                pause()
-            //            } else if state.isBuffering && player.currentItem == nil {
-            //                stop()
-            //            } else if state.isPaused && player.currentItem == nil {
-            //                stop()
-            //            } else if state.isWaitingForNetwork && player.currentItem == nil {
-            //                stop()
-            //            } else if state.isLoaded && player.currentItem == nil {
-            //                stop()
-            //            }
-            
-            if (state.isPlaying || state.isBuffering) 
-                && !autoPlay {
-                pause()
-            }
-            break
-        case .waitingToPlayAtSpecifiedRate:
-            guard !state.isBuffering
-                    && !state.isWaitingForNetwork
-                    && !state.isPlaying
-                    && !state.isPaused else {
-                if !autoPlay && !state.isPlaying {
-                    player.pause()
-                }
-                return
-            }
-            play()
-        case .playing:
-            guard !state.isPlaying else { return }
-            play()
-        @unknown default:
-            assertionFailure()
-        }
-    }
-}
-
-// MARK: - AKPlayerRateObserverDelegate
-
-extension AKPlayerController: AKPlayerRateObserverDelegate {
-    
-    public func playerRateObserver(_ observer: AKPlayerRateObserverProtocol,
-                                   didChangePlaybackRateTo newRate: AKPlaybackRate,
-                                   from oldRate: AKPlaybackRate,
-                                   for player: AVPlayer,
-                                   with reason: AVPlayer.RateDidChangeReason) {
-        delegate?.playerController(self,
-                                   didChangePlaybackRateTo: newRate,
-                                   from: oldRate)
-    }
-}
-
-// MARK: - AKPlayerAudioBehaviorObserverDelegate
-
-extension AKPlayerController: AKPlayerAudioBehaviorObserverDelegate {
-    
-    public func audioBehaviorObserver(_ observer: AKPlayerAudioBehaviorObserverProtocol,
-                                      didChangeVolumeTo volume: Float,
-                                      for player: AVPlayer) {
-        delegate?.playerController(self,
-                                   didChangeVolumeTo: volume)
-    }
-    
-    public func audioBehaviorObserver(_ observer: AKPlayerAudioBehaviorObserverProtocol,
-                                      didChangeMutedStatusTo isMuted: Bool,
-                                      for player: AVPlayer) {
-        delegate?.playerController(self,
-                                   didChangeMutedStatusTo: isMuted)
-    }
-}
-
-// MARK: - AKPlayerReadinessObserverDelegate
-
-extension AKPlayerController: AKPlayerReadinessObserverDelegate {
-    
-    public func playerReadinessObserver(_ observer: AKPlayerReadinessObserverProtocol,
-                                        didChangeStatusTo status: AVPlayer.Status,
-                                        for player: AVPlayer) {
-        switch status {
-        case .failed:
-            stop()
-        default: break
-        }
     }
 }

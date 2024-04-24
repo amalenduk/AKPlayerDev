@@ -27,7 +27,7 @@ import AVFoundation
 import Combine
 
 open class AKMediaManager: NSObject, AKMediaManagerProtocol {
-
+    
     // MARK: - Properties
     
     public unowned let media: AKPlayable
@@ -51,27 +51,27 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     public var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
-        return playerItemNotificationsObserver.playerItemDidPlayToEndTimePublisher
+        return playerItemNotificationsObserver.didPlayToEndTimePublisher
     }
     
     public var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
-        return playerItemNotificationsObserver.playerItemFailedToPlayToEndTimePublisher
+        return playerItemNotificationsObserver.failedToPlayToEndTimePublisher
     }
     
     public var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
-        return playerItemNotificationsObserver.playerItemPlaybackStalledPublisher
+        return playerItemNotificationsObserver.playbackStalledPublisher
     }
     
     public var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
-        return playerItemNotificationsObserver.playerItemTimeJumpedPublisher
+        return playerItemNotificationsObserver.timeJumpedPublisher
     }
     
     public var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
-        return playerItemNotificationsObserver.playerItemMediaSelectionDidChangePublisher
+        return playerItemNotificationsObserver.mediaSelectionDidChangePublisher
     }
     
     public var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
-        return playerItemNotificationsObserver.playerItemRecommendedTimeOffsetFromLiveDidChangePublisher
+        return playerItemNotificationsObserver.recommendedTimeOffsetFromLiveDidChangePublisher
     }
     
     public var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> {
@@ -111,6 +111,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     private var playerItemNotificationsObserver: AKPlayerItemNotificationsObserverProtocol!
     
     private var playerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObserverProtocol!
+    
+    private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -183,6 +185,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     open func startPlayerItemAssetKeysObserver() {
         guard state.isPlayerItemLoaded || state.isReadyToPlay else { return }
         
+        startObservingPlayerItemProperties()
+        
         steppingThroughMediaObserver.startObserving()
         playbackCapabilitiesObserver.startObserving()
         playerItemTimingInformationObserver.startObserving()
@@ -194,6 +198,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func stopPlayerItemAssetKeysObserver() {
+        cancellables.removeAll()
+        
         steppingThroughMediaObserver?.stopObserving()
         playbackCapabilitiesObserver?.stopObserving()
         playerItemTimingInformationObserver?.stopObserving()
@@ -266,149 +272,139 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         seekingThroughMediaService = AKSeekingThroughMediaService(with: playerItem)
         playerItemNotificationsObserver = AKPlayerItemNotificationsObserver(playerItem: playerItem)
         playerItemBufferingStatusObserver = AKPlayerItemBufferingStatusObserver(with: playerItem)
+    }
+    
+    private func startObservingPlayerItemProperties() {
+        playerItemReadinessObserver.statusPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] result in
+                switch result.status {
+                case .readyToPlay:
+                    state = .readyToPlay
+                case .failed:
+                    self.error = result.error
+                    state = .failed
+                default: break
+                }
+            }
+            .store(in: &cancellables)
         
-        playerItemReadinessObserver.delegate = self
-        playerItemTracksObserverProtocol.delegate = self
-        steppingThroughMediaObserver.delegate = self
-        playbackCapabilitiesObserver.delegate = self
-        playerItemTimingInformationObserver.delegate = self
-        playerItemAvailableTimeRangesObserver.delegate = self
-        playerItemTracksObserver.delegate = self
-        playerItemPresentationObserver.delegate = self
-    }
-}
-
-// MARK: - AKPlayerItemReadinessObserverDelegate
-
-extension AKMediaManager: AKPlayerItemReadinessObserverDelegate {
-    public func playerItemReadinessObserver(_ observer: AKPlayerItemReadinessObserverProtocol,
-                                            didChangeStatusTo status: AVPlayerItem.Status,
-                                            for playerItem: AVPlayerItem,
-                                            with error: AKPlayerError?) {
-        switch status {
-        case .readyToPlay:
-            state = .readyToPlay
-        case .failed:
-            self.error = error
-            state = .failed
-        default: break
-        }
-    }
-}
-
-// MARK: - AKPlayerItemTracksObserverDelegate
-
-extension AKMediaManager: AKPlayerItemTracksObserverDelegate {
-    public func playerItemTracksObserver(_ observer: AKPlayerItemTracksObserverProtocol,
-                                         didLoad tracks: [AVPlayerItemTrack],
-                                         for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeTracks: tracks)
-    }
-}
-
-// MARK: - AKPlaybackCapabilitiesObserverDelegate
-
-extension AKMediaManager: AKPlaybackCapabilitiesObserverDelegate {
-    
-    public func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                             didChangeCanPlayReverseStatusTo canPlayReverse: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeCanPlayReverseStatus: canPlayReverse)
-    }
-    
-    public func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                             didChangeCanPlayFastForwardStatusTo canPlayFastForward: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeCanPlayFastForwardStatus: canPlayFastForward)
-    }
-    
-    public func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                             didChangeCanPlayFastReverseStatusTo canPlayFastReverse: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeCanPlayFastReverseStatus: canPlayFastReverse)
-    }
-    
-    public func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                             didChangeCanPlaySlowForwardStatusTo canPlaySlowForward: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
-    }
-    
-    public func playbackCapabilitiesObserver(_ observer: AKPlaybackCapabilitiesObserverProtocol,
-                                             didChangeCanPlaySlowReverseStatusTo canPlaySlowReverse: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
-    }
-}
-
-// MARK: - AKSteppingThroughMediaObserverDelegate
-
-extension AKMediaManager: AKSteppingThroughMediaObserverDelegate {
-    
-    public func steppingThroughMediaObserver(_ observer: AKSteppingThroughMediaObserverProtocol,
-                                             didChangeCanStepForwardStatusTo canStepForward: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media, didChangeCanStepForwardStatus: canStepForward)
-    }
-    
-    public func steppingThroughMediaObserver(_ observer: AKSteppingThroughMediaObserverProtocol,
-                                             didChangeCanStepBackwardStatusTo canStepBackward: Bool,
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media, didChangeCanStepBackwardStatus: canStepBackward)
-    }
-}
-
-// MARK: - AKPlayerItemTimingInformationObserverDelegate
-
-extension AKMediaManager: AKPlayerItemTimingInformationObserverDelegate {
-    
-    public func playerItemTimingInformationObserver(_ observer: AKPlayerItemTimingInformationObserverProtocol,
-                                                    didChangeDurationTo duration: CMTime,
-                                                    for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeItemDuration: duration)
-    }
-    
-    public func accessingTimingInformationObserver(_ observer: AKPlayerItemTimingInformationObserverProtocol,
-                                                   didChangeTimebaseTo timebase: CMTimebase?,
-                                                   for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeTimebase: timebase)
-    }
-}
-
-// MARK: - AKPlayerItemTimeRangesObserverDelegate
-
-extension AKMediaManager: AKPlayerItemTimeRangesObserverDelegate {
-    
-    public func playerItemTimeRangesObserver(_ observer: AKPlayerItemTimeRangesObserverProtocol,
-                                             didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue],
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangeLoadedTimeRanges: loadedTimeRanges)
-    }
-    
-    public func playerItemTimeRangesObserver(_ observer: AKPlayerItemTimeRangesObserverProtocol,
-                                             didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue],
-                                             for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media, didChangeSeekableTimeRanges: seekableTimeRanges)
-    }
-}
-
-// MARK: - AKPlayerItemPresentationObserverDelegate
-
-extension AKMediaManager: AKPlayerItemPresentationObserverDelegate {
-    
-    public func playerItemPresentationObserver(_ observer: AKPlayerItemPresentationObserverProtocol,
-                                               didChangePresentationSizeTo size: CGSize,
-                                               for playerItem: AVPlayerItem) {
-        media.delegate?.akMedia(media,
-                                didChangePresentationSize: size)
+        playerItemTracksObserver.tracksPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] tracks in
+                media.delegate?.akMedia(media,
+                                        didChangeTracks: tracks)
+            }
+            .store(in: &cancellables)
+        
+        steppingThroughMediaObserver.canStepForwardPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canStepForward in
+                media.delegate?.akMedia(media,
+                                        didChangeCanStepForwardStatus: canStepForward)
+            }
+            .store(in: &cancellables)
+        
+        steppingThroughMediaObserver.canStepBackwardPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canStepBackward in
+                media.delegate?.akMedia(media,
+                                        didChangeCanStepBackwardStatus: canStepBackward)
+            }
+            .store(in: &cancellables)
+        
+        playerItemPresentationObserver.presentationSizePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] presentationSize in
+                media.delegate?.akMedia(media,
+                                        didChangePresentationSize: presentationSize)
+            }
+            .store(in: &cancellables)
+        
+        playerItemAvailableTimeRangesObserver.loadedTimeRangesPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] loadedTimeRanges in
+                media.delegate?.akMedia(media,
+                                        didChangeLoadedTimeRanges: loadedTimeRanges)
+            }
+            .store(in: &cancellables)
+        
+        playerItemAvailableTimeRangesObserver.seekableTimeRangesPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] seekableTimeRanges in
+                media.delegate?.akMedia(media,
+                                        didChangeSeekableTimeRanges: seekableTimeRanges)
+            }
+            .store(in: &cancellables)
+        
+        playerItemTimingInformationObserver.durationPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] duration in
+                media.delegate?.akMedia(media,
+                                        didChangeItemDuration: duration)
+            }
+            .store(in: &cancellables)
+        
+        playerItemTimingInformationObserver.timebasePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] timebase in
+                media.delegate?.akMedia(media,
+                                        didChangeTimebase: timebase)
+            }
+            .store(in: &cancellables)
+        
+        playbackCapabilitiesObserver.canPlayReversePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canPlayReverse in
+                media.delegate?.akMedia(media,
+                                        didChangeCanPlayReverseStatus: canPlayReverse)
+            }
+            .store(in: &cancellables)
+        
+        playbackCapabilitiesObserver.canPlayFastForwardPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canPlayFastForward in
+                media.delegate?.akMedia(media,
+                                        didChangeCanPlayFastForwardStatus: canPlayFastForward)
+            }
+            .store(in: &cancellables)
+        
+        playbackCapabilitiesObserver.canPlayFastReversePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canPlayFastReverse in
+                media.delegate?.akMedia(media,
+                                        didChangeCanPlayFastReverseStatus: canPlayFastReverse)
+            }
+            .store(in: &cancellables)
+        
+        playbackCapabilitiesObserver.canPlaySlowForwardPublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canPlaySlowForward in
+                media.delegate?.akMedia(media,
+                                        didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
+            }
+            .store(in: &cancellables)
+        
+        playbackCapabilitiesObserver.canPlaySlowReversePublisher
+            .subscribe(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
+            .sink { [unowned self] canPlaySlowReverse in
+                media.delegate?.akMedia(media,
+                                        didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
+            }
+            .store(in: &cancellables)
     }
 }
