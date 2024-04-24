@@ -57,7 +57,7 @@ public protocol AKPlayerManagerDelegate: AnyObject {
 public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProtocol {
     var playerController: AKPlayerControllerProtocol { get }
     var configuration: AKPlayerConfigurationProtocol { get }
-    var delegate: AKPlayerManagerDelegate? { get }
+    var delegate: AKPlayerManagerDelegate? { get set }
     var playerStateSnapshot: AKPlayerStateSnapshot? { get }
     var remoteCommands: [AKRemoteCommand] { get }
     

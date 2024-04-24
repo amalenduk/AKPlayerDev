@@ -27,7 +27,7 @@ import AVFoundation
 import Combine
 
 open class AKMediaManager: NSObject, AKMediaManagerProtocol {
-    
+
     // MARK: - Properties
     
     public unowned let media: AKPlayable

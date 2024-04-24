@@ -144,8 +144,16 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     deinit {
         print("AKPlayerController: Deinit called from the AKPlayerController ✌🏼")
-        networkStatusMonitor.stopObserving()
         stopPlayerObservers()
+        networkStatusMonitor.stopObserving()
+    }
+    
+    open func addBoundaryTimeObserver(for times: [CMTime]) {
+        playerPlaybackTimeObserver.startObservingBoundaryTime(for: times)
+    }
+    
+    open func removeBoundaryTimeObserver() {
+        playerPlaybackTimeObserver.stopObservingPeriodicTime()
     }
     
     // MARK: - Commands
@@ -463,8 +471,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private func canSeek(toOffset offset: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
-        let time = CMTime(seconds: currentItem!.currentTime().seconds + offset,
-                          preferredTimescale: configuration.preferredTimeScale)
+        let time = CMTimeAdd(currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: configuration.preferredTimeScale))
         
         let result = canSeek(to: time)
         
@@ -569,45 +577,37 @@ extension AKPlayerController: AKPlayerWaitingBehaviorObserverDelegate {
         
         switch status {
         case .paused:
-            if state.isPlaying {
+            //            if state.isPlaying {
+            //                pause()
+            //            } else if state.isBuffering && player.currentItem == nil {
+            //                stop()
+            //            } else if state.isPaused && player.currentItem == nil {
+            //                stop()
+            //            } else if state.isWaitingForNetwork && player.currentItem == nil {
+            //                stop()
+            //            } else if state.isLoaded && player.currentItem == nil {
+            //                stop()
+            //            }
+            
+            if (state.isPlaying || state.isBuffering) 
+                && !autoPlay {
                 pause()
-            } else if state.isBuffering && player.currentItem == nil {
-                stop()
-            } else if state.isPaused && player.currentItem == nil {
-                stop()
-            } else if state.isWaitingForNetwork && player.currentItem == nil {
-                stop()
-            } else if state.isLoaded && player.currentItem == nil {
-                stop()
             }
+            break
         case .waitingToPlayAtSpecifiedRate:
-            if state.isBuffering {
-                guard let reasonForWaitingToPlay = player.reasonForWaitingToPlay,
-                      reasonForWaitingToPlay == .noItemToPlay else { return }
-                stop()
-            } else if state.isPlaying {
-                guard let reasonForWaitingToPlay = player.reasonForWaitingToPlay else { return }
-                switch reasonForWaitingToPlay {
-                case .noItemToPlay: stop()
-                case .evaluatingBufferingRate: print("evaluatingBufferingRate")
-                case .interstitialEvent: print("interstitialEvent")
-                case .toMinimizeStalls: print("toMinimizeStalls")
-                case .waitingForCoordinatedPlayback: print("waitingForCoordinatedPlayback")
-                default:
-                    // TODO: - What to do
-                    break
+            guard !state.isBuffering
+                    && !state.isWaitingForNetwork
+                    && !state.isPlaying
+                    && !state.isPaused else {
+                if !autoPlay && !state.isPlaying {
+                    player.pause()
                 }
+                return
             }
+            play()
         case .playing:
-            if state == .paused {
-                guard status == .playing else {
-                    if player.currentItem == nil { stop() }
-                    return
-                }
-                play()
-            } else if state == .waitingForNetwork {
-                play()
-            }
+            guard !state.isPlaying else { return }
+            play()
         @unknown default:
             assertionFailure()
         }
@@ -658,8 +658,6 @@ extension AKPlayerController: AKPlayerReadinessObserverDelegate {
         switch status {
         case .failed:
             stop()
-            delegate?.playerController(self,
-                                       didFailWith: .playerCanNoLongerPlay(error: player.error))
         default: break
         }
     }

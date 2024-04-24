@@ -263,13 +263,14 @@ public class AKStoppedStateBackup: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeGetSeconds(playerController.currentTime)
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }

@@ -128,10 +128,11 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .alreadyTryingToPlay)
+                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
             return
         }
         self.rate = rate
+        autoPlay = true
     }
     
     public func pause() {
@@ -143,9 +144,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         if autoPlay {
             pause()
         } else {
-            self.autoPlay = true
+            play()
         }
-        
     }
     
     public func stop() {
@@ -206,13 +206,15 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
@@ -316,9 +318,9 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     private func startPlayingIfPossible() {
-        guard (playerController.currentItem!.isPlaybackBufferFull
-               || playerController.currentItem!.isPlaybackLikelyToKeepUp)
-                && !playerController.isSeeking else { return }
+        guard !playerController.isSeeking
+                && (playerController.currentMedia!.isPlaybackBufferFull
+                    || playerController.currentMedia!.isPlaybackLikelyToKeepUp) else { return }
         
         let controller = AKPlayingState(playerController: playerController,
                                         rate: rate)

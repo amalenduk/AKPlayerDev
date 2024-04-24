@@ -110,36 +110,22 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     public func play() {
-        guard playerController.networkStatusMonitor.isConnected else {
+        if autoPlay {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .waitingForEstablishedNetwork)
-            return
+                                                        unavailableActionWith: .alreadyTryingToPlay)
+        } else {
+            self.autoPlay = true
         }
-        
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: autoPlay,
-                                          rate: rate,
-                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-        change(controller)
     }
     
     public func play(at rate: AKPlaybackRate) {
-        guard playerController.networkStatusMonitor.isConnected else {
-            playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .waitingForEstablishedNetwork)
-            return
-        }
-        
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         unavailableActionWith: .canNotPlayAtSpecifiedRate)
             return
         }
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: autoPlay,
-                                          rate: rate,
-                                          stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-        change(controller)
+        self.rate = rate
+        autoPlay = true
     }
     
     public func pause() {
@@ -151,7 +137,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         if autoPlay {
             pause()
         } else {
-            self.autoPlay = true
+            play()
         }
     }
     
@@ -213,13 +199,15 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     public func seek(toOffset offset: Double) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
-        let time = CMTimeGetSeconds(playerController.currentTime) + offset
+        let time = CMTimeAdd(playerController.currentTime,
+                             CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
