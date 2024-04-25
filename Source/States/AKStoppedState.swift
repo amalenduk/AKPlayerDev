@@ -231,17 +231,6 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
             }.store(in: &cancellables)
-        
-        playerController.playerTimeControlStatusPublisher
-            .receive(on: DispatchQueue.global(qos: .background))
-            .sink { [unowned self] timeControlStatus in
-                switch timeControlStatus {
-                case .paused: break
-                case .playing, .waitingToPlayAtSpecifiedRate:
-                    playerController.player.pause()
-                @unknown default: break
-                }
-            }.store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
