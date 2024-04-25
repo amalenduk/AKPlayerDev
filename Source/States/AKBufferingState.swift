@@ -258,6 +258,24 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
             }.store(in: &cancellables)
+        
+        playerController.playerTimeControlStatusPublisher
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] timeControlStatus in
+                switch timeControlStatus {
+                case .paused:
+                    if playerController.player.currentItem == nil {
+                        stop()
+                    } else {
+                        pause()
+                    }
+                case .playing, .waitingToPlayAtSpecifiedRate:
+                    playerController.player.pause()
+                    play()
+                @unknown default:
+                    break
+                }
+            }.store(in: &cancellables)
     }
     
     private func startObservingPlayerItemNotifications() {
@@ -280,6 +298,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private func startObservingPlayerItemBufferingStatus() {
         playerController.currentMedia!.playbackLikelyToKeepUpPublisher
+            .prepend(playerController.currentMedia!.isPlaybackLikelyToKeepUp)
             .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
                 if autoPlay {
                     startPlayingIfPossible()
@@ -290,6 +309,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
             .store(in: &cancellables)
         
         playerController.currentMedia!.playbackBufferFullPublisher
+            .prepend(playerController.currentMedia!.isPlaybackBufferFull)
             .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
                 if autoPlay {
                     startPlayingIfPossible()

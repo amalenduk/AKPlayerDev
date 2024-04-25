@@ -281,9 +281,19 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         playerController.playerTimeControlStatusPublisher
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
-                guard timeControlStatus == .playing
-                        || timeControlStatus == .waitingToPlayAtSpecifiedRate else { return pause() }
-                play()
+                switch timeControlStatus {
+                case .paused:
+                    if playerController.player.currentItem == nil {
+                        stop()
+                    } else {
+                        pause()
+                    }
+                case .playing, .waitingToPlayAtSpecifiedRate:
+                    playerController.player.pause()
+                    play()
+                @unknown default:
+                    break
+                }
             }.store(in: &cancellables)
     }
     

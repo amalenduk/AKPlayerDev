@@ -306,27 +306,27 @@ public extension AKPlayable {
 public extension AKPlayable {
     
     var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
-        return manager.playerItemDidPlayToEndTimePublisher
+        return manager.didPlayToEndTimePublisher
     }
     
     var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
-        return manager.playerItemFailedToPlayToEndTimePublisher
+        return manager.failedToPlayToEndTimePublisher
     }
     
     var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
-        return manager.playerItemPlaybackStalledPublisher
+        return manager.playbackStalledPublisher
     }
     
     var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
-        return manager.playerItemTimeJumpedPublisher
+        return manager.timeJumpedPublisher
     }
     
     var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
-        return manager.playerItemMediaSelectionDidChangePublisher
+        return manager.mediaSelectionDidChangePublisher
     }
     
     var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
-        return manager.playerItemRecommendedTimeOffsetFromLiveDidChangePublisher
+        return manager.recommendedTimeOffsetFromLiveDidChangePublisher
     }
 }
 

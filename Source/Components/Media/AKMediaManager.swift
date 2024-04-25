@@ -50,27 +50,27 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         return _statePublisher.eraseToAnyPublisher()
     }
     
-    public var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+    public var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
         return playerItemNotificationsObserver.didPlayToEndTimePublisher
     }
     
-    public var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+    public var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
         return playerItemNotificationsObserver.failedToPlayToEndTimePublisher
     }
     
-    public var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
+    public var playbackStalledPublisher: AnyPublisher<Void, Never> {
         return playerItemNotificationsObserver.playbackStalledPublisher
     }
     
-    public var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
+    public var timeJumpedPublisher: AnyPublisher<Void, Never> {
         return playerItemNotificationsObserver.timeJumpedPublisher
     }
     
-    public var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+    public var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
         return playerItemNotificationsObserver.mediaSelectionDidChangePublisher
     }
     
-    public var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+    public var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
         return playerItemNotificationsObserver.recommendedTimeOffsetFromLiveDidChangePublisher
     }
     

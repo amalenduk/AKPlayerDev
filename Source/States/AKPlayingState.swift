@@ -264,6 +264,23 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
             }.store(in: &cancellables)
+        
+        playerController.playerTimeControlStatusPublisher
+            .receive(on: DispatchQueue.global(qos: .background))
+            .sink { [unowned self] timeControlStatus in
+                switch timeControlStatus {
+                case .paused:
+                    if playerController.player.currentItem == nil {
+                        stop()
+                    } else {
+                        pause()
+                    }
+                case .playing, .waitingToPlayAtSpecifiedRate:
+                    break
+                @unknown default:
+                    break
+                }
+            }.store(in: &cancellables)
     }
     
     private func startObservingPlayerItemNotifications() {

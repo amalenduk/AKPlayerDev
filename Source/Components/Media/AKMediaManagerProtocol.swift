@@ -34,13 +34,12 @@ public protocol AKMediaManagerProtocol: AnyObject {
     var state: AKPlayableState { get }
     var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
     
-    var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
-    var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
-    var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> { get }
-    var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> { get }
-    var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> { get }
-    var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> { get }
-    
+    var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
+    var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
+    var playbackStalledPublisher: AnyPublisher<Void, Never> { get }
+    var timeJumpedPublisher: AnyPublisher<Void, Never> { get }
+    var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> { get }
+    var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> { get }
     var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> { get }
     var playbackBufferFullPublisher: AnyPublisher<Bool, Never> { get }
     var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> { get }
