@@ -46,9 +46,12 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
                 rate: AKPlaybackRate? = nil) {
         self.playerController = playerController
         self.rate = rate
+        print("called", " PlayingState")
     }
     
-    deinit { }
+    deinit {
+        cancellables.removeAll()
+    }
     
     public func didChangeState() {
         startObservingPlayerStatus()
@@ -137,11 +140,11 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to time: CMTime,
@@ -150,10 +153,10 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter)
+        change(controller)
     }
     
     public func seek(to time: CMTime,
@@ -161,17 +164,17 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: time,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to time: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: time)
+        change(controller)
     }
     
     public func seek(to time: Double,
@@ -193,17 +196,17 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: date,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to date: Date) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         controller.seek(to: date)
+        change(controller)
     }
     
     public func seek(toOffset offset: Double) {
@@ -269,13 +272,13 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
                 guard timeControlStatus == .paused,
-                        playerController.player.currentItem == nil else { return }
+                      playerController.player.currentItem == nil else { return }
                 stop()
             }.store(in: &cancellables)
     }
     
     private func startObservingPlayerItemNotifications() {
-        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+        playerController.currentMedia!.failedToPlayToEndTimePublisher
             .sink { [weak self] error in
                 guard let self else { return }
                 guard error.underlyingError is URLError else {
@@ -290,7 +293,7 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
                 change(controller)
             }.store(in: &cancellables)
         
-        playerController.currentMedia!.playerItemDidPlayToEndTimePublisher
+        playerController.currentMedia!.didPlayToEndTimePublisher
             .sink { [weak self] error in
                 guard let self else { return }
                 let controller = AKPausedState(playerController: playerController,
@@ -298,7 +301,7 @@ public class AKPlayingState: AKPlayerStateControllerProtocol {
                 change(controller)
             }.store(in: &cancellables)
         
-        playerController.currentMedia!.playerItemPlaybackStalledPublisher
+        playerController.currentMedia!.playbackStalledPublisher
             .sink { [weak self] error in
                 guard let self else { return }
                 let controller = AKBufferingState(playerController: playerController,

@@ -50,7 +50,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     }
     
     public var currentMedia: AKPlayable? {
-        playerController.currentMedia
+        return playerController.currentMedia
     }
     
     public var currentItem: AVPlayerItem? {
@@ -91,19 +91,25 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         set { playerController.isMuted = newValue }
     }
     
-    public var error: AKPlayerError? { playerController.error }
+    public var error: AKPlayerError? {
+        return playerController.error
+    }
     
     public let playerController: AKPlayerControllerProtocol
     
     public var remoteCommands: [AKRemoteCommand] = []
     
-    public var configuration: AKPlayerConfigurationProtocol { playerController.configuration }
+    public var configuration: AKPlayerConfigurationProtocol {
+        return playerController.configuration
+    }
     
     public weak var delegate: AKPlayerManagerDelegate?
     
     public private(set) var playerStateSnapshot: AKPlayerStateSnapshot?
     
-    public var audioSession: AVAudioSession { audioSessionService.audioSession }
+    public var audioSession: AVAudioSession {
+        return audioSessionService.audioSession
+    }
     
     private var isExternalAudioPlaybackDeviceConnected: Bool = false
     
@@ -186,7 +192,8 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         nowPlayingSessionController.setNowPlayingInfo(nowPlayableMetadata)
     }
     
-    open func handleRemoteCommand(_ command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
+    open func handleRemoteCommand(_ command: AKRemoteCommand, 
+                                  with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         switch command {
         case .pause:
             if currentMedia == nil { return .noActionableNowPlayingItem }
@@ -195,7 +202,10 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         case .play:
             if currentMedia == nil { return .noActionableNowPlayingItem }
             play()
-            guard (state.isLoadingStateActive && autoPlay) || state.isPlaybackActive else { return .commandFailed }
+            guard (state.isAny(of: [.loading,
+                                    .loaded]) && autoPlay) || state.isAny(of: [.buffering,
+                                                                               .playing,
+                                                                               .waitingForNetwork]) else { return .commandFailed }
         case .stop:
             if currentMedia == nil { return .noActionableNowPlayingItem }
             stop()
@@ -204,10 +214,19 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
             if currentMedia == nil { return .noActionableNowPlayingItem }
             let lastState = state
             togglePlayPause()
-            if lastState.isPlaybackInactive {
-                guard (state.isLoadingStateActive && autoPlay) || state.isPlaybackActive else { return .commandFailed }
+            if lastState.isAny(of: [.idle,
+                                    .paused,
+                                    .stopped,
+                                    .failed]) {
+                guard (state.isAny(of: [.loading,
+                                        .loaded]) && autoPlay) || state.isAny(of: [.buffering,
+                                                                                   .playing,
+                                                                                   .waitingForNetwork]) else { return .commandFailed }
             } else {
-                guard state.isPlaybackInactive else { return .commandFailed }
+                guard state.isAny(of: [.idle,
+                                       .paused,
+                                       .stopped,
+                                       .failed]) else { return .commandFailed }
             }
         case .nextTrack:
             return .commandFailed
@@ -581,8 +600,7 @@ extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
                                                  didBeginInterruptionWith reason: AVAudioSession.InterruptionReason?,
                                                  for audioSession: AVAudioSession) {
         
-        guard state.isLoadingStateActive
-                || state.isPlaybackActive else { return }
+        guard state.isAny(of: [.loading, .loaded, .buffering, .playing, .waitingForNetwork]) else { return }
         /* Audio session automatically pauses player, if not will be paused here.
          Update the UI to indicate that playback or recording has paused when it’s interrupted. Do not deactivate the audio session. */
         savePlayerStateSnapshot(playbackInterruptionReason: .audioSessionInterruption,
@@ -615,10 +633,11 @@ extension AKPlayerManager: AKAudioSessionRouteChangesObserverDelegate {
         
         guard isExternalAudioPlaybackDeviceConnected
                 && !observer.isExternalDeviceConnected()
-                && state.isLoadingStateActive
-                || state.isPlaybackActive else {
-            return
-        }
+                && state.isAny(of: [.loading,
+                                    .loaded,
+                                    .buffering,
+                                    .playing,
+                                    .waitingForNetwork]) else { return }
         
         pause()
     }
@@ -645,8 +664,11 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenResigningActive {
                 
-                if state.isLoadingStateActive
-                    || state.isPlaybackActive {
+                if state.isAny(of: [.loading,
+                                    .loaded,
+                                    .buffering,
+                                    .playing,
+                                    .waitingForNetwork]) {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: true)
@@ -657,8 +679,11 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 
             } else {
                 
-                if (state.isLoadingStateActive && !autoPlay)
-                    || state.isPlaybackInactive {
+                if (state.isAny(of: [.loading,
+                                     .loaded]) && !autoPlay)
+                    || state.isAny(of: [.buffering,
+                                        .playing,
+                                        .waitingForNetwork]) {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: false)
@@ -678,8 +703,11 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenBackgrounded {
                 
-                if state.isLoadingStateActive
-                    || state.isPlaybackActive {
+                if state.isAny(of: [.loading,
+                                    .loaded,
+                                    .buffering,
+                                    .playing,
+                                    .waitingForNetwork]) {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
                                             shouldResume: true)
@@ -690,8 +718,12 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 
             } else {
                 
-                if (state.isLoadingStateActive && !autoPlay)
-                    || state.isPlaybackInactive {
+                if (state.isAny(of: [.loading,
+                                     .loaded]) && !autoPlay)
+                    || state.isAny(of: [.idle,
+                                        .paused,
+                                        .stopped,
+                                        .failed]) {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
                                             shouldResume: false)

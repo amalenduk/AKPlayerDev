@@ -42,7 +42,9 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
         self.playerController = playerController
     }
     
-    deinit { }
+    deinit {
+        cancellables.removeAll()
+    }
     
     public func didChangeState() {
         startObservingPlayerStatus()

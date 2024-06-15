@@ -42,10 +42,10 @@ open class AKPlayerItemPresentationObserver: AKPlayerItemPresentationObserverPro
     public let playerItem: AVPlayerItem
     
     public var presentationSizePublisher: AnyPublisher<CGSize, Never> {
-        return _presentationSizePublisher.eraseToAnyPublisher()
+        return presentationSizeSubject.eraseToAnyPublisher()
     }
     
-    private var _presentationSizePublisher = PassthroughSubject<CGSize, Never>()
+    private var presentationSizeSubject = PassthroughSubject<CGSize, Never>()
     
     private var isObserving = false
     
@@ -68,7 +68,7 @@ open class AKPlayerItemPresentationObserver: AKPlayerItemPresentationObserverPro
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] presentationSize in
-            _presentationSizePublisher.send(presentationSize)
+            presentationSizeSubject.send(presentationSize)
         })
         .store(in: &cancellables)
         

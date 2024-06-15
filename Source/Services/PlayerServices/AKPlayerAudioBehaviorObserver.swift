@@ -42,15 +42,15 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
     public let player: AVPlayer
     
     public var volumePublisher: AnyPublisher<Float, Never> {
-        return _volumePublisher.eraseToAnyPublisher()
+        return volumeSubject.eraseToAnyPublisher()
     }
     
     public var muteStatusPublisher: AnyPublisher<Bool, Never> {
-        return _muteStatusPublisher.eraseToAnyPublisher()
+        return muteStatusSubject.eraseToAnyPublisher()
     }
     
-    private var _volumePublisher = PassthroughSubject<Float, Never>()
-    private var _muteStatusPublisher = PassthroughSubject<Bool, Never>()
+    private var volumeSubject = PassthroughSubject<Float, Never>()
+    private var muteStatusSubject = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -76,7 +76,7 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
                          options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] volume in
-            _volumePublisher.send(volume)
+            volumeSubject.send(volume)
         }
         .store(in: &cancellables)
         
@@ -87,7 +87,7 @@ open class AKPlayerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol 
                          options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] isMuted in
-            _muteStatusPublisher.send(isMuted)
+            muteStatusSubject.send(isMuted)
         }
         .store(in: &cancellables)
         

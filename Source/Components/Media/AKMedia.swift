@@ -47,7 +47,7 @@ open class AKMedia: AKPlayable {
     public init(url: URL,
                 type: AKMediaType,
                 assetInitializationOptions: [String : Any]? = nil,
-                automaticallyLoadedAssetKeys: [AVPartialAsyncProperty<AVAsset>]? = [.duration, .isPlayable, .hasProtectedContent],
+                automaticallyLoadedAssetKeys: [AVPartialAsyncProperty<AVAsset>]? = nil,
                 staticMetadata: AKNowPlayableStaticMetadataProtocol? = nil) {
         self.url = url
         self.type = type

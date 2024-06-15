@@ -39,6 +39,7 @@ public enum AKPlayerUnavailableCommandReason {
     case canNotStepBackward
     case canNotPlayAtSpecifiedRate
     case actionNotPermitted
+    case playerCanNoLongerPlay
 }
 
 extension AKPlayerUnavailableCommandReason: CustomStringConvertible {
@@ -70,6 +71,8 @@ extension AKPlayerUnavailableCommandReason: CustomStringConvertible {
             return "Item can't be played at the specified rate"
         case .actionNotPermitted:
             return "Action is not permitted"
+        case .playerCanNoLongerPlay:
+            return "Player can no longer play"
         }
     }
 }

@@ -56,7 +56,9 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
         self.rate = rate
     }
     
-    deinit { }
+    deinit {
+        cancellables.removeAll()
+    }
     
     public func didChangeState() {
         startObservingPlayerStatus()
@@ -266,7 +268,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     private func startObservingPlayerItemNotifications() {
-        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+        playerController.currentMedia!.failedToPlayToEndTimePublisher
             .sink { [weak self] error in
                 guard let self else { return }
                 guard error.underlyingError is URLError else {

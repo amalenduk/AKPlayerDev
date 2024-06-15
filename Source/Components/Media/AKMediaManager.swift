@@ -32,22 +32,26 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     public unowned let media: AKPlayable
     
-    public private(set) var asset: AVURLAsset?
+    public var asset: AVURLAsset? {
+        return playerItemInitService.asset
+    }
     
-    public private(set) var playerItem: AVPlayerItem?
+    public var playerItem: AVPlayerItem? {
+        return playerItemInitService.playerItem
+    }
     
     public var error: AKPlayerError?
     
     public private(set) var state: AKPlayableState = .idle {
         didSet {
-            _statePublisher.send(state)
+            stateSubject.send(state)
             media.delegate?.akMedia(media,
                                     didChangedState: state)
         }
     }
     
     public var statePublisher: AnyPublisher<AKPlayableState, Never> {
-        return _statePublisher.eraseToAnyPublisher()
+        return stateSubject.eraseToAnyPublisher()
     }
     
     public var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
@@ -86,7 +90,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         return playerItemBufferingStatusObserver.playbackBufferEmptyPublisher
     }
     
-    private let _statePublisher = PassthroughSubject<AKPlayableState, Never>()
+    private let stateSubject = PassthroughSubject<AKPlayableState, Never>()
     
     private var playerItemInitService: AKPlayerItemInitServiceProtocol!
     
@@ -127,15 +131,13 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         print("Deinit called from AKMediaManager 👌🏼")
     }
     
-    open func createAsset() -> AVURLAsset {
+    open func createAsset() {
         assert(state.isIdle
                || state.isFailed,
                "This function can only be called if the media is idle or has encountered an error.")
         self.error = nil
-        let asset = playerItemInitService.createAsset()
-        self.asset = asset
+        playerItemInitService.createAsset()
         state = .assetLoaded
-        return asset
     }
     
     open func fetchAssetPropertiesValues() async throws {
@@ -158,15 +160,13 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         }
     }
     
-    open func createPlayerItemFromAsset() -> AVPlayerItem {
+    open func createPlayerItemFromAsset() {
         assert(state.isAssetLoaded,
                "This function requires the asset to be loaded first.")
         self.error = nil
-        let playerItem = playerItemInitService!.createPlayerItemFromAsset()
-        initializeObservers(with: playerItem)
-        self.playerItem = playerItem
+        playerItemInitService.createPlayerItemFromAsset()
+        initializeObservers(with: playerItem!)
         state = .playerItemLoaded
-        return playerItem
     }
     
     open func abortAssetInitialization() {
@@ -174,7 +174,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func startPlayerItemReadinessObserver() {
-        guard state.isPlayerItemLoaded || state.isReadyToPlay else { return }
+        guard state.isPlayerItemLoaded
+                || state.isReadyToPlay else { return }
         playerItemReadinessObserver.startObserving()
     }
     
@@ -183,7 +184,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func startPlayerItemAssetKeysObserver() {
-        guard state.isPlayerItemLoaded || state.isReadyToPlay else { return }
+        guard state.isPlayerItemLoaded
+                || state.isReadyToPlay else { return }
         
         startObservingPlayerItemProperties()
         
@@ -198,8 +200,6 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func stopPlayerItemAssetKeysObserver() {
-        cancellables.removeAll()
-        
         steppingThroughMediaObserver?.stopObserving()
         playbackCapabilitiesObserver?.stopObserving()
         playerItemTimingInformationObserver?.stopObserving()
@@ -248,8 +248,10 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     open func canSeek(to time: CMTime) -> (flag: Bool,
                                            reason: AKPlayerUnavailableCommandReason?) {
-        guard state.isPlayerItemLoaded || state.isReadyToPlay else {
-            if state.isIdle || state.isFailed {
+        guard state.isPlayerItemLoaded
+                || state.isReadyToPlay else {
+            if state.isIdle
+                || state.isFailed {
                 return (false, .loadMediaFirst)
             } else {
                 return (false, .waitTillMediaLoaded)

@@ -42,15 +42,15 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
     public let playerItem: AVPlayerItem
     
     public var durationPublisher: AnyPublisher<CMTime, Never> {
-        return _durationPublisher.eraseToAnyPublisher()
+        return durationSubject.eraseToAnyPublisher()
     }
     
     public var timebasePublisher: AnyPublisher<CMTimebase?, Never> {
-        return _timebasePublisher.eraseToAnyPublisher()
+        return timebaseSubject.eraseToAnyPublisher()
     }
     
-    private var _durationPublisher = PassthroughSubject<CMTime, Never>()
-    private var _timebasePublisher = PassthroughSubject<CMTimebase?, Never>()
+    private var durationSubject = PassthroughSubject<CMTime, Never>()
+    private var timebaseSubject = PassthroughSubject<CMTimebase?, Never>()
     
     private var isObserving = false
     
@@ -73,7 +73,7 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] duration in
-            _durationPublisher.send(duration)
+            durationSubject.send(duration)
         })
         .store(in: &cancellables)
         
@@ -82,7 +82,7 @@ open class AKPlayerItemTimingInformationObserver: AKPlayerItemTimingInformationO
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] timebase in
-            _timebasePublisher.send(timebase)
+            timebaseSubject.send(timebase)
         })
         .store(in: &cancellables)
         

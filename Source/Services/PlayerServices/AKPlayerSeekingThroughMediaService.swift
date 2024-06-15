@@ -31,6 +31,7 @@ public protocol AKPlayerSeekingThroughMediaServiceProtocol: AnyObject {
     var seekPosition: AKSeekPosition? { get }
     var isSeeking: Bool { get }
     
+    func seek(to seek: AKSeek)
     func seek(to time: CMTime)
     func seek(to time: CMTime,
               completionHandler: @escaping (Bool) -> Void)
@@ -65,6 +66,13 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
     }
     
     deinit { }
+    
+    open func seek(to seek: AKSeek) {
+        self.seek(to: seek.position,
+                  toleranceBefore: seek.toleranceBefore,
+                  toleranceAfter: seek.toleranceAfter,
+                  completionHandler: seek.completionHandler)
+    }
     
     open func seek(to time: CMTime) {
         seek(to: .time(time),

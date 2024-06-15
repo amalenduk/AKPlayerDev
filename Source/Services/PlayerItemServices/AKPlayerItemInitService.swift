@@ -37,8 +37,8 @@ public protocol AKPlayerItemInitServiceProtocol {
     var asset: AVURLAsset? { get }
     var playerItem: AVPlayerItem? { get }
     
-    func createAsset() -> AVURLAsset
-    func createPlayerItemFromAsset() -> AVPlayerItem
+    func createAsset()
+    func createPlayerItemFromAsset()
     func fetchAssetPropertiesValues() async throws
     func validateAssetPlayability() async throws
     func abortAssetInitialization()
@@ -62,23 +62,15 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
     
     deinit { }
     
-    // MARK: - Additional Helper Functions
-    
-    open func createAsset() -> AVURLAsset {
-        /*
-         Create an asset for inspection of a resource referenced by a given URL.
-         */
+    open func createAsset() {
         let asset: AVURLAsset = AVURLAsset(url: media.url,
                                            options: media.assetInitializationOptions)
         self.asset = asset
-        return asset
     }
     
-    open func createPlayerItemFromAsset() -> AVPlayerItem {
+    open func createPlayerItemFromAsset() {
         assert(!(asset == nil),
                "Asset must be created before calling this function.")
-        // Create a new AVPlayerItem with the asset and an
-        // array of asset keys to be automatically loaded
         let playerItem: AVPlayerItem
         if let automaticallyLoadedAssetKeys = media.automaticallyLoadedAssetKeys {
             playerItem = AVPlayerItem(asset: asset!,
@@ -87,7 +79,6 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
             playerItem = AVPlayerItem(asset: asset!)
         }
         self.playerItem = playerItem
-        return playerItem
     }
     
     open func fetchAssetPropertiesValues() async throws {
@@ -129,6 +120,8 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
         guard let asset = asset else { return }
         asset.cancelLoading()
     }
+    
+    // MARK: - Additional Helper Functions
     
     private func verifyPlayability(isPlayable: Bool,
                                    hasProtectedContent: Bool) throws {

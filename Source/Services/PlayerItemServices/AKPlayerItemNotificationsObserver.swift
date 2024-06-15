@@ -51,35 +51,35 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
     private var cancellables = Set<AnyCancellable>()
     
     public var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
-        _didPlayToEndTimePublisher.eraseToAnyPublisher()
+        didPlayToEndTimeSubject.eraseToAnyPublisher()
     }
     
     public var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
-        _failedToPlayToEndTimePublisher.eraseToAnyPublisher()
+        failedToPlayToEndTimeSubject.eraseToAnyPublisher()
     }
     
     public var playbackStalledPublisher: AnyPublisher<Void, Never> {
-        _playbackStalledPublisher.eraseToAnyPublisher()
+        playbackStalledSubject.eraseToAnyPublisher()
     }
     
     public var timeJumpedPublisher: AnyPublisher<Void, Never> {
-        _timeJumpedPublisher.eraseToAnyPublisher()
+        timeJumpedSubject.eraseToAnyPublisher()
     }
     
     public var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
-        _mediaSelectionDidChangePublisher.eraseToAnyPublisher()
+        mediaSelectionDidChangeSubject.eraseToAnyPublisher()
     }
     
     public var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
-        _recommendedTimeOffsetFromLiveDidChangePublisher.eraseToAnyPublisher()
+        recommendedTimeOffsetFromLiveDidChangeSubject.eraseToAnyPublisher()
     }
     
-    private let _didPlayToEndTimePublisher = PassthroughSubject<CMTime, Never>()
-    private let _failedToPlayToEndTimePublisher = PassthroughSubject<AKPlayerError, Never>()
-    private let _playbackStalledPublisher = PassthroughSubject<Void, Never>()
-    private let _timeJumpedPublisher = PassthroughSubject<Void, Never>()
-    private let _mediaSelectionDidChangePublisher = PassthroughSubject<Void, Never>()
-    private let _recommendedTimeOffsetFromLiveDidChangePublisher = PassthroughSubject<CMTime, Never>()
+    private let didPlayToEndTimeSubject = PassthroughSubject<CMTime, Never>()
+    private let failedToPlayToEndTimeSubject = PassthroughSubject<AKPlayerError, Never>()
+    private let playbackStalledSubject = PassthroughSubject<Void, Never>()
+    private let timeJumpedSubject = PassthroughSubject<Void, Never>()
+    private let mediaSelectionDidChangeSubject = PassthroughSubject<Void, Never>()
+    private let recommendedTimeOffsetFromLiveDidChangeSubject = PassthroughSubject<CMTime, Never>()
     
     // MARK: - Init
     
@@ -99,7 +99,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _didPlayToEndTimePublisher.send(playerItem.currentTime())
+                didPlayToEndTimeSubject.send(playerItem.currentTime())
             }
             .store(in: &cancellables)
         
@@ -109,7 +109,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .sink { [weak self] notification in
                 guard let self,
                       let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
-                _failedToPlayToEndTimePublisher.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
+                failedToPlayToEndTimeSubject.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
             }
             .store(in: &cancellables)
         
@@ -121,7 +121,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _playbackStalledPublisher.send()
+                playbackStalledSubject.send()
             }
             .store(in: &cancellables)
         
@@ -130,7 +130,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _timeJumpedPublisher.send()
+                timeJumpedSubject.send()
             }
             .store(in: &cancellables)
         
@@ -139,7 +139,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _mediaSelectionDidChangePublisher.send()
+                mediaSelectionDidChangeSubject.send()
             }
             .store(in: &cancellables)
         
@@ -148,7 +148,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [weak self] _ in
                 guard let self else { return }
-                _recommendedTimeOffsetFromLiveDidChangePublisher.send(playerItem.recommendedTimeOffsetFromLive)
+                recommendedTimeOffsetFromLiveDidChangeSubject.send(playerItem.recommendedTimeOffsetFromLive)
             }
             .store(in: &cancellables)
         

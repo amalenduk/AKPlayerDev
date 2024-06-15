@@ -32,8 +32,8 @@ public protocol AKMediaManagerProtocol: AnyObject {
     var playerItem: AVPlayerItem? { get }
     var error: AKPlayerError? { get }
     var state: AKPlayableState { get }
-    var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
     
+    var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
     var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> { get }
     var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> { get }
     var playbackStalledPublisher: AnyPublisher<Void, Never> { get }
@@ -44,8 +44,8 @@ public protocol AKMediaManagerProtocol: AnyObject {
     var playbackBufferFullPublisher: AnyPublisher<Bool, Never> { get }
     var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> { get }
     
-    func createAsset() -> AVURLAsset
-    func createPlayerItemFromAsset() -> AVPlayerItem
+    func createAsset()
+    func createPlayerItemFromAsset()
     func fetchAssetPropertiesValues() async throws
     func validateAssetPlayability() async throws
     func abortAssetInitialization()

@@ -5,7 +5,5 @@ target 'AKPlayer_Example' do
 
   target 'AKPlayer_Tests' do
     inherit! :search_paths
-
-    
   end
 end

@@ -62,7 +62,9 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
         self.rate = rate
     }
     
-    deinit { }
+    deinit {
+        cancellables.removeAll()
+    }
     
     public func didChangeState() {
         resetPlayer()
@@ -70,12 +72,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
                                                     didChangeMediaTo: media)
         
         media.statePublisher
+            .prepend(media.state)
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
                 handleMediaSteChange(with: state)
             }.store(in: &cancellables)
-        
-        handleMediaSteChange(with: media.state)
     }
     
     // MARK: - Commands
@@ -125,15 +126,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     public func play(at rate: AKPlaybackRate) {
-        autoPlay = true
-        self.rate = rate
+        playerController.delegate?.playerController(playerController,
+                                                    unavailableActionWith: .waitTillMediaLoaded)
     }
     
     public func pause() {
-        guard !media.state.isFailed else {
-            failedToPrepareForPlayback(with: media.error!)
-            return
-        }
         autoPlay = false
     }
     
@@ -333,9 +330,8 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     
     
     private func abortAssetInitialization() {
-        isCancelled = true
         task?.cancel()
-        cancellables.forEach({$0.cancel()})
+        isCancelled = true
         cancellables.removeAll()
         media.abortAssetInitialization()
     }

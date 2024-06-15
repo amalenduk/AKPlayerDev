@@ -75,7 +75,8 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProto
     func canPlay() -> Bool
     func updateNowPlayingControl()
     func setNowPlayingInfo()
-    func handleRemoteCommand(_ command: AKRemoteCommand, with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
+    func handleRemoteCommand(_ command: AKRemoteCommand, 
+                             with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
 }
 
 public struct AKPlayerStateSnapshot {

@@ -50,30 +50,30 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
     public let playerItem: AVPlayerItem
     
     public var canPlayReversePublisher: AnyPublisher<Bool, Never> {
-        return _canPlayReversePublisher.eraseToAnyPublisher()
+        return canPlayReverseSubject.eraseToAnyPublisher()
     }
     
     public var canPlayFastForwardPublisher: AnyPublisher<Bool, Never> {
-        return _canPlayFastForwardPublisher.eraseToAnyPublisher()
+        return canPlayFastForwardSubject.eraseToAnyPublisher()
     }
     
     public var canPlayFastReversePublisher: AnyPublisher<Bool, Never> {
-        return _canPlayFastReversePublisher.eraseToAnyPublisher()
+        return canPlayFastReverseSubject.eraseToAnyPublisher()
     }
     
     public var canPlaySlowForwardPublisher: AnyPublisher<Bool, Never> {
-        return _canPlaySlowForwardPublisher.eraseToAnyPublisher()
+        return canPlaySlowForwardSubject.eraseToAnyPublisher()
     }
     
     public var canPlaySlowReversePublisher: AnyPublisher<Bool, Never> {
-        return _canPlaySlowReversePublisher.eraseToAnyPublisher()
+        return canPlaySlowReverseSubject.eraseToAnyPublisher()
     }
     
-    private var _canPlayReversePublisher = PassthroughSubject<Bool, Never>()
-    private var _canPlayFastForwardPublisher = PassthroughSubject<Bool, Never>()
-    private var _canPlayFastReversePublisher = PassthroughSubject<Bool, Never>()
-    private var _canPlaySlowForwardPublisher = PassthroughSubject<Bool, Never>()
-    private var _canPlaySlowReversePublisher = PassthroughSubject<Bool, Never>()
+    private var canPlayReverseSubject = PassthroughSubject<Bool, Never>()
+    private var canPlayFastForwardSubject = PassthroughSubject<Bool, Never>()
+    private var canPlayFastReverseSubject = PassthroughSubject<Bool, Never>()
+    private var canPlaySlowForwardSubject = PassthroughSubject<Bool, Never>()
+    private var canPlaySlowReverseSubject = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -96,7 +96,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayReverse in
-            _canPlayReversePublisher.send(canPlayReverse)
+            canPlayReverseSubject.send(canPlayReverse)
         })
         .store(in: &cancellables)
         
@@ -104,7 +104,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayFastForward in
-            _canPlayFastForwardPublisher.send(canPlayFastForward)
+            canPlayFastForwardSubject.send(canPlayFastForward)
         })
         .store(in: &cancellables)
         
@@ -112,7 +112,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlayFastReverse in
-            _canPlayFastReversePublisher.send(canPlayFastReverse)
+            canPlayFastReverseSubject.send(canPlayFastReverse)
         })
         .store(in: &cancellables)
         
@@ -120,7 +120,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlaySlowForward in
-            _canPlaySlowForwardPublisher.send(canPlaySlowForward)
+            canPlaySlowForwardSubject.send(canPlaySlowForward)
         })
         .store(in: &cancellables)
         
@@ -128,7 +128,7 @@ open class AKPlaybackCapabilitiesObserver: AKPlaybackCapabilitiesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] canPlaySlowReverse in
-            _canPlaySlowReversePublisher.send(canPlaySlowReverse)
+            canPlaySlowReverseSubject.send(canPlaySlowReverse)
         })
         .store(in: &cancellables)
         

@@ -66,9 +66,8 @@ public extension AKPlayable {
 
 public extension AKPlayable {
     
-    @discardableResult
-    func createAsset() -> AVURLAsset {
-        return manager.createAsset()
+    func createAsset() {
+        manager.createAsset()
     }
     
     func fetchAssetPropertiesValues() async throws {
@@ -79,9 +78,8 @@ public extension AKPlayable {
         try await manager.validateAssetPlayability()
     }
     
-    @discardableResult
-    func createPlayerItemFromAsset() -> AVPlayerItem {
-        return manager.createPlayerItemFromAsset()
+    func createPlayerItemFromAsset() {
+        manager.createPlayerItemFromAsset()
     }
     
     func abortAssetInitialization() {
@@ -305,27 +303,27 @@ public extension AKPlayable {
 
 public extension AKPlayable {
     
-    var playerItemDidPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
+    var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
         return manager.didPlayToEndTimePublisher
     }
     
-    var playerItemFailedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
+    var failedToPlayToEndTimePublisher: AnyPublisher<AKPlayerError, Never> {
         return manager.failedToPlayToEndTimePublisher
     }
     
-    var playerItemPlaybackStalledPublisher: AnyPublisher<Void, Never> {
+    var playbackStalledPublisher: AnyPublisher<Void, Never> {
         return manager.playbackStalledPublisher
     }
     
-    var playerItemTimeJumpedPublisher: AnyPublisher<Void, Never> {
+    var timeJumpedPublisher: AnyPublisher<Void, Never> {
         return manager.timeJumpedPublisher
     }
     
-    var playerItemMediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
+    var mediaSelectionDidChangePublisher: AnyPublisher<Void, Never> {
         return manager.mediaSelectionDidChangePublisher
     }
     
-    var playerItemRecommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
+    var recommendedTimeOffsetFromLiveDidChangePublisher: AnyPublisher<CMTime, Never> {
         return manager.recommendedTimeOffsetFromLiveDidChangePublisher
     }
 }

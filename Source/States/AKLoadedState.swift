@@ -54,7 +54,9 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         self.rate = rate
     }
     
-    deinit { }
+    deinit {
+        cancellables.removeAll()
+    }
     
     public func didChangeState() {
         startObservingPlayerProperties()
@@ -156,11 +158,11 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                      completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to time: CMTime,
@@ -168,26 +170,26 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                      toleranceAfter: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: time,
                         toleranceBefore: toleranceBefore,
                         toleranceAfter: toleranceAfter)
+        change(controller)
     }
     
     public func seek(to time: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: time,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to time: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: time)
+        change(controller)
     }
     
     public func seek(to time: Double,
@@ -207,16 +209,16 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                      completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: date,
                         completionHandler: completionHandler)
+        change(controller)
     }
     
     public func seek(to date: Date) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
-        change(controller)
         controller.seek(to: date)
+        change(controller)
     }
     
     public func seek(toOffset offset: Double) {
@@ -282,7 +284,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
                 guard timeControlStatus == .paused,
-                        playerController.player.currentItem == nil else { return }
+                      playerController.player.currentItem == nil else { return }
                 stop()
             }.store(in: &cancellables)
     }

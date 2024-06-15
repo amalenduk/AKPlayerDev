@@ -42,6 +42,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private var timer: Timer?
     
+    private var targetSeek: AKSeek?
+    
     private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
@@ -57,11 +59,14 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     deinit {
-        cancellables.forEach({$0.cancel()})
+        cancellables.removeAll()
     }
     
     public func didChangeState() {
         startObservingPlayerStatus()
+        if let targetSeek {
+            playerController.playerSeekingThroughMediaService.seek(to: targetSeek)
+        }
         
         if !(playerController.player.timeControlStatus == .paused) {
             playerController.player.pause()
@@ -152,52 +157,52 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                      toleranceBefore: CMTime,
                      toleranceAfter: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
-        playerController.playerSeekingThroughMediaService.seek(to: time,
-                                                               toleranceBefore: toleranceBefore,
-                                                               toleranceAfter: toleranceAfter,
-                                                               completionHandler: completionHandler)
+        targetSeek = AKSeek(position: .time(time),
+                            toleranceBefore: toleranceBefore,
+                            toleranceAfter: toleranceAfter,
+                            completionHandler: completionHandler)
     }
     
     public func seek(to time: CMTime,
                      toleranceBefore: CMTime,
                      toleranceAfter: CMTime) {
-        playerController.playerSeekingThroughMediaService.seek(to: time,
-                                                               toleranceBefore: toleranceBefore,
-                                                               toleranceAfter: toleranceAfter)
+        targetSeek = AKSeek(position: .time(time),
+                            toleranceBefore: toleranceBefore,
+                            toleranceAfter: toleranceAfter)
     }
     
     public func seek(to time: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
-        playerController.playerSeekingThroughMediaService.seek(to: time,
-                                                               completionHandler: completionHandler)
+        targetSeek = AKSeek(position: .time(time),
+                            completionHandler: completionHandler)
     }
     
     public func seek(to time: CMTime) {
-        playerController.playerSeekingThroughMediaService.seek(to: time)
+        targetSeek = AKSeek(position: .time(time))
     }
     
     public func seek(to time: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         let time = CMTime(seconds: time,
                           preferredTimescale: playerController.configuration.preferredTimeScale)
-        playerController.playerSeekingThroughMediaService.seek(to: time,
-                                                               completionHandler: completionHandler)
+        targetSeek = AKSeek(position: .time(time),
+                            completionHandler: completionHandler)
     }
     
     public func seek(to time: Double) {
         let time = CMTime(seconds: time,
                           preferredTimescale: playerController.configuration.preferredTimeScale)
-        playerController.playerSeekingThroughMediaService.seek(to: time)
+        targetSeek = AKSeek(position: .time(time))
     }
     
     public func seek(to date: Date,
                      completionHandler: @escaping (Bool) -> Void) {
-        playerController.playerSeekingThroughMediaService.seek(to: date,
-                                                               completionHandler: completionHandler)
+        targetSeek = AKSeek(position: .date(date),
+                            completionHandler: completionHandler)
     }
     
     public func seek(to date: Date) {
-        playerController.playerSeekingThroughMediaService.seek(to: date)
+        targetSeek = AKSeek(position: .date(date))
     }
     
     public func seek(toOffset offset: Double) {
@@ -250,7 +255,6 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private func startObservingPlayerStatus() {
         playerController.playerStatusPublisher
-            .prepend(playerController.player.status)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] status in
                 guard status == .failed else { return }
@@ -263,13 +267,13 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
                 guard timeControlStatus == .paused,
-                        playerController.player.currentItem == nil else { return }
+                      playerController.player.currentItem == nil else { return }
                 stop()
             }.store(in: &cancellables)
     }
     
     private func startObservingPlayerItemNotifications() {
-        playerController.currentMedia!.playerItemFailedToPlayToEndTimePublisher
+        playerController.currentMedia!.failedToPlayToEndTimePublisher
             .sink { [weak self] error in
                 guard let self else { return }
                 guard error.underlyingError is URLError else {
@@ -311,6 +315,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
+        cancellables.forEach({$0.cancel()})
         cancellables.removeAll()
         
         timer?.invalidate()
@@ -362,11 +367,14 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         }
     }
     
-    private func startPlayingIfPossible() {
+    private func canPlay() -> Bool {
         guard !playerController.isSeeking
                 && (playerController.currentMedia!.isPlaybackBufferFull
-                    || playerController.currentMedia!.isPlaybackLikelyToKeepUp) else { return }
-        
+                    || playerController.currentMedia!.isPlaybackLikelyToKeepUp) else { return false }
+        return true
+    }
+    
+    private func startPlayingIfPossible() {
         let controller = AKPlayingState(playerController: playerController,
                                         rate: rate)
         change(controller)

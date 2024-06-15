@@ -161,21 +161,25 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     // MARK: - Commands
     
     open func load(media: AKPlayable) {
-        if !state.isPlaybackInactive {
+        if !state.isAny(of: [.idle,
+            .paused,
+            .stopped,
+            .failed]) {
             pause()
         }
         currentMedia = media
-        
         controller.load(media: media)
     }
     
     open func load(media: AKPlayable,
                    autoPlay: Bool) {
-        if !state.isPlaybackInactive {
+        if !state.isAny(of: [.idle,
+                                   .paused,
+                                   .stopped,
+                                   .failed]) {
             pause()
         }
         currentMedia = media
-        
         controller.load(media: media,
                         autoPlay: autoPlay)
     }
@@ -183,11 +187,13 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open func load(media: AKPlayable,
                    autoPlay: Bool,
                    at position: CMTime) {
-        if !state.isPlaybackInactive {
+        if !state.isAny(of: [.idle,
+                             .paused,
+                             .stopped,
+                             .failed]) {
             pause()
         }
         currentMedia = media
-        
         controller.load(media: media,
                         autoPlay: autoPlay,
                         at: position)
@@ -196,11 +202,13 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open func load(media: AKPlayable,
                    autoPlay: Bool,
                    at position: Double) {
-        if !state.isPlaybackInactive {
+        if !state.isAny(of: [.idle,
+                             .paused,
+                             .stopped,
+                             .failed]) {
             pause()
         }
         currentMedia = media
-        
         controller.load(media: media,
                         autoPlay: autoPlay,
                         at: position)

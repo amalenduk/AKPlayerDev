@@ -42,15 +42,15 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
     public let playerItem: AVPlayerItem
     
     public var canStepForwardPublisher: AnyPublisher<Bool, Never> {
-        return _canStepForwardPublisher.eraseToAnyPublisher()
+        return canStepForwardSubject.eraseToAnyPublisher()
     }
     
     public var canStepBackwardPublisher: AnyPublisher<Bool, Never> {
-        return _canStepBackwardPublisher.eraseToAnyPublisher()
+        return canStepBackwardSubject.eraseToAnyPublisher()
     }
     
-    private var _canStepForwardPublisher = PassthroughSubject<Bool, Never>()
-    private var _canStepBackwardPublisher = PassthroughSubject<Bool, Never>()
+    private var canStepForwardSubject = PassthroughSubject<Bool, Never>()
+    private var canStepBackwardSubject = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -95,7 +95,7 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] canStepForward in
-            _canStepForwardPublisher.send(canStepForward)
+            canStepForwardSubject.send(canStepForward)
         }
         .store(in: &cancellables)
         
@@ -103,7 +103,7 @@ open class AKSteppingThroughMediaObserver: AKSteppingThroughMediaObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink { [unowned self] canStepBackward in
-            _canStepBackwardPublisher.send(canStepBackward)
+            canStepBackwardSubject.send(canStepBackward)
         }
         .store(in: &cancellables)
         

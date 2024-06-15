@@ -41,10 +41,10 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
     public let playerItem: AVPlayerItem
     
     public var statusPublisher: AnyPublisher<(status: AVPlayerItem.Status, error: AKPlayerError?), Never> {
-        return _statusPublisher.eraseToAnyPublisher()
+        return statusSubject.eraseToAnyPublisher()
     }
     
-    private var _statusPublisher = PassthroughSubject<(status: AVPlayerItem.Status, error: AKPlayerError?), Never>()
+    private var statusSubject = PassthroughSubject<(status: AVPlayerItem.Status, error: AKPlayerError?), Never>()
     
     private var isObserving = false
     
@@ -67,7 +67,7 @@ open class AKPlayerItemReadinessObserver: AKPlayerItemReadinessObserverProtocol 
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] status in
-            _statusPublisher.send((status, (status == .failed) ? .playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil))
+            statusSubject.send((status, (status == .failed) ? .playerItemLoadingFailed(reason: .statusLoadingFailed(error: playerItem.error!)) : nil))
         })
         .store(in: &cancellables)
     }

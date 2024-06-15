@@ -41,10 +41,10 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
     public let playerItem: AVPlayerItem
     
     public var recommendedTimeOffsetFromLivePublisher: AnyPublisher<CMTime, Never> {
-        return _recommendedTimeOffsetFromLivePublisher.eraseToAnyPublisher()
+        return recommendedTimeOffsetFromLiveSubject.eraseToAnyPublisher()
     }
     
-    private var _recommendedTimeOffsetFromLivePublisher = PassthroughSubject<CMTime, Never>()
+    private var recommendedTimeOffsetFromLiveSubject = PassthroughSubject<CMTime, Never>()
     
     private var isObserving = false
     
@@ -67,7 +67,7 @@ open class AKPlyerItemTimeOffsetsObserver: AKPlyerItemTimeOffsetsObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] recommendedTimeOffsetFromLive in
-            _recommendedTimeOffsetFromLivePublisher.send(recommendedTimeOffsetFromLive)
+            recommendedTimeOffsetFromLiveSubject.send(recommendedTimeOffsetFromLive)
         })
         .store(in: &cancellables)
         

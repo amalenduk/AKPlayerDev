@@ -49,22 +49,22 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
     public let playerItem: AVPlayerItem
     
     public var playbackLikelyToKeepUpPublisher: AnyPublisher<Bool, Never> {
-        _playbackLikelyToKeepUpPublisher.eraseToAnyPublisher()
+        playbackLikelyToKeepUpSubject.eraseToAnyPublisher()
     }
     
     public var playbackBufferFullPublisher: AnyPublisher<Bool, Never> {
-        _playbackBufferFullPublisher.eraseToAnyPublisher()
+        playbackBufferFullSubject.eraseToAnyPublisher()
     }
     
     public var playbackBufferEmptyPublisher: AnyPublisher<Bool, Never> {
-        _playbackBufferEmptyPublisher.eraseToAnyPublisher()
+        playbackBufferEmptySubject.eraseToAnyPublisher()
     }
     
-    private var _playbackLikelyToKeepUpPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
+    private var playbackLikelyToKeepUpSubject: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
     
-    private var _playbackBufferFullPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
+    private var playbackBufferFullSubject: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
     
-    private var _playbackBufferEmptyPublisher: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
+    private var playbackBufferEmptySubject: PassthroughSubject<Bool, Never> = PassthroughSubject<Bool, Never>()
     
     private var isObserving = false
     
@@ -83,12 +83,11 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
     open func startObserving() {
         guard !isObserving else { return }
         
-        
         playerItem.publisher(for: \.isPlaybackLikelyToKeepUp,
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] isPlaybackLikelyToKeepUp in
-            _playbackLikelyToKeepUpPublisher.send(isPlaybackLikelyToKeepUp)
+            playbackLikelyToKeepUpSubject.send(isPlaybackLikelyToKeepUp)
         })
         .store(in: &cancellables)
         
@@ -96,7 +95,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] isPlaybackBufferFull in
-            _playbackBufferFullPublisher.send(isPlaybackBufferFull)
+            playbackBufferFullSubject.send(isPlaybackBufferFull)
         })
         .store(in: &cancellables)
         
@@ -104,7 +103,7 @@ open class AKPlayerItemBufferingStatusObserver: AKPlayerItemBufferingStatusObser
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] isPlaybackBufferEmpty in
-            _playbackBufferEmptyPublisher.send(isPlaybackBufferEmpty)
+            playbackBufferEmptySubject.send(isPlaybackBufferEmpty)
         })
         .store(in: &cancellables)
         

@@ -435,14 +435,14 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
             if media.isLive() {
-                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time?.stringValue ?? currentTime.stringValue)"
+                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time.stringValue ?? currentTime.stringValue)"
                 
                 self.currentTimeLabel.textColor = media.isLivePositionCloseToLive() ? .red : .green
                 
-                self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
+                self.setSliderProgress(player.seekPosition?.time.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
             } else {
                 self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
-                self.setSliderProgress(player.seekPosition?.time?.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
+                self.setSliderProgress(player.seekPosition?.time.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
             }
         }
     }

@@ -81,16 +81,8 @@ public enum AKPlayerState: String, CustomStringConvertible {
         return self == .failed
     }
     
-    var isPlaybackActive: Bool {
-        return isBuffering || isPlaying || isWaitingForNetwork
-    }
-    
-    var isLoadingStateActive: Bool {
-        return isLoading || isLoaded
-    }
-    
-    var isPlaybackInactive: Bool {
-        return isIdle || isPaused || isStopped || isFailed
+    func isAny(of states: [AKPlayerState]) -> Bool {
+        return states.contains(where: {$0 == self})
     }
 }
 

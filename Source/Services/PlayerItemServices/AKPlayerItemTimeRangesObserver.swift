@@ -42,15 +42,15 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
     public let playerItem: AVPlayerItem
     
     public var loadedTimeRangesPublisher: AnyPublisher<[NSValue], Never> {
-        return _loadedTimeRangesPublisher.eraseToAnyPublisher()
+        return loadedTimeRangesSubject.eraseToAnyPublisher()
     }
     
     public var seekableTimeRangesPublisher: AnyPublisher<[NSValue], Never> {
-        return _seekableTimeRangesPublisher.eraseToAnyPublisher()
+        return seekableTimeRangesSubject.eraseToAnyPublisher()
     }
     
-    private var _loadedTimeRangesPublisher = PassthroughSubject<[NSValue], Never>()
-    private var _seekableTimeRangesPublisher = PassthroughSubject<[NSValue], Never>()
+    private var loadedTimeRangesSubject = PassthroughSubject<[NSValue], Never>()
+    private var seekableTimeRangesSubject = PassthroughSubject<[NSValue], Never>()
     
     private var isObserving = false
     
@@ -73,7 +73,7 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] loadedTimeRanges in
-            _loadedTimeRangesPublisher.send(loadedTimeRanges)
+            loadedTimeRangesSubject.send(loadedTimeRanges)
         })
         .store(in: &cancellables)
         
@@ -81,7 +81,7 @@ open class AKPlayerItemTimeRangesObserver: AKPlayerItemTimeRangesObserverProtoco
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] seekableTimeRanges in
-            _seekableTimeRangesPublisher.send(seekableTimeRanges)
+            seekableTimeRangesSubject.send(seekableTimeRanges)
         })
         .store(in: &cancellables)
         

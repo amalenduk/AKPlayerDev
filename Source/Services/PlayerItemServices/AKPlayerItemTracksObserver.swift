@@ -41,10 +41,10 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
     public let playerItem: AVPlayerItem
     
     public var tracksPublisher: AnyPublisher<[AVPlayerItemTrack], Never> {
-        return _tracksPublisher.eraseToAnyPublisher()
+        return tracksSubject.eraseToAnyPublisher()
     }
     
-    private var _tracksPublisher = PassthroughSubject<[AVPlayerItemTrack], Never>()
+    private var tracksSubject = PassthroughSubject<[AVPlayerItemTrack], Never>()
     
     private var isObserving = false
     
@@ -67,7 +67,7 @@ open class AKPlayerItemTracksObserver: AKPlayerItemTracksObserverProtocol {
                              options: [.initial, .new])
         .receive(on: DispatchQueue.global(qos: .background))
         .sink(receiveValue: { [unowned self] tracks in
-            _tracksPublisher.send(tracks)
+            tracksSubject.send(tracks)
         })
         .store(in: &cancellables)
         
