@@ -1,5 +1,5 @@
 //
-//  AKMediaManagerProtocol.swift
+//  AVPlayer+Extensions.swift
 //  AKPlayer
 //
 //  Copyright (c) 2020 Amalendu Kar
@@ -24,31 +24,18 @@
 //
 
 import AVFoundation
-import Combine
 
-public protocol AKMediaManagerProtocol: NSObjectProtocol {
-    var media: AKPlayable { get }
-    var asset: AVURLAsset? { get }
-    var playerItem: AVPlayerItem? { get }
-    var error: AKPlayerError? { get }
-    var state: AKPlayableState { get }
-
-    var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
+extension AVPlayer.TimeControlStatus {
     
-    func createAsset()
-    func createPlayerItemFromAsset()
-    func fetchAssetPropertiesValues() async throws
-    func validateAssetPlayability() async throws
-    func abortAssetInitialization()
+    var isPaused: Bool {
+        return self == .paused
+    }
     
-    func startPlayerItemAssetKeysObserver()
-    func startPlayerItemReadinessObserver()
-    func stopPlayerItemAssetKeysObserver()
-    func stopPlayerItemReadinessObserver()
+    var isPlaying: Bool {
+        return self == .playing
+    }
     
-    func canStep(by count: Int) -> Bool
-    func canPlay(at rate: AKPlaybackRate) -> Bool
-    func canSeek(to time: CMTime) -> (flag: Bool,
-                                      reason: AKPlayerUnavailableCommandReason?)
+    var isWaitingToPlayAtSpecifiedRate: Bool {
+        return self == .waitingToPlayAtSpecifiedRate
+    }
 }
-

@@ -26,7 +26,7 @@
 import Foundation
 import AVFoundation
 
-open class AKMedia: AKPlayable {
+open class AKMedia: NSObject, AKPlayable {
     
     // MARK: - Properties
     

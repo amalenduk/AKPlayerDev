@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		04253CFA29C81B030028D194 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04253CF929C81B030028D194 /* AppDelegate.swift */; };
 		0430C1232710ABB500D40AAF /* AudioSearchTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */; };
+		04926A2D2C1DBAFC00144A97 /* audio.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 04926A2C2C1DBAFC00144A97 /* audio.mp3 */; };
 		5A2E83E4D8DA25F73A9FD72E /* Pods_AKPlayer_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78F4A1351222960D5319D480 /* Pods_AKPlayer_Tests.framework */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
@@ -43,6 +44,7 @@
 /* Begin PBXFileReference section */
 		04253CF929C81B030028D194 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSearchTableViewController.swift; sourceTree = "<group>"; };
+		04926A2C2C1DBAFC00144A97 /* audio.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = audio.mp3; sourceTree = "<group>"; };
 		0FB847605FBD3AFE367613FA /* Pods-AKPlayer_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Tests.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Tests/Pods-AKPlayer_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		3235A9DAAE16B3C5C2906893 /* Pods_AKPlayer_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AKPlayer_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		409D138A202EADAE1074C338 /* Pods-AKPlayer_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Example.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Example/Pods-AKPlayer_Example.debug.xcconfig"; sourceTree = "<group>"; };
@@ -137,6 +139,7 @@
 		607FACD21AFB9204008FA782 /* Example for AKPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				04926A2C2C1DBAFC00144A97 /* audio.mp3 */,
 				F40ED5B025E2BBDC003FBD82 /* Helper */,
 				F4D6B12A25565A210011F71C /* Model */,
 				F492603D254893C2009844FA /* View */,
@@ -393,6 +396,7 @@
 				607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */,
 				607FACE01AFB9204008FA782 /* LaunchScreen.xib in Resources */,
 				F49260492548947C009844FA /* SimpleVideo.storyboard in Resources */,
+				04926A2D2C1DBAFC00144A97 /* audio.mp3 in Resources */,
 				F453FC48254DB4D0003E4ADF /* AKVideoPlayer.xib in Resources */,
 				607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */,
 				F44E64922551D14000B7BB4D /* AKVideoPlayerControlView.xib in Resources */,

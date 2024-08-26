@@ -41,7 +41,7 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     public var audioSession: AKAudioSessionConfiguration = AKAudioSessionConfiguration()
     
-    public var isNowPlayingEnabled: Bool = false
+    public var isNowPlayingEnabled: Bool = true
     
     public var idleTimerDisabledForStates: [AKPlayerState] = [AKPlayerState.buffering,
                                                               AKPlayerState.playing]

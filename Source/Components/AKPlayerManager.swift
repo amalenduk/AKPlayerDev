@@ -115,27 +115,21 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     public let audioSessionService: AKAudioSessionServiceProtocol
     
-    public private(set) var audioSessionInterruptionObserver: AKAudioSessionInterruptionObserverProtocol!
-    
-    public private(set) var audioSessionRouteChangesObserver: AKAudioSessionRouteChangesObserverProtocol!
-    
-    public private(set) var audioSessionMediaServicesWereResetObserver: AKAudioSessionMediaServicesWereResetObserverProtocol!
-    
-    public private(set) var audioSessionSilenceSecondaryAudioHintObserver: AKAudioSessionSilenceSecondaryAudioHintObserverProtocol!
-    
-    public private(set) var audioSessionMediaServicesLostObserver: AKAudioSessionMediaServicesLostObserverProtocol!
-    
-    public private(set) var audioSessionSpatialPlaybackCapabilitiesObserver: AKAudioSessionSpatialPlaybackCapabilitiesObserverProtocol!
-    
-    public private(set) var applicationLifeCycleEventsObserver: AKApplicationLifeCycleEventsObserverProtocol!
-    
     public private(set) var nowPlayingSessionController: AKNowPlayingSessionController!
+    
+    private var audioSessionInterruptionObserver: AKAudioSessionInterruptionObserverProtocol!
+    
+    private var audioSessionRouteChangesObserver: AKAudioSessionRouteChangesObserverProtocol!
+    
+    private var audioSessionMediaServicesWereResetObserver: AKAudioSessionMediaServicesWereResetObserverProtocol!
+    
+    private var applicationLifeCycleEventsObserver: AKApplicationLifeCycleEventsObserverProtocol!
     
     // MARK: - Init
     
     public init(player: AVPlayer,
                 configuration: AKPlayerConfigurationProtocol,
-                audioSessionService: AKAudioSessionServiceProtocol = AKAudioSessionService()) {
+                audioSessionService: AKAudioSessionServiceProtocol) {
         self.playerController = AKPlayerController(player: player,
                                                    configuration: configuration)
         self.audioSessionService = audioSessionService
@@ -192,7 +186,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         nowPlayingSessionController.setNowPlayingInfo(nowPlayableMetadata)
     }
     
-    open func handleRemoteCommand(_ command: AKRemoteCommand, 
+    open func handleRemoteCommand(_ command: AKRemoteCommand,
                                   with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         switch command {
         case .pause:
@@ -529,14 +523,12 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     private func savePlayerStateSnapshot(playbackInterruptionReason: AKPlaybackInterruptionReason,
                                          shouldResume: Bool) {
         guard var snapshot = playerStateSnapshot else {
-            playerStateSnapshot = AKPlayerStateSnapshot(state: state,
-                                                        shouldResume: shouldResume,
+            playerStateSnapshot = AKPlayerStateSnapshot(shouldResume: shouldResume,
                                                         applicationState: applicationLifeCycleEventsObserver.state,
                                                         playbackInterruptionReason: playbackInterruptionReason)
             return
         }
         
-        snapshot.state = state
         snapshot.applicationState = applicationLifeCycleEventsObserver.state
         
         self.playerStateSnapshot = snapshot
@@ -600,7 +592,11 @@ extension AKPlayerManager: AKAudioSessionInterruptionObserverDelegate {
                                                  didBeginInterruptionWith reason: AVAudioSession.InterruptionReason?,
                                                  for audioSession: AVAudioSession) {
         
-        guard state.isAny(of: [.loading, .loaded, .buffering, .playing, .waitingForNetwork]) else { return }
+        guard (state.isAny(of: [.loading,
+                                .loaded,
+                                .buffering,
+                                .waitingForNetwork]) && autoPlay)
+                || state == .playing else { return }
         /* Audio session automatically pauses player, if not will be paused here.
          Update the UI to indicate that playback or recording has paused when it’s interrupted. Do not deactivate the audio session. */
         savePlayerStateSnapshot(playbackInterruptionReason: .audioSessionInterruption,
@@ -633,11 +629,11 @@ extension AKPlayerManager: AKAudioSessionRouteChangesObserverDelegate {
         
         guard isExternalAudioPlaybackDeviceConnected
                 && !observer.isExternalDeviceConnected()
-                && state.isAny(of: [.loading,
-                                    .loaded,
-                                    .buffering,
-                                    .playing,
-                                    .waitingForNetwork]) else { return }
+                && (state.isAny(of: [.loading,
+                                     .loaded,
+                                     .buffering,
+                                     .waitingForNetwork]) && autoPlay)
+                || state == .playing else { return }
         
         pause()
     }
@@ -664,26 +660,25 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenResigningActive {
                 
-                if state.isAny(of: [.loading,
-                                    .loaded,
-                                    .buffering,
-                                    .playing,
-                                    .waitingForNetwork]) {
+                if (state.isAny(of: [.loading,
+                                     .loaded,
+                                     .buffering,
+                                     .waitingForNetwork]) && autoPlay)
+                    || state == .playing {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: true)
                     pause()
                 }
-                
                 execute { try self.setAudioSession(false) }
                 
             } else {
                 
-                if (state.isAny(of: [.loading,
-                                     .loaded]) && !autoPlay)
-                    || state.isAny(of: [.buffering,
-                                        .playing,
-                                        .waitingForNetwork]) {
+                if (state.isNotAny(of: [.loading,
+                                        .loaded,
+                                        .buffering,
+                                        .waitingForNetwork]) && !autoPlay)
+                    && !state.isPlaying {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: false)
@@ -703,27 +698,25 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenBackgrounded {
                 
-                if state.isAny(of: [.loading,
-                                    .loaded,
-                                    .buffering,
-                                    .playing,
-                                    .waitingForNetwork]) {
+                if (state.isAny(of: [.loading,
+                                     .loaded,
+                                     .buffering,
+                                     .waitingForNetwork]) && autoPlay)
+                    || state == .playing {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
                                             shouldResume: true)
                     pause()
                 }
-                
                 execute { try self.setAudioSession(false) }
                 
             } else {
                 
-                if (state.isAny(of: [.loading,
-                                     .loaded]) && !autoPlay)
-                    || state.isAny(of: [.idle,
-                                        .paused,
-                                        .stopped,
-                                        .failed]) {
+                if (state.isNotAny(of: [.loading,
+                                        .loaded,
+                                        .buffering,
+                                        .waitingForNetwork]) && !autoPlay)
+                    && !state.isPlaying {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
                                             shouldResume: false)
@@ -749,7 +742,7 @@ extension AKPlayerManager: AKNowPlayingSessionControllerDelegate {
     public func nowPlayingSessionController(_ controller: AKNowPlayingSessionControllerProtocol,
                                             didReceive command: AKRemoteCommand,
                                             with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
-        handleRemoteCommand(command, with: event)
+        return handleRemoteCommand(command, with: event)
     }
 }
 

@@ -96,15 +96,15 @@ public class AKNowPlayingSessionController: AKNowPlayingSessionControllerProtoco
         delegate = nil
     }
     
-    public func addPlayer(_ player: AVPlayer) {
+    internal func addPlayer(_ player: AVPlayer) {
         nowPlayingSession.addPlayer(player)
     }
     
-    public func removePlayer(_ player: AVPlayer) {
+    internal func removePlayer(_ player: AVPlayer) {
         nowPlayingSession.addPlayer(player)
     }
     
-    public func becomeActiveIfPossible() async -> Bool {
+    internal func becomeActiveIfPossible() async -> Bool {
         return await nowPlayingSession.becomeActiveIfPossible()
     }
     
@@ -124,13 +124,13 @@ public class AKNowPlayingSessionController: AKNowPlayingSessionControllerProtoco
         }
     }
     
-    internal func enable(commands: [AKRemoteCommand]) {
+    func enable(commands: [AKRemoteCommand]) {
         commands.forEach { (command) in
             self.enable(command.registration)
         }
     }
     
-    internal func disable(commands: [AKRemoteCommand]) {
+    func disable(commands: [AKRemoteCommand]) {
         commands.forEach { (command) in
             self.disable(command.registration)
         }
@@ -172,86 +172,86 @@ public class AKNowPlayingSessionController: AKNowPlayingSessionControllerProtoco
     
     private func pauseCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .pause, with: event) ?? .commandFailed
     }
     
     private func stopCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .stop, with: event) ?? .commandFailed
     }
     
     private func togglePlayPauseCommandCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .togglePlayPause, with: event) ?? .commandFailed
     }
     
     private func nextTrackCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .nextTrack, with: event) ?? .commandFailed
     }
     
     private func previousTrackCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .previousTrack, with: event) ?? .commandFailed
     }
     
     private func changeRepeatModeCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .changeRepeatMode, with: event) ?? .commandFailed
     }
     
     private func changeShuffleModeCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .changeShuffleMode, with: event) ?? .commandFailed
     }
     
     private func changePlaybackRateCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .changePlaybackRate(supportedPlaybackRates: []), with: event) ?? .commandFailed
     }
     
     private func seekBackwardCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .seekForward, with: event) ?? .commandFailed
     }
     
     private func seekForwardCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .seekBackward, with: event) ?? .commandFailed
     }
     
     private func skipBackwardCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .skipBackward(preferredIntervals: []), with: event) ?? .commandFailed
     }
     
     private func skipForwardCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .skipForward(preferredIntervals: []), with: event) ?? .commandFailed
     }
     
     private func changePlaybackPositionCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .changePlaybackPosition, with: event) ?? .commandFailed
     }
     
     private func ratingCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .rating, with: event) ?? .commandFailed
     }
     
     private func likeCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .like, with: event) ?? .commandFailed
     }
     
     private func dislikeCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .dislike, with: event) ?? .commandFailed
     }
     
     private func bookmarkCommandHandler(event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus {
         return delegate?.nowPlayingSessionController(self,
-                                                     didReceive: .play, with: event) ?? .commandFailed
+                                                     didReceive: .bookmark, with: event) ?? .commandFailed
     }
 }

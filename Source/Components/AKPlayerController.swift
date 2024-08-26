@@ -62,10 +62,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     }
     
     open var autoPlay: Bool {
-        return (controller as? AKLoadedState)?.autoPlay ?? false
-        || (controller as? AKLoadingState)?.autoPlay ?? false
-        || (controller as? AKBufferingState)?.autoPlay ?? false
-        || (controller as? AKWaitingForNetworkState)?.autoPlay ?? false
+        return controller.autoPlay
     }
     
     open var isSeeking: Bool {
@@ -110,21 +107,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private var playerPlaybackTimeObserver: AKPlayerPlaybackTimeObserverProtocol
     
-    private var playerWaitingBehaviorObserver: AKPlayerWaitingBehaviorObserverProtocol
-    
     private var playerRateObserver: AKPlayerRateObserverProtocol
-    
-    private var playerAudioBehaviorObserver: AKPlayerAudioBehaviorObserverProtocol
-    
-    private var playerReadinessObserver: AKPlayerReadinessObserverProtocol
-    
-    public var playerStatusPublisher: AnyPublisher<AVPlayer.Status, Never> {
-        return playerReadinessObserver.statusPublisher
-    }
-    
-    public var playerTimeControlStatusPublisher: AnyPublisher<AVPlayer.TimeControlStatus, Never> {
-        return playerWaitingBehaviorObserver.timeControlStatusPublisher
-    }
     
     private var cancellables : Set<AnyCancellable> = Set<AnyCancellable>()
     
@@ -136,10 +119,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         self.configuration = configuration
         
         playerRateObserver = AKPlayerRateObserver(with: player)
-        playerReadinessObserver = AKPlayerReadinessObserver(with: player)
         playerPlaybackTimeObserver = AKPlayerPlaybackTimeObserver(with: player)
-        playerWaitingBehaviorObserver = AKPlayerWaitingBehaviorObserver(with: player)
-        playerAudioBehaviorObserver = AKPlayerAudioBehaviorObserver(with: player)
         playerSeekingThroughMediaService = AKPlayerSeekingThroughMediaService(with: player)
         networkStatusMonitor = AKNetworkStatusMonitor()
     }
@@ -162,9 +142,9 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     open func load(media: AKPlayable) {
         if !state.isAny(of: [.idle,
-            .paused,
-            .stopped,
-            .failed]) {
+                             .paused,
+                             .stopped,
+                             .failed]) {
             pause()
         }
         currentMedia = media
@@ -174,9 +154,9 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     open func load(media: AKPlayable,
                    autoPlay: Bool) {
         if !state.isAny(of: [.idle,
-                                   .paused,
-                                   .stopped,
-                                   .failed]) {
+                             .paused,
+                             .stopped,
+                             .failed]) {
             pause()
         }
         currentMedia = media
@@ -431,11 +411,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private func startPlayerObservers() {
         playerRateObserver.startObserving()
-        playerReadinessObserver.startObserving()
         playerPlaybackTimeObserver.startObservingPeriodicTime(for: configuration.getPeriodicTimeInterval())
-        playerWaitingBehaviorObserver.startObserving()
-        playerAudioBehaviorObserver.startObserving()
-        playerAudioBehaviorObserver.startObserving()
         
         playerRateObserver.playbackRatePublisher
             .subscribe(on: DispatchQueue.global(qos: .background))
@@ -447,7 +423,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
             }
             .store(in: &cancellables)
         
-        playerAudioBehaviorObserver.volumePublisher
+        player.publisher(for: \.volume)
             .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] volume in
@@ -456,10 +432,10 @@ open class AKPlayerController: AKPlayerControllerProtocol {
             }
             .store(in: &cancellables)
         
-        playerAudioBehaviorObserver.muteStatusPublisher
+        player.publisher(for: \.isMuted)
             .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
-            .sink { [unowned self] volume in
+            .sink { [unowned self] isMuted in
                 delegate?.playerController(self,
                                            didChangeMutedStatusTo: isMuted)
             }
@@ -488,11 +464,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private func stopPlayerObservers() {
         playerRateObserver.stopObserving()
-        playerReadinessObserver.stopObserving()
         playerPlaybackTimeObserver.stopObservingPeriodicTime()
         playerPlaybackTimeObserver.stopObservingBoundaryTime()
-        playerWaitingBehaviorObserver.stopObserving()
-        playerAudioBehaviorObserver.stopObserving()
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {

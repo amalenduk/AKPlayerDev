@@ -75,7 +75,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
             .prepend(media.state)
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
-                handleMediaSteChange(with: state)
+                hanldeChangeInMedia(state)
             }.store(in: &cancellables)
     }
     
@@ -135,11 +135,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     public func togglePlayPause() {
-        if autoPlay {
-            pause()
-        } else {
-            play()
-        }
+        autoPlay ? pause() : play()
     }
     
     public func stop() {
@@ -240,7 +236,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
                                                     unavailableActionWith: .waitTillMediaLoaded)
     }
     
-    public func rewind(){
+    public func rewind() {
         playerController.delegate?.playerController(playerController,
                                                     unavailableActionWith: .waitTillMediaLoaded)
     }
@@ -253,10 +249,11 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     // MARK: - Additional Helper Functions
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
+        cancellables.removeAll()
         playerController.change(controller)
     }
     
-    private func handleMediaSteChange(with state: AKPlayableState) {
+    private func hanldeChangeInMedia(_ state: AKPlayableState) {
         switch state {
         case .idle:
             createAsset()
@@ -264,7 +261,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
             task = Task { [weak self] in
                 guard let self else { return }
                 await validateAssetPlayability()
-                if Task.isCancelled { return }
+                if isCancelled { return }
                 createPlayerItemFromAsset()
             }
         case .playerItemLoaded:
@@ -309,9 +306,9 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func becameReadyToPlay() {
-        playerController.playerStatusPublisher
-            .prepend(playerController.player.status)
-            .receive(on: DispatchQueue.global(qos: .background))
+        playerController.player.publisher(for: \.status,
+                                          options: [.initial, .new])
+            .receiveOnMainThread()
             .sink { [unowned self] status in
                 switch status {
                 case .readyToPlay:
@@ -342,18 +339,16 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     private func resetPlayer() {
-        if !(playerController.player.timeControlStatus == .paused) {
+        if !playerController.player.timeControlStatus.isPaused {
             playerController.player.pause()
         }
-        
+        stopPlayerItemObservers()
         /*
          It seems to be a good idea to reset player current item
          Fix side effect when coming from failed state
          */
         playerController.currentItem?.cancelPendingSeeks()
         playerController.player.replaceCurrentItem(with: nil)
-        
-        stopPlayerItemObservers()
     }
     
     // MARK: - Error Handling - Preparing Assets for Playback Failed

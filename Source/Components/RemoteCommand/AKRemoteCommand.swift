@@ -175,7 +175,6 @@ public struct AKNavigatingBetweenTracksCommand: AKRemoteCommandRegistrable {
                                                                    handler: \AKNowPlayingSessionController.nextTrackCommandHandler)
     public static let previousTrack = AKNavigatingBetweenTracksCommand(command: \MPRemoteCommandCenter.previousTrackCommand,
                                                                        handler: \AKNowPlayingSessionController.previousTrackCommandHandler)
-    
 }
 
 public struct AKNavigatingTrackContentsCommand: AKRemoteCommandRegistrable {

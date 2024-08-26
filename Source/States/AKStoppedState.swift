@@ -224,7 +224,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     // MARK: - Additional Helper Functions
     
     private func startObservingPlayerStatus() {
-        playerController.playerStatusPublisher
+        playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] status in
@@ -236,6 +236,7 @@ public class AKStoppedState: AKPlayerStateControllerProtocol {
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
+        cancellables.removeAll()
         playerController.change(controller)
     }
 }

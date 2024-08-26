@@ -25,15 +25,26 @@
 
 import Foundation
 
-public enum AKPlayableState: String, CustomStringConvertible {
-    case idle
+@objc public enum AKPlayableState: Int, CustomStringConvertible {
+    case idle = 0
     case assetLoaded
     case playerItemLoaded
     case readyToPlay
     case failed
     
     public var description: String {
-        return rawValue.capitalized
+        switch self {
+        case .idle:
+            return "Idle"
+        case .assetLoaded:
+            return "Asset Loaded"
+        case .playerItemLoaded:
+            return "Player Item Loaded"
+        case .readyToPlay:
+            return "Ready To Play"
+        case .failed:
+            return "Failed"
+        }
     }
     
     var isIdle: Bool {

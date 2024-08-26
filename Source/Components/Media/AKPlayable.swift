@@ -55,3 +55,13 @@ public extension AKPlayable {
         return true
     }
 }
+
+public extension AKPlayable {
+    func isLocal() -> Bool {
+        return true
+    }
+    
+    func isOverNetwork() -> Bool {
+        return true
+    }
+}

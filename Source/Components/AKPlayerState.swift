@@ -84,6 +84,10 @@ public enum AKPlayerState: String, CustomStringConvertible {
     func isAny(of states: [AKPlayerState]) -> Bool {
         return states.contains(where: {$0 == self})
     }
+    
+    func isNotAny(of states: [AKPlayerState]) -> Bool {
+        return !states.contains(where: {$0 == self})
+    }
 }
 
 extension AKPlayerState: Equatable {}

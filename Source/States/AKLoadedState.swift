@@ -113,8 +113,8 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         if let position = position { controller.seek(to: position) }
+        change(controller)
     }
     
     public func play(at rate: AKPlaybackRate) {
@@ -126,8 +126,8 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
-        change(controller)
         if let position = position { controller.seek(to: position) }
+        change(controller)
     }
     
     public func pause() {
@@ -270,9 +270,9 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     // MARK: - Additional Helper Functions
     
     private func startObservingPlayerProperties() {
-        playerController.playerStatusPublisher
+        playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
-            .receive(on: DispatchQueue.global(qos: .background))
+            .receiveOnMainThread()
             .sink { [unowned self] status in
                 guard status == .failed else { return }
                 let controller = AKFailedState(playerController: playerController,
@@ -280,8 +280,8 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                 change(controller)
             }.store(in: &cancellables)
         
-        playerController.playerTimeControlStatusPublisher
-            .receive(on: DispatchQueue.global(qos: .background))
+        playerController.player.publisher(for: \.timeControlStatus)
+            .receiveOnMainThread()
             .sink { [unowned self] timeControlStatus in
                 guard timeControlStatus == .paused,
                       playerController.player.currentItem == nil else { return }
@@ -290,6 +290,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
+        cancellables.removeAll()
         playerController.change(controller)
     }
 }

@@ -28,6 +28,11 @@ import AVFoundation
 public protocol AKPlayerStateControllerProtocol: AKPlayerCommandsProtocol {
     var playerController: AKPlayerControllerProtocol { get }
     var state: AKPlayerState { get }
+    var autoPlay: Bool { get }
     
     func didChangeState()
+}
+
+extension AKPlayerStateControllerProtocol {
+    public var autoPlay: Bool { false }
 }

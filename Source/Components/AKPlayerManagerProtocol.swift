@@ -62,13 +62,6 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProto
     var remoteCommands: [AKRemoteCommand] { get }
     
     var audioSessionService: AKAudioSessionServiceProtocol { get }
-    var audioSessionInterruptionObserver: AKAudioSessionInterruptionObserverProtocol! { get }
-    var audioSessionRouteChangesObserver: AKAudioSessionRouteChangesObserverProtocol! { get }
-    var audioSessionMediaServicesWereResetObserver: AKAudioSessionMediaServicesWereResetObserverProtocol! { get }
-    var audioSessionSilenceSecondaryAudioHintObserver: AKAudioSessionSilenceSecondaryAudioHintObserverProtocol! { get }
-    var audioSessionMediaServicesLostObserver: AKAudioSessionMediaServicesLostObserverProtocol! { get }
-    var audioSessionSpatialPlaybackCapabilitiesObserver: AKAudioSessionSpatialPlaybackCapabilitiesObserverProtocol! { get }
-    var applicationLifeCycleEventsObserver: AKApplicationLifeCycleEventsObserverProtocol! { get }
     var nowPlayingSessionController: AKNowPlayingSessionController! { get }
     
     func prepare() throws
@@ -80,7 +73,6 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProto
 }
 
 public struct AKPlayerStateSnapshot {
-    var state: AKPlayerState
     var shouldResume: Bool
     var applicationState: AKApplicationLifeCycleState
     var playbackInterruptionReason: AKPlaybackInterruptionReason

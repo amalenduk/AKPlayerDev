@@ -248,7 +248,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     // MARK: - Additional Helper Functions
     
     private func startObservingPlayerStatus() {
-        playerController.playerStatusPublisher
+        playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] status in
@@ -258,32 +258,38 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
                 change(controller)
             }.store(in: &cancellables)
         
-        playerController.playerTimeControlStatusPublisher
+        playerController.player.publisher(for: \.timeControlStatus)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
                 guard timeControlStatus == .paused,
-                        playerController.player.currentItem == nil else { return }
+                      playerController.player.currentItem == nil else { return }
                 stop()
             }.store(in: &cancellables)
     }
     
     private func startObservingPlayerItemNotifications() {
-        playerController.currentMedia!.failedToPlayToEndTimePublisher
-            .sink { [weak self] error in
-                guard let self else { return }
-                guard error.underlyingError is URLError else {
-                    let controller = AKFailedState(playerController: playerController,
-                                                   error: .itemFailedToPlayToEndTime)
-                    return change(controller)
-                }
-                
-                /*
-                 If playback failed for internet issue will wait till internet gets activated
-                 */
-            }.store(in: &cancellables)
+        NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime,
+                                             object: playerController.currentMedia!.playerItem!)
+        .subscribe(on: DispatchQueue.global(qos: .background))
+        .receive(on: RunLoop.main)
+        .sink { [weak self] notification in
+            guard let self,
+                  let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
+            guard error is URLError else {
+                let controller = AKFailedState(playerController: playerController,
+                                               error: .itemFailedToPlayToEndTime)
+                return change(controller)
+            }
+            
+            /*
+             If playback failed for internet issue will wait till internet gets activated
+             */
+        }
+        .store(in: &cancellables)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
+        cancellables.removeAll()
         playerController.change(controller)
         guard let seek = targetSeek,
               let controller = controller as? AKBufferingState else { return }
