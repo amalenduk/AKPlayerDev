@@ -30,39 +30,6 @@ import AKPlayer
 import UIKit
 import Combine
 
-var vids = [
-    [
-        "name": "Big Buck Bunny",
-        "description": "2008 ‧ Short/Comedy ‧ 12 mins",
-        "imageUrl": "bbb",
-        "videoSource": "https://cdn.theoplayer.com/video/big_buck_bunny/big_buck_bunny_metadata.m3u8"
-    ],
-    [
-        "name": "Sintel",
-        "description": "2010 ‧ Fantasy/Short ‧ 15 mins",
-        "imageUrl": "sintel",
-        "videoSource": "https://cdn.theoplayer.com/video/sintel/nosubs.m3u8"
-    ],
-    [
-        "name": "Tears of Steel",
-        "description": "2012 ‧ Short/Sci-fi ‧ 12 mins",
-        "imageUrl": "tears",
-        "videoSource": "https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8"
-    ],
-    [
-        "name": "Elephant's Dream",
-        "description": "2006 ‧ Sci-fi/Short ‧ 11 mins",
-        "imageUrl": "elephant",
-        "videoSource": "https://cdn.theoplayer.com/video/elephants-dream/playlist.m3u8"
-    ],
-    [
-        "name": "Caminandes Llama Drama",
-        "description": "2013 ‧ Short/Comedy ‧ 3 mins",
-        "imageUrl": "llama",
-        "videoSource": "http://amssamples.streaming.mediaservices.windows.net/634cd01c-6822-4630-8444-8dd6279f94c6/CaminandesLlamaDrama4K.ism/manifest(format=m3u8-aapl-v3)"
-    ]
-]
-
 class SimpleVideoViewController: UIViewController {
     
     // MARK: - Outlates
@@ -82,7 +49,6 @@ class SimpleVideoViewController: UIViewController {
     @IBOutlet weak private var volumeSlider: UISlider!
     @IBOutlet weak private var autoPlaySwitch: UISwitch!
     @IBOutlet weak private var muteButton: UIButton!
-    @IBOutlet weak private var brightnessSlider: UISlider!
     @IBOutlet weak private var stepBackwardButton: UIButton!
     @IBOutlet weak private var stepForwardButton: UIButton!
     
@@ -133,9 +99,6 @@ class SimpleVideoViewController: UIViewController {
         timeSlider.maximumValue = 1
         timeSlider.value = 0
         
-        audioButton.isEnabled = false
-        subtitleButton.isEnabled = false
-        
         volumeSlider.value = player.volume
         
         muteButton.setTitle("Mute", for: .normal)
@@ -167,7 +130,6 @@ class SimpleVideoViewController: UIViewController {
         UIView.animate(withDuration: 1.5) { self.debugMessageLabel.alpha = 0 }
     }
     
-    @available(iOS 13.0, *)
     func reloadRateMenus() {
         let destruct = UIAction(title: "Cancel", attributes: .destructive) { _ in }
         items.removeAll()
@@ -198,50 +160,57 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func audioButtonAction(_ sender: UIButton) {
-        //        guard let audibleGroup =  player.currentMedia?.mediaSelection?.audibleGroup else { return }
-        //        guard audibleGroup.options.count > 0 else { setDebugMessage("No tracks found"); return }
-        //        let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
-        //
-        //        for option in audibleGroup.options {
-        //            let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
-        //                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: option, for: .audible)
-        //            }
-        //            alert.addAction(action)
-        //        }
-        //
-        //        if audibleGroup.allowsEmptySelection {
-        //            let action = UIAlertAction(title: "Off", style: .default) { (_) in
-        //                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: nil, for: .audible)
-        //            }
-        //            alert.addAction(action)
-        //        }
-        //        let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
-        //        alert.addAction(destruct)
-        //        present(alert, animated: true, completion: nil)
+        guard let asset = self.player.currentItem?.asset else { return }
+        Task {
+            let group = try await asset.loadMediaSelectionGroup(for: .audible)
+            
+            guard let group, group.options.count > 0 else { setDebugMessage("No tracks found"); return }
+            let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
+    
+            for option in group.options {
+                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+                    self.player.currentMedia?.playerItem?.select(option, in: group)
+                }
+                alert.addAction(action)
+            }
+    
+            if group.allowsEmptySelection {
+                let action = UIAlertAction(title: "Off", style: .default) { (_) in
+                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+                }
+                alert.addAction(action)
+            }
+            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+            alert.addAction(destruct)
+            present(alert, animated: true, completion: nil)
+        }
     }
     
     @objc func subtitleButtonAction(_ sender: UIButton) {
-        //        guard let legibleGroup =  player.currentMedia?.mediaSelection?.legibleGroup else { return }
-        //        guard legibleGroup.options.count > 0 else { setDebugMessage("No subtitles found"); return }
-        //        let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
-        //
-        //        for option in legibleGroup.options {
-        //            let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
-        //                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: option, for: .legible)
-        //            }
-        //            alert.addAction(action)
-        //        }
-        //
-        //        if legibleGroup.allowsEmptySelection {
-        //            let action = UIAlertAction(title: "Off", style: .default) { (_) in
-        //                self.player.currentMedia?.mediaSelection?.select(mediaSelectionOption: nil, for: .legible)
-        //            }
-        //            alert.addAction(action)
-        //        }
-        //        let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
-        //        alert.addAction(destruct)
-        //
-        //        present(alert, animated: true, completion: nil)
+        guard let asset = self.player.currentItem?.asset else { return }
+        Task {
+            let group = try await asset.loadMediaSelectionGroup(for: .legible)
+            
+            guard let group, group.options.count > 0 else { setDebugMessage("No subtitles found"); return }
+            let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
+    
+            for option in group.options {
+                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+                    self.player.currentMedia?.playerItem?.select(option, in: group)
+                }
+                alert.addAction(action)
+            }
+    
+            if group.allowsEmptySelection {
+                let action = UIAlertAction(title: "Off", style: .default) { (_) in
+                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+                }
+                alert.addAction(action)
+            }
+            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+            alert.addAction(destruct)
+            present(alert, animated: true, completion: nil)
+        }
     }
     
     // MARK: - User Interactions
@@ -291,7 +260,7 @@ class SimpleVideoViewController: UIViewController {
         
         print(player.state)
     }
-
+    
     @IBAction func pause(_ sender: UIButton) {
         player.pause()
     }
@@ -301,12 +270,17 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func load(_ sender: Any) {
-        let index = Int.random(in: 0..<4)
-        // "https://tagesschau.akamaized.net/hls/live/2020115/tagesschau/tagesschau_1/master.m3u8"
-        let fileURL = Bundle.main.bundleURL.appending(path: "audio.mp3")
-        let url =  URL(string: "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4")!//"https://cdn.theoplayer.com/video/tears_of_steel/index.m3u8")! // "https://aac.saavncdn.com/951/92ebdad19552d2313e99532f5a6345f8_320.mp4"
-        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title: vids[index]["name"] ?? "Akplayer", artist: vids[index]["description"] ?? "Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
-        let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration, .creationDate, .lyrics, .isPlayable, .metadata, .commonMetadata, .metadata, .availableMetadataFormats], staticMetadata: staticMetadata)
+        guard let url = URL(string: "http://sample.vodobox.com/planete_interdite/planete_interdite_alternate.m3u8") else { return }
+        let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title:"Akplayer", artist:"Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
+        let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration,
+                                                                                  .creationDate,
+                                                                                  .lyrics,
+                                                                                  .isPlayable,
+                                                                                  .metadata,
+                                                                                  .commonMetadata,
+                                                                                  .metadata,
+                                                                                  .availableMetadataFormats,
+                                                                                  .availableMediaCharacteristicsWithMediaSelectionOptions], staticMetadata: staticMetadata)
         media.delegate = self
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
@@ -325,9 +299,10 @@ class SimpleVideoViewController: UIViewController {
         //                AVAudioSessionInterruptionOptionKey: AVAudioSession.InterruptionOptions.shouldResume.rawValue
         //            ])
         
-        player.player.replaceCurrentItem(with: nil)
-//        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
-//        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
+        //player.player.replaceCurrentItem(with: nil)
+        try? audioSession.audioSession.setActive(false)
+        //        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
+        //        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
         
         
     }
@@ -452,11 +427,11 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     }
     
     
-    func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) {
+    func akPlayer(_ player: AKPlayer, didReachEndAt time: CMTime, for media: AKPlayable) {
     }
     
     
-    func akPlayer(_ player: AKPlayer, unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
+    func akPlayer(_ player: AKPlayer, didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason) {
         DispatchQueue.main.async {
             self.setDebugMessage(reason.description)
         }
@@ -526,4 +501,3 @@ extension SimpleVideoViewController: AKMediaDelegate {
     func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) {
     }
 }
-

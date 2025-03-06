@@ -60,21 +60,4 @@ public extension Publisher {
     func weakCapture<T>(_ other: T?) -> AnyPublisher<(Output, T), Failure> where T: AnyObject {
         weakCapture(other, at: \T.self)
     }
-    
-    func receiveOnMainThread() -> AnyPublisher<Output, Failure> {
-        map { output in
-            // `receive(on: DispatchQueue.main)` defers execution if already on the main thread. Do nothing in this case.
-            if Thread.isMainThread {
-                return Just(output)
-                    .eraseToAnyPublisher()
-            }
-            else {
-                return Just(output)
-                    .receive(on: DispatchQueue.main)
-                    .eraseToAnyPublisher()
-            }
-        }
-        .switchToLatest()
-        .eraseToAnyPublisher()
-    }
 }

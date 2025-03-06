@@ -91,8 +91,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         get { return _controller }
         set {
             _controller = newValue
-            controller.didChangeState()
-            handleStateChange()
+            controller.processStateChange()
+            processStateChange()
             delegate?.playerController(self, didChangeStateTo: controller.state)
         }
     }
@@ -109,7 +109,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     
     private var playerRateObserver: AKPlayerRateObserverProtocol
     
-    private var cancellables : Set<AnyCancellable> = Set<AnyCancellable>()
+    private var subscriptions : Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -386,7 +386,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         self.controller = controller
     }
     
-    open func handleStateChange() {
+    open func processStateChange() {
         switch state {
         case .idle:
             break
@@ -413,53 +413,48 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         playerRateObserver.startObserving()
         playerPlaybackTimeObserver.startObservingPeriodicTime(for: configuration.getPeriodicTimeInterval())
         
-        playerRateObserver.playbackRatePublisher
-            .subscribe(on: DispatchQueue.global(qos: .background))
+        playerRateObserver.rateChangePublisher
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] change in
                 delegate?.playerController(self,
-                                           didChangePlaybackRateTo: change.newRate,
-                                           from: change.oldRate)
+                                           didChangePlaybackRateTo: change.currentRate,
+                                           from: change.previousRate)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         player.publisher(for: \.volume)
-            .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] volume in
                 delegate?.playerController(self,
                                            didChangeVolumeTo: volume)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         player.publisher(for: \.isMuted)
-            .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] isMuted in
                 delegate?.playerController(self,
                                            didChangeMutedStatusTo: isMuted)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         playerPlaybackTimeObserver.periodicTimePublisher
-            .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] time in
                 delegate?.playerController(self,
                                            didChangeCurrentTimeTo: time,
                                            for: currentMedia!)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         playerPlaybackTimeObserver.boundaryTimePublisher
-            .subscribe(on: DispatchQueue.global(qos: .background))
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] time in
                 delegate?.playerController(self,
                                            didInvokeBoundaryTimeObserverAt: time,
                                            for: currentMedia!)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
     }
     
     private func stopPlayerObservers() {
@@ -469,7 +464,7 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     }
     
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {
-        delegate?.playerController(self, unavailableActionWith: reason)
+        delegate?.playerController(self, didEncounterUnavailableAction: reason)
     }
     
     private func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
@@ -480,12 +475,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                 || state.isBuffering
                 || state.isPlaying
                 || state.isWaitingForNetwork
-                || state.isPaused
-                || (state.isStopped && player.currentItem != nil) else {
+                || state.isPaused else {
             if currentMedia?.state.isIdle ?? false
                 || currentMedia?.state.isFailed ?? false
                 || state.isIdle
-                || state.isFailed {
+                || state.isFailed
+                || state.isStopped {
                 return (false, .loadMediaFirst)
             } else if currentMedia?.state.isAssetLoaded ?? false
                         || currentMedia?.state.isPlayerItemLoaded ?? false
@@ -503,7 +498,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     private func canSeek(toOffset offset: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
         
         let time = CMTimeAdd(currentTime,
-                             CMTimeMakeWithSeconds(offset, preferredTimescale: configuration.preferredTimeScale))
+                             CMTimeMakeWithSeconds(offset,
+                                                   preferredTimescale: configuration.preferredTimeScale))
         
         let result = canSeek(to: time)
         
@@ -528,12 +524,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                 || state.isBuffering
                 || state.isPlaying
                 || state.isWaitingForNetwork
-                || state.isPaused
-                || state.isStopped else {
+                || state.isPaused else {
             if currentMedia?.state.isIdle ?? false
                 || currentMedia?.state.isFailed ?? false
                 || state.isIdle
-                || state.isFailed {
+                || state.isFailed
+                || state.isStopped {
                 return (false, .loadMediaFirst)
             } else if currentMedia?.state.isAssetLoaded ?? false
                         || currentMedia?.state.isPlayerItemLoaded ?? false
@@ -556,12 +552,12 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                 || state.isBuffering
                 || state.isPlaying
                 || state.isWaitingForNetwork
-                || state.isPaused
-                || state.isStopped else {
+                || state.isPaused else {
             if currentMedia?.state.isIdle ?? false
                 || currentMedia?.state.isFailed ?? false
                 || state.isIdle
-                || state.isFailed {
+                || state.isFailed
+                || state.isStopped {
                 return (false, .loadMediaFirst)
             } else if currentMedia?.state.isAssetLoaded ?? false
                         || currentMedia?.state.isPlayerItemLoaded ?? false

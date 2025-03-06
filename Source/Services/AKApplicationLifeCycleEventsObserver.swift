@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import UIKit
 
 public protocol AKApplicationLifeCycleEventsObserverDelegate: AnyObject {
     func applicationLifeCycleEventsObserver(_ observer: AKApplicationLifeCycleEventsObserverProtocol,

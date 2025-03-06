@@ -40,7 +40,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     
     private var rate: AKPlaybackRate?
     
-    private var cancellables = Set<AnyCancellable>()
+    private var subscriptions = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -55,10 +55,10 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     }
     
     deinit {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
-    public func didChangeState() {
+    public func processStateChange() {
         startObservingPlayerProperties()
         
         playerController.delegate?.playerController(playerController,
@@ -67,6 +67,12 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         if autoPlay {
             play()
         } else if let position = position {
+            let result = playerController.currentMedia!.canSeek(to: position)
+            guard result.flag else {
+                playerController.delegate?.playerController(playerController,
+                                                            didEncounterUnavailableAction: result.reason!)
+                return
+            }
             seek(to: position)
         }
     }
@@ -120,7 +126,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+                                                        didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
         }
         let controller = AKBufferingState(playerController: playerController,
@@ -135,7 +141,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
             autoPlay = false
         } else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .alreadyPaused)
+                                                        didEncounterUnavailableAction: .alreadyPaused)
         }
     }
     
@@ -272,25 +278,24 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     private func startObservingPlayerProperties() {
         playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
-            .receiveOnMainThread()
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] status in
                 guard status == .failed else { return }
                 let controller = AKFailedState(playerController: playerController,
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
         
         playerController.player.publisher(for: \.timeControlStatus)
-            .receiveOnMainThread()
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] timeControlStatus in
-                guard timeControlStatus == .paused,
-                      playerController.player.currentItem == nil else { return }
+                guard playerController.player.currentItem == nil else { return }
                 stop()
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.removeAll()
+        subscriptions.removeAll()
         playerController.change(controller)
     }
 }

@@ -36,7 +36,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     private let playerItemDidPlayToEndTime: Bool
     
-    private var cancellables = Set<AnyCancellable>()
+    private var subscriptions = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -47,20 +47,20 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     }
     
     deinit {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
-    public func didChangeState() {
+    public func processStateChange() {
         startObservingPlayerStatus()
         startObservingPlayerItemNotifications()
         
-        if !(playerController.player.timeControlStatus == .paused) {
+        if !playerController.player.timeControlStatus.isPaused {
             playerController.player.pause()
         }
         
         if playerItemDidPlayToEndTime {
             playerController.delegate?.playerController(playerController,
-                                                        playerItemDidReachEnd: playerController.currentTime,
+                                                                                  didReachEndAt: playerController.currentTime,
                                                         for: playerController.currentMedia!)
         }
     }
@@ -131,7 +131,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
         
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+                                                        didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
         }
         
@@ -148,7 +148,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     
     public func pause() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .alreadyPaused)
+                                                    didEncounterUnavailableAction: .alreadyPaused)
     }
     
     public func togglePlayPause() {
@@ -261,7 +261,7 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
         
         guard result else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotStepForward)
+                                                        didEncounterUnavailableAction: .canNotStepForward)
             return
         }
         
@@ -289,27 +289,26 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
     private func startObservingPlayerStatus() {
         playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
-            .receiveOnMainThread()
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] status in
                 guard status == .failed else { return }
                 let controller = AKFailedState(playerController: playerController,
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
         
         playerController.player.publisher(for: \.timeControlStatus)
-            .receiveOnMainThread()
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] timeControlStatus in
-                guard timeControlStatus.isPaused,
-                      playerController.player.currentItem == nil else { return }
+                guard playerController.player.currentItem == nil else { return }
                 stop()
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     private func startObservingPlayerItemNotifications() {
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime,
                                              object: playerController.currentMedia!.playerItem!)
-        .receiveOnMainThread()
+        .receive(on: DispatchQueue.main)
         .sink { [weak self] notification in
             guard let self,
                   let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
@@ -323,11 +322,11 @@ public class AKPausedState: AKPlayerStateControllerProtocol {
                                                       autoPlay: true)
             change(controller)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.removeAll()
+        subscriptions.removeAll()
         playerController.change(controller)
     }
 }

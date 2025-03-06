@@ -29,14 +29,14 @@ import Combine
 // https://developer.apple.com/documentation/avfoundation/media_playback/controlling_the_transport_behavior_of_a_player
 
 public struct AKPlaybackRateChange {
-    let oldRate: AKPlaybackRate
-    let newRate: AKPlaybackRate
+    let previousRate: AKPlaybackRate
+    let currentRate: AKPlaybackRate
     let reason: AVPlayer.RateDidChangeReason
 }
 
 public protocol AKPlayerRateObserverProtocol {
     var player: AVPlayer { get }
-    var playbackRatePublisher: AnyPublisher<AKPlaybackRateChange, Never> { get }
+    var rateChangePublisher: AnyPublisher<AKPlaybackRateChange, Never> { get }
     
     func startObserving()
     func stopObserving()
@@ -48,17 +48,17 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     
     public let player: AVPlayer
     
-    public var playbackRatePublisher: AnyPublisher<AKPlaybackRateChange, Never> {
-        return _playbackRatePublisher.eraseToAnyPublisher()
+    public var rateChangePublisher: AnyPublisher<AKPlaybackRateChange, Never> {
+        return _rateChangePublisher.eraseToAnyPublisher()
     }
     
-    private var _playbackRatePublisher = PassthroughSubject<AKPlaybackRateChange, Never>()
+    private var _rateChangePublisher = PassthroughSubject<AKPlaybackRateChange, Never>()
     
     private var isObserving = false
     
-    private var playbackRateObserver: NSKeyValueObservation?
+    private var rateChangeObserver: NSKeyValueObservation?
     
-    private var cancellables = Set<AnyCancellable>()
+    private var subscriptions = Set<AnyCancellable>()
     
     private var oldRate: AKPlaybackRate!
     
@@ -77,9 +77,9 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     open func startObserving() {
         guard !isObserving else { return }
         
-        playbackRateObserver = player.observe(\AVPlayer.rate,
-                                               options: [.old, .new, .initial],
-                                               changeHandler: { [unowned self] player, change in
+        rateChangeObserver = player.observe(\AVPlayer.rate,
+                                             options: [.old, .new, .initial],
+                                             changeHandler: { [unowned self] player, change in
             guard let newValue = change.newValue,
                   let oldValue = change.oldValue else { return }
             
@@ -96,20 +96,20 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
                 }
                 
                 let reason = AVPlayer.RateDidChangeReason(rawValue: key)
-                let change = AKPlaybackRateChange(oldRate: oldRate,
-                                                  newRate: newRate,
+                let change = AKPlaybackRateChange(previousRate: oldRate,
+                                                  currentRate: newRate,
                                                   reason: reason)
-                _playbackRatePublisher.send(change)
+                _rateChangePublisher.send(change)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        playbackRateObserver?.invalidate()
-        cancellables.removeAll()
+        rateChangeObserver?.invalidate()
+        subscriptions.removeAll()
         isObserving = false
     }
 }

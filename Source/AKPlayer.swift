@@ -301,10 +301,10 @@ extension AKPlayer: AKPlayerManagerDelegate {
     }
     
     public func playerManager(_ playerManager: AKPlayerManagerProtocol,
-                              playerItemDidReachEnd endTime: CMTime,
+                              didReachEndAt time: CMTime,
                               for media: AKPlayable) {
         delegate?.akPlayer(self,
-                           playerItemDidReachEnd: endTime,
+                           didReachEndAt: time,
                            for: media)
     }
     
@@ -321,9 +321,9 @@ extension AKPlayer: AKPlayerManagerDelegate {
     }
     
     public func playerManager(_ playerManager: AKPlayerManagerProtocol,
-                              unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
+                              didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason) {
         delegate?.akPlayer(self,
-                           unavailableActionWith: reason)
+                           didEncounterUnavailableAction: reason)
     }
     
     public func playerManager(_ playerManager: AKPlayerManagerProtocol,

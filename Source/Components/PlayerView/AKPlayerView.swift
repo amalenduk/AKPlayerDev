@@ -24,6 +24,7 @@
 //
 
 import AVFoundation
+import UIKit
 
 /// A simple `UIView` subclass backed by an `AVPlayerLayer` layer.
 open class AKPlayerView: UIView {

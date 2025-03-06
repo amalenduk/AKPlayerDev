@@ -48,7 +48,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
     
     private var isObserving = false
     
-    private var cancellables = Set<AnyCancellable>()
+    private var subscriptions = Set<AnyCancellable>()
     
     public var didPlayToEndTimePublisher: AnyPublisher<CMTime, Never> {
         didPlayToEndTimeSubject.eraseToAnyPublisher()
@@ -101,7 +101,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                 guard let self else { return }
                 didPlayToEndTimeSubject.send(playerItem.currentTime())
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         /* When the player item has failed to play to its end time */
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime, object: playerItem)
@@ -111,7 +111,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                       let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
                 failedToPlayToEndTimeSubject.send(AKPlayerError.playerItemFailedToPlay(reason: .failedToPlayToEndTime(error: error)))
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         /* A notification that’s posted when some media doesn’t arrive in time to continue playback.
          
@@ -123,7 +123,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                 guard let self else { return }
                 playbackStalledSubject.send()
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         /* A notification the system posts when a player item’s time changes discontinuously. */
         NotificationCenter.default.publisher(for: AVPlayerItem.timeJumpedNotification, object: playerItem)
@@ -132,7 +132,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                 guard let self else { return }
                 timeJumpedSubject.send()
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         /* A notification the player item posts when its media selection changes. */
         NotificationCenter.default.publisher(for: AVPlayerItem.mediaSelectionDidChangeNotification, object: playerItem)
@@ -141,7 +141,7 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                 guard let self else { return }
                 mediaSelectionDidChangeSubject.send()
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         /* A notification the player item posts when its offset from the live time changes. */
         NotificationCenter.default.publisher(for: AVPlayerItem.recommendedTimeOffsetFromLiveDidChangeNotification, object: playerItem)
@@ -150,14 +150,14 @@ open class AKPlayerItemNotificationsObserver: AKPlayerItemNotificationsObserverP
                 guard let self else { return }
                 recommendedTimeOffsetFromLiveDidChangeSubject.send(playerItem.recommendedTimeOffsetFromLive)
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
         
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
-        cancellables.removeAll()
+        subscriptions.removeAll()
         isObserving = false
     }
 }

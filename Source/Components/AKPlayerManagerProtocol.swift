@@ -42,19 +42,19 @@ public protocol AKPlayerManagerDelegate: AnyObject {
                        didInvokeBoundaryTimeObserverAt time: CMTime,
                        for media: AKPlayable)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
-                       playerItemDidReachEnd endTime: CMTime,
+                       didReachEndAt time: CMTime,
                        for media: AKPlayable)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
                        didChangeVolumeTo volume: Float)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
                        didChangeMutedStatusTo isMuted: Bool)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
-                       unavailableActionWith reason: AKPlayerUnavailableCommandReason)
+                       didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason)
     func playerManager(_ playerManager: AKPlayerManagerProtocol,
                        didFailWith error: AKPlayerError)
 }
 
-public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerCommandsProtocol {
+public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerActionsProtocol {
     var playerController: AKPlayerControllerProtocol { get }
     var configuration: AKPlayerConfigurationProtocol { get }
     var delegate: AKPlayerManagerDelegate? { get set }

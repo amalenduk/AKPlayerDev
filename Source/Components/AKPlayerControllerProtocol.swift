@@ -32,8 +32,8 @@ public protocol AKPlayerControllerDelegate: AnyObject {
     func playerController(_ playerController: AKPlayerControllerProtocol,
                           didChangeMediaTo media: AKPlayable)
     func playerController(_ playerController: AKPlayerControllerProtocol,
-                          didChangePlaybackRateTo newRate: AKPlaybackRate,
-                          from oldRate: AKPlaybackRate)
+                          didChangePlaybackRateTo currentRate: AKPlaybackRate,
+                          from previousRate: AKPlaybackRate)
     func playerController(_ playerController: AKPlayerControllerProtocol,
                           didChangeCurrentTimeTo currentTime: CMTime,
                           for media: AKPlayable)
@@ -41,14 +41,14 @@ public protocol AKPlayerControllerDelegate: AnyObject {
                           didInvokeBoundaryTimeObserverAt time: CMTime,
                           for media: AKPlayable)
     func playerController(_ playerController: AKPlayerControllerProtocol,
-                          playerItemDidReachEnd endTime: CMTime,
+                          didReachEndAt time: CMTime,
                           for media: AKPlayable)
     func playerController(_ playerController: AKPlayerControllerProtocol,
                           didChangeVolumeTo volume: Float)
     func playerController(_ playerController: AKPlayerControllerProtocol,
                           didChangeMutedStatusTo isMuted: Bool)
     func playerController(_ playerController: AKPlayerControllerProtocol,
-                          unavailableActionWith reason: AKPlayerUnavailableCommandReason)
+                          didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason)
     func playerController(_ playerController: AKPlayerControllerProtocol,
                           didFailWith error: AKPlayerError)
 }
@@ -60,8 +60,8 @@ public protocol AKPlayerControllerProtocol: AKPlayerProtocol {
     
     var playerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol { get }
     var networkStatusMonitor: AKNetworkStatusMonitorProtocol { get }
-   
+    
     func prepare() throws
     func change(_ controller: AKPlayerStateControllerProtocol)
-    func handleStateChange()
+    func processStateChange()
 }

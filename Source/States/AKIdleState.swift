@@ -41,7 +41,7 @@ public class AKIdleState: AKPlayerStateControllerProtocol {
     
     deinit { }
     
-    public func didChangeState() { }
+    public func processStateChange() { }
     
     // MARK: - Commands
     
@@ -83,27 +83,27 @@ public class AKIdleState: AKPlayerStateControllerProtocol {
     
     public func play() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func play(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func pause() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func togglePlayPause() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func stop() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(to time: CMTime,
@@ -111,7 +111,7 @@ public class AKIdleState: AKPlayerStateControllerProtocol {
                      toleranceAfter: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
@@ -119,92 +119,92 @@ public class AKIdleState: AKPlayerStateControllerProtocol {
                      toleranceBefore: CMTime,
                      toleranceAfter: CMTime) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(to time: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
     public func seek(to time: CMTime) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(to time: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
     public func seek(to time: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(to date: Date,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
     public func seek(to date: Date) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(toOffset offset: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
     public func seek(toPercentage percentage: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
         completionHandler(false)
     }
     
     public func seek(toPercentage percentage: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func step(by count: Int) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func fastForward() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func fastForward(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func rewind() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     public func rewind(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .loadMediaFirst)
+                                                    didEncounterUnavailableAction: .loadMediaFirst)
     }
     
     // MARK: - Additional Helper Functions

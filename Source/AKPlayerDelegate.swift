@@ -37,7 +37,7 @@ public protocol AKPlayerDelegate: AnyObject {
                   didChangeCurrentTimeTo currentTime: CMTime,
                   for media: AKPlayable)
     func akPlayer(_ player: AKPlayer,
-                  playerItemDidReachEnd endTime: CMTime,
+                  didReachEndAt time: CMTime,
                   for media: AKPlayable)
     func akPlayer(_ player: AKPlayer,
                   didInvokeBoundaryTimeObserverAt time: CMTime,
@@ -47,7 +47,7 @@ public protocol AKPlayerDelegate: AnyObject {
     func akPlayer(_ player: AKPlayer,
                   didChangeMutedStatusTo isMuted: Bool)
     func akPlayer(_ player: AKPlayer,
-                  unavailableActionWith reason: AKPlayerUnavailableCommandReason)
+                  didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason)
     func akPlayer(_ player: AKPlayer,
                   didFailWith error: AKPlayerError)
 }
@@ -67,14 +67,14 @@ public extension AKPlayerDelegate {
                   didInvokeBoundaryTimeObserverAt time: CMTime,
                   for media: AKPlayable) { }
     func akPlayer(_ player: AKPlayer,
-                  playerItemDidReachEnd endTime: CMTime,
+                  didReachEndAt time: CMTime,
                   for media: AKPlayable) { }
     func akPlayer(_ player: AKPlayer,
                   didChangeVolumeTo volume: Float) { }
     func akPlayer(_ player: AKPlayer,
                   didChangeMutedStatusTo isMuted: Bool) { }
     func akPlayer(_ player: AKPlayer,
-                  unavailableActionWith reason: AKPlayerUnavailableCommandReason) { }
+                  didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason) { }
     func akPlayer(_ player: AKPlayer,
                   didFailWith error: AKPlayerError) { }
 }

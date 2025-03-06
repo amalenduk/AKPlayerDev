@@ -44,7 +44,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private var targetSeek: AKSeek?
     
-    private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
+    private var subscriptions: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -59,10 +59,10 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     }
     
     deinit {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
-    public func didChangeState() {
+    public func processStateChange() {
         startObservingPlayerStatus()
         playerController.player.pause()
         
@@ -73,7 +73,8 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
         startObservingPlayerItemBufferingStatus()
         startObservingPlayerItemNotifications()
         startBufferTimeoutWatcher()
-        if !playerController.currentMedia!.isLocal() {
+        
+        if playerController.currentMedia!.isOverNetwork() {
             observeNetworkChanges()
         }
     }
@@ -119,7 +120,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     public func play() {
         if autoPlay {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .alreadyTryingToPlay)
+                                                        didEncounterUnavailableAction: .alreadyTryingToPlay)
         } else {
             self.autoPlay = true
         }
@@ -128,7 +129,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+                                                        didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
         }
         self.rate = rate
@@ -261,23 +262,21 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                 let controller = AKFailedState(playerController: playerController,
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
         
         playerController.player.publisher(for: \.timeControlStatus)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
-                guard timeControlStatus == .paused,
-                      playerController.player.currentItem == nil else { return }
+                guard playerController.player.currentItem == nil else { return }
                 stop()
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     private func startObservingPlayerItemNotifications() {
         let playerItem = playerController.currentMedia!.playerItem!
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime,
                                              object: playerItem)
-        .subscribe(on: DispatchQueue.global(qos: .background))
-        .receive(on: RunLoop.main)
+        .receive(on: DispatchQueue.main)
         .sink { [weak self] notification in
             guard let self,
                   let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
@@ -293,7 +292,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                                                       stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
             change(controller)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
     
     private func startObservingPlayerItemBufferingStatus() {
@@ -302,8 +301,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                                                       options: [.initial, .new]),
                                  playerItem.publisher(for: \.isPlaybackLikelyToKeepUp,
                                                       options: [.initial, .new]))
-        .subscribe(on: DispatchQueue.global(qos: .background))
-        .receive(on: RunLoop.main)
+        .receive(on: DispatchQueue.main)
         .sink(receiveValue: { [unowned self] _ in
             if autoPlay {
                 startPlayingIfPossible()
@@ -311,11 +309,11 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                 changeToPreviousState()
             }
         })
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.removeAll()
+        subscriptions.removeAll()
         
         timer?.invalidate()
         timer = nil
@@ -382,7 +380,7 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
     
     private func observeNetworkChanges() {
         playerController.networkStatusMonitor.networkStatusPublisher
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .prepend(playerController.networkStatusMonitor.currentNetworkStatus)
             .sink { [weak self] status in
                 guard let self else { return }
@@ -394,6 +392,6 @@ public class AKBufferingState: AKPlayerStateControllerProtocol  {
                     change(controller)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
     }
 }

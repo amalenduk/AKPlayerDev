@@ -69,11 +69,7 @@ public extension AKPlayable {
     func createAsset() {
         manager.createAsset()
     }
-    
-    func fetchAssetPropertiesValues() async throws {
-        try await manager.fetchAssetPropertiesValues()
-    }
-    
+
     func validateAssetPlayability() async throws {
         try await manager.validateAssetPlayability()
     }

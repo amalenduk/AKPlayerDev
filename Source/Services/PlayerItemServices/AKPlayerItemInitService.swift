@@ -39,7 +39,6 @@ public protocol AKPlayerItemInitServiceProtocol {
     
     func createAsset()
     func createPlayerItemFromAsset()
-    func fetchAssetPropertiesValues() async throws
     func validateAssetPlayability() async throws
     func abortAssetInitialization()
 }
@@ -79,24 +78,6 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
             playerItem = AVPlayerItem(asset: asset!)
         }
         self.playerItem = playerItem
-    }
-    
-    open func fetchAssetPropertiesValues() async throws {
-        assert(!(asset == nil),
-               "Asset must be created before calling this function.")
-        do {
-            let (duration, metadata, commonMetadata, lyrics) = try await asset!.load(.duration,
-                                                                                     .metadata,
-                                                                                     .commonMetadata,
-                                                                                     .lyrics)
-            
-        } catch (let error) {
-            guard let err = error as? URLError,
-                  err.code  == URLError.Code.notConnectedToInternet else {
-                throw AKPlayerError.assetLoadingFailed(reason: .propertyKeyLoadingFailed(error: error))
-            }
-            throw AKPlayerError.assetLoadingFailed(reason: .notConnectedToInternet(error: err))
-        }
     }
     
     open func validateAssetPlayability() async throws {

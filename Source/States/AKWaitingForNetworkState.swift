@@ -42,7 +42,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     private var targetSeek: AKSeek?
     
-    private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
+    private var subscriptions: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -57,13 +57,13 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     }
     
     deinit {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
-    public func didChangeState() {
+    public func processStateChange() {
         startObservingPlayerStatus()
         
-        if !(playerController.player.timeControlStatus == .paused) {
+        if !playerController.player.timeControlStatus.isPaused {
             playerController.player.pause()
         }
         
@@ -112,7 +112,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     public func play() {
         if autoPlay {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .alreadyTryingToPlay)
+                                                        didEncounterUnavailableAction: .alreadyTryingToPlay)
         } else {
             self.autoPlay = true
         }
@@ -121,7 +121,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     public func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
-                                                        unavailableActionWith: .canNotPlayAtSpecifiedRate)
+                                                        didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
         }
         self.rate = rate
@@ -226,7 +226,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     public func step(by count: Int) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitingForEstablishedNetwork)
+                                                    didEncounterUnavailableAction: .waitingForEstablishedNetwork)
     }
     
     public func fastForward() {
@@ -256,22 +256,20 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
                 let controller = AKFailedState(playerController: playerController,
                                                error: .playerCanNoLongerPlay(error: playerController.player.error))
                 change(controller)
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
         
         playerController.player.publisher(for: \.timeControlStatus)
             .receive(on: DispatchQueue.global(qos: .background))
             .sink { [unowned self] timeControlStatus in
-                guard timeControlStatus == .paused,
-                      playerController.player.currentItem == nil else { return }
+                guard playerController.player.currentItem == nil else { return }
                 stop()
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     private func startObservingPlayerItemNotifications() {
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime,
                                              object: playerController.currentMedia!.playerItem!)
-        .subscribe(on: DispatchQueue.global(qos: .background))
-        .receive(on: RunLoop.main)
+        .receive(on: DispatchQueue.main)
         .sink { [weak self] notification in
             guard let self,
                   let error = notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? NSError else { return }
@@ -285,11 +283,11 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
              If playback failed for internet issue will wait till internet gets activated
              */
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.removeAll()
+        subscriptions.removeAll()
         playerController.change(controller)
         guard let seek = targetSeek,
               let controller = controller as? AKBufferingState else { return }
@@ -318,7 +316,7 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
     
     private func observeNetworkChanges() {
         playerController.networkStatusMonitor.networkStatusPublisher
-            .receive(on: RunLoop.main)
+            .receive(on: DispatchQueue.main)
             .prepend(playerController.networkStatusMonitor.currentNetworkStatus)
             .sink { [unowned self] status in
                 if status == .satisfied {
@@ -329,6 +327,6 @@ public class AKWaitingForNetworkState: AKPlayerStateControllerProtocol {
                     change(controller)
                 }
             }
-            .store(in: &cancellables)
+            .store(in: &subscriptions)
     }
 }

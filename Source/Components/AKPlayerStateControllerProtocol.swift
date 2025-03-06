@@ -25,12 +25,12 @@
 
 import AVFoundation
 
-public protocol AKPlayerStateControllerProtocol: AKPlayerCommandsProtocol {
+public protocol AKPlayerStateControllerProtocol: AKPlayerActionsProtocol {
     var playerController: AKPlayerControllerProtocol { get }
     var state: AKPlayerState { get }
     var autoPlay: Bool { get }
     
-    func didChangeState()
+    func processStateChange()
 }
 
 extension AKPlayerStateControllerProtocol {

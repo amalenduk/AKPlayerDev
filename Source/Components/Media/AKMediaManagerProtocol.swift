@@ -37,7 +37,6 @@ public protocol AKMediaManagerProtocol: NSObjectProtocol {
     
     func createAsset()
     func createPlayerItemFromAsset()
-    func fetchAssetPropertiesValues() async throws
     func validateAssetPlayability() async throws
     func abortAssetInitialization()
     

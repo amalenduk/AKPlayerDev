@@ -119,7 +119,7 @@ open class AKVideoPlayer: UIView {
 
 // MARK: - AKPlayerCommand
 
-extension AKVideoPlayer: AKPlayerCommandsProtocol {
+extension AKVideoPlayer: AKPlayerActionsProtocol {
     
     public func load(media: AKPlayable) {
         player.load(media: media)
@@ -318,9 +318,9 @@ extension AKVideoPlayer: AKPlayerDelegate {
                          for media: AKPlayable) {
         
     }
-    public func akPlayer(_ player: AKPlayer, playerItemDidReachEnd endTime: CMTime, for media: AKPlayable) {}
+    public func akPlayer(_ player: AKPlayer, didReachEndAt time: CMTime, for media: AKPlayable) {}
     public func akPlayer(_ player: AKPlayer, didChangeVolumeTo volume: Float) {}
     public func akPlayer(_ player: AKPlayer, didChangeMutedStatusTo isMuted: Bool) {}
-    public func akPlayer(_ player: AKPlayer, unavailableActionWith reason: AKPlayerUnavailableCommandReason) {}
+    public func akPlayer(_ player: AKPlayer, didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason) {}
     public func akPlayer(_ player: AKPlayer, didFailWith error: AKPlayerError) {}
 }

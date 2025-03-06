@@ -25,7 +25,7 @@
 
 import AVFoundation
 
-public protocol AKPlayerProtocol: AnyObject, AKPlayerCommandsProtocol {
+public protocol AKPlayerProtocol: AnyObject, AKPlayerActionsProtocol {
     var player: AVPlayer { get }
     var state: AKPlayerState { get }
     var defaultRate: AKPlaybackRate { get set }

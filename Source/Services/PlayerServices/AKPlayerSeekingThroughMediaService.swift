@@ -32,19 +32,6 @@ public protocol AKPlayerSeekingThroughMediaServiceProtocol: AnyObject {
     var isSeeking: Bool { get }
     
     func seek(to seek: AKSeek)
-    func seek(to time: CMTime)
-    func seek(to time: CMTime,
-              completionHandler: @escaping (Bool) -> Void)
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime)
-    func seek(to time: CMTime,
-              toleranceBefore: CMTime,
-              toleranceAfter: CMTime,
-              completionHandler: @escaping (Bool) -> Void)
-    func seek(to date: Date)
-    func seek(to date: Date,
-              completionHandler: @escaping (Bool) -> Void)
 }
 
 open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol {
@@ -72,45 +59,6 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
                   toleranceBefore: seek.toleranceBefore,
                   toleranceAfter: seek.toleranceAfter,
                   completionHandler: seek.completionHandler)
-    }
-    
-    open func seek(to time: CMTime) {
-        seek(to: .time(time),
-             completionHandler: nil)
-    }
-    
-    open func seek(to time: CMTime,
-                   completionHandler: @escaping (Bool) -> Void) {
-        seek(to: .time(time),
-             completionHandler: completionHandler)
-    }
-    
-    open func seek(to time: CMTime,
-                   toleranceBefore: CMTime,
-                   toleranceAfter: CMTime) {
-        seek(to: .time(time),
-             toleranceBefore: toleranceBefore,
-             toleranceAfter: toleranceAfter)
-    }
-    
-    open func seek(to time: CMTime,
-                   toleranceBefore: CMTime,
-                   toleranceAfter: CMTime,
-                   completionHandler: @escaping (Bool) -> Void) {
-        seek(to: .time(time),
-             toleranceBefore: toleranceBefore,
-             toleranceAfter: toleranceAfter,
-             completionHandler: completionHandler)
-    }
-    
-    open func seek(to date: Date) {
-        seek(to: .date(date))
-    }
-    
-    open func seek(to date: Date,
-                   completionHandler: @escaping (Bool) -> Void) {
-        seek(to: .date(date),
-             completionHandler: completionHandler)
     }
     
     private func seek(to position: AKSeekPosition,
@@ -171,7 +119,7 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
             pendingSeeks.remove(seek)
             seek.completionHandler?(false)
             if let targetSeek = pendingSeeks.last {
-                enqueue(seek: seek)
+                enqueue(seek: targetSeek) // Was seek
             }
         }
     }

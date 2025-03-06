@@ -107,10 +107,6 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     public private(set) var playerStateSnapshot: AKPlayerStateSnapshot?
     
-    public var audioSession: AVAudioSession {
-        return audioSessionService.audioSession
-    }
-    
     private var isExternalAudioPlaybackDeviceConnected: Bool = false
     
     public let audioSessionService: AKAudioSessionServiceProtocol
@@ -135,9 +131,9 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         self.audioSessionService = audioSessionService
         super.init()
         
-        audioSessionInterruptionObserver = AKAudioSessionInterruptionObserver(audioSession: audioSession)
-        audioSessionRouteChangesObserver = AKAudioSessionRouteChangesObserver(audioSession: audioSession)
-        audioSessionMediaServicesWereResetObserver = AKAudioSessionMediaServicesWereResetObserver(audioSession: audioSession)
+        audioSessionInterruptionObserver = AKAudioSessionInterruptionObserver(audioSession: audioSessionService.audioSession)
+        audioSessionRouteChangesObserver = AKAudioSessionRouteChangesObserver(audioSession: audioSessionService.audioSession)
+        audioSessionMediaServicesWereResetObserver = AKAudioSessionMediaServicesWereResetObserver(audioSession: audioSessionService.audioSession)
         applicationLifeCycleEventsObserver = AKApplicationLifeCycleEventsObserver()
         nowPlayingSessionController = AKNowPlayingSessionController(players: [player])
         
@@ -201,7 +197,6 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                                                                                .playing,
                                                                                .waitingForNetwork]) else { return .commandFailed }
         case .stop:
-            if currentMedia == nil { return .noActionableNowPlayingItem }
             stop()
             guard state.isStopped else { return .commandFailed }
         case .togglePlayPause:
@@ -550,8 +545,8 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                                                            duration: duration,
                                                            currentLanguageOptions: nil,
                                                            availableLanguageOptionGroups: nil,
-                                                           chapterCount: nil,
-                                                           chapterNumber: nil,
+                                                           chapterCount: 10,
+                                                           chapterNumber: 4,
                                                            creditsStartTime: nil,
                                                            currentPlaybackDate: nil,
                                                            playbackProgress: playbackProgress,
@@ -563,7 +558,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private func actionNotPermitted() {
         delegate?.playerManager(self,
-                                unavailableActionWith: .actionNotPermitted)
+                                didEncounterUnavailableAction: .actionNotPermitted)
     }
     
     private func performPlaybackAction(action: () -> Void) {
@@ -660,10 +655,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenResigningActive {
                 
-                if (state.isAny(of: [.loading,
-                                     .loaded,
-                                     .buffering,
-                                     .waitingForNetwork]) && autoPlay)
+                if autoPlay
                     || state == .playing {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
@@ -674,11 +666,8 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 
             } else {
                 
-                if (state.isNotAny(of: [.loading,
-                                        .loaded,
-                                        .buffering,
-                                        .waitingForNetwork]) && !autoPlay)
-                    && !state.isPlaying {
+                if !autoPlay
+                     && !state.isPlaying {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: false)
@@ -698,10 +687,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             
             if configuration.playbackPausesWhenBackgrounded {
                 
-                if (state.isAny(of: [.loading,
-                                     .loaded,
-                                     .buffering,
-                                     .waitingForNetwork]) && autoPlay)
+                if autoPlay
                     || state == .playing {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
@@ -712,10 +698,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
                 
             } else {
                 
-                if (state.isNotAny(of: [.loading,
-                                        .loaded,
-                                        .buffering,
-                                        .waitingForNetwork]) && !autoPlay)
+                if !autoPlay
                     && !state.isPlaying {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationEnteredBackground,
@@ -792,11 +775,11 @@ extension AKPlayerManager: AKPlayerControllerDelegate {
     }
     
     public func playerController(_ playerController: AKPlayerControllerProtocol,
-                                 playerItemDidReachEnd endTime: CMTime,
+                                 didReachEndAt time: CMTime,
                                  for media: AKPlayable) {
         setNowPlayingInfo()
         delegate?.playerManager(self,
-                                playerItemDidReachEnd: endTime,
+                                didReachEndAt: time,
                                 for: media)
     }
     
@@ -815,10 +798,10 @@ extension AKPlayerManager: AKPlayerControllerDelegate {
     }
     
     public func playerController(_ playerController: AKPlayerControllerProtocol,
-                                 unavailableActionWith reason: AKPlayerUnavailableCommandReason) {
+                                 didEncounterUnavailableAction reason: AKPlayerUnavailableCommandReason) {
         setNowPlayingInfo()
         delegate?.playerManager(self,
-                                unavailableActionWith: reason)
+                                didEncounterUnavailableAction: reason)
     }
     
     public func playerController(_ playerController: AKPlayerControllerProtocol,

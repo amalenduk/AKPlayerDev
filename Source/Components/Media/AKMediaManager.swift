@@ -60,7 +60,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     private var seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol!
     
-    private var cancellables: Set<AnyCancellable> = Set<AnyCancellable>()
+    private var subscriptions: Set<AnyCancellable> = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -82,16 +82,6 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         self.error = nil
         playerItemInitService.createAsset()
         state = .assetLoaded
-    }
-    
-    open func fetchAssetPropertiesValues() async throws {
-        assert(state.isAssetLoaded,
-               "This function requires the asset to be loaded first.")
-        do {
-            try await playerItemInitService.fetchAssetPropertiesValues()
-        } catch {
-            throw error
-        }
     }
     
     open func validateAssetPlayability() async throws {
@@ -124,7 +114,6 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItem!.publisher(for: \.status,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] status in
             switch status {
@@ -136,11 +125,11 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
             default: break
             }
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
     
     open func stopPlayerItemReadinessObserver() {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
     open func startPlayerItemAssetKeysObserver() {
@@ -151,7 +140,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func stopPlayerItemAssetKeysObserver() {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
     open func canStep(by count: Int) -> Bool {
@@ -210,145 +199,132 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         playerItem!.publisher(for: \.tracks,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] tracks in
             media.delegate?.akMedia(media,
                                     didChangeTracks: tracks)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canStepForward,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canStepForward in
             media.delegate?.akMedia(media,
                                     didChangeCanStepForwardStatus: canStepForward)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canStepBackward,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canStepBackward in
             media.delegate?.akMedia(media,
                                     didChangeCanStepBackwardStatus: canStepBackward)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         
         playerItem!.publisher(for: \.presentationSize,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] presentationSize in
             media.delegate?.akMedia(media,
                                     didChangePresentationSize: presentationSize)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.loadedTimeRanges,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] loadedTimeRanges in
             media.delegate?.akMedia(media,
                                     didChangeLoadedTimeRanges: loadedTimeRanges)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.seekableTimeRanges,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] seekableTimeRanges in
             media.delegate?.akMedia(media,
                                     didChangeSeekableTimeRanges: seekableTimeRanges)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.duration,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] duration in
             media.delegate?.akMedia(media,
                                     didChangeItemDuration: duration)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.timebase,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] timebase in
             media.delegate?.akMedia(media,
                                     didChangeTimebase: timebase)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canPlayReverse,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayReverse in
             media.delegate?.akMedia(media,
                                     didChangeCanPlayReverseStatus: canPlayReverse)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canPlayFastForward,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayFastForward in
             media.delegate?.akMedia(media,
                                     didChangeCanPlayFastForwardStatus: canPlayFastForward)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canPlayFastReverse,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayFastReverse in
             media.delegate?.akMedia(media,
                                     didChangeCanPlayFastReverseStatus: canPlayFastReverse)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canPlaySlowForward,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlaySlowForward in
             media.delegate?.akMedia(media,
                                     didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
         
         playerItem!.publisher(for: \.canPlaySlowReverse,
                               options: [.initial,
                                         .new])
-        .subscribe(on: DispatchQueue.global(qos: .background))
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlaySlowReverse in
             media.delegate?.akMedia(media,
                                     didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
         }
-        .store(in: &cancellables)
+        .store(in: &subscriptions)
     }
 }

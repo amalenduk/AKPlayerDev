@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="22154" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="23504" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina6_1" orientation="portrait" appearance="light"/>
     <dependencies>
-        <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="22130"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="23506"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="System colors in document resources" minToolsVersion="11.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
@@ -112,10 +111,10 @@
                                         </variation>
                                     </view>
                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="h8S-Bs-z3P">
-                                        <rect key="frame" x="0.0" y="82" width="414" height="493"/>
+                                        <rect key="frame" x="0.0" y="82" width="414" height="349"/>
                                         <subviews>
                                             <stackView opaque="NO" contentMode="scaleToFill" axis="vertical" spacing="4" translatesAutoresizingMaskIntoConstraints="NO" id="zq1-az-9YJ">
-                                                <rect key="frame" x="16" y="12" width="382" height="469"/>
+                                                <rect key="frame" x="16" y="0.0" width="382" height="337"/>
                                                 <subviews>
                                                     <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" value="0.5" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="QMt-xf-amv" customClass="AKProgressAndTimeRangesSlider" customModule="AKPlayer_Example" customModuleProvider="target">
                                                         <rect key="frame" x="-2" y="0.0" width="386" height="31"/>
@@ -126,14 +125,8 @@
                                                             <action selector="volumeSliderChanged:" destination="ZCJ-Il-0yo" eventType="valueChanged" id="g08-9y-bit"/>
                                                         </connections>
                                                     </slider>
-                                                    <slider opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" minValue="0.0" maxValue="1" translatesAutoresizingMaskIntoConstraints="NO" id="lvm-0f-Tcj">
-                                                        <rect key="frame" x="-2" y="68" width="386" height="31"/>
-                                                        <connections>
-                                                            <action selector="brightnessSliderDidChageValue:" destination="ZCJ-Il-0yo" eventType="valueChanged" id="Rrp-Qd-hsD"/>
-                                                        </connections>
-                                                    </slider>
                                                     <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="eAO-wv-AtR">
-                                                        <rect key="frame" x="0.0" y="102" width="382" height="31"/>
+                                                        <rect key="frame" x="0.0" y="68" width="382" height="31"/>
                                                         <subviews>
                                                             <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Auto Play" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="aKs-Ta-SDc">
                                                                 <rect key="frame" x="0.0" y="5.5" width="71.5" height="20.5"/>
@@ -155,7 +148,7 @@
                                                         </constraints>
                                                     </view>
                                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="sCu-jd-bg8">
-                                                        <rect key="frame" x="0.0" y="137" width="382" height="30"/>
+                                                        <rect key="frame" x="0.0" y="103" width="382" height="30"/>
                                                         <subviews>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="WpD-qs-YMb" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="185" height="30"/>
@@ -190,7 +183,7 @@
                                                         </subviews>
                                                     </stackView>
                                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="OiS-iN-gYE">
-                                                        <rect key="frame" x="0.0" y="171" width="382" height="30"/>
+                                                        <rect key="frame" x="0.0" y="137" width="382" height="30"/>
                                                         <subviews>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="phC-mM-Xz0" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="86.5" height="30"/>
@@ -252,10 +245,10 @@
                                                         </subviews>
                                                     </stackView>
                                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="f0v-le-dfL">
-                                                        <rect key="frame" x="0.0" y="205" width="382" height="128"/>
+                                                        <rect key="frame" x="0.0" y="171" width="382" height="30"/>
                                                         <subviews>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XNi-GC-Udy" userLabel="Play">
-                                                                <rect key="frame" x="0.0" y="0.0" width="86.5" height="128"/>
+                                                                <rect key="frame" x="0.0" y="0.0" width="86.5" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333333333331" alpha="0.14460804920322848" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Step(-1)">
                                                                     <color key="titleColor" systemColor="systemGrayColor"/>
@@ -270,7 +263,7 @@
                                                                 </connections>
                                                             </button>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="3CF-Nq-Bw0" userLabel="Play">
-                                                                <rect key="frame" x="98.5" y="0.0" width="86.5" height="128"/>
+                                                                <rect key="frame" x="98.5" y="0.0" width="86.5" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333333333331" alpha="0.14460804920322848" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="-10">
                                                                     <color key="titleColor" systemColor="systemGrayColor"/>
@@ -285,7 +278,7 @@
                                                                 </connections>
                                                             </button>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="esv-ml-8Xy" userLabel="Stop">
-                                                                <rect key="frame" x="197" y="0.0" width="86.5" height="128"/>
+                                                                <rect key="frame" x="197" y="0.0" width="86.5" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333333333331" alpha="0.14460804920322848" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="+10" image="next">
                                                                     <color key="titleColor" systemColor="systemGrayColor"/>
@@ -300,7 +293,7 @@
                                                                 </connections>
                                                             </button>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="HVX-KZ-Yxr" userLabel="Stop">
-                                                                <rect key="frame" x="295.5" y="0.0" width="86.5" height="128"/>
+                                                                <rect key="frame" x="295.5" y="0.0" width="86.5" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333333333331" alpha="0.14460804920322848" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Step(+1)">
                                                                     <color key="titleColor" systemColor="systemGrayColor"/>
@@ -315,9 +308,12 @@
                                                                 </connections>
                                                             </button>
                                                         </subviews>
+                                                        <constraints>
+                                                            <constraint firstAttribute="height" constant="30" id="imf-5g-cl7"/>
+                                                        </constraints>
                                                     </stackView>
                                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="Gh3-7G-hHo">
-                                                        <rect key="frame" x="0.0" y="337" width="382" height="30"/>
+                                                        <rect key="frame" x="0.0" y="205" width="382" height="30"/>
                                                         <subviews>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="DtH-5r-mXZ" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="119.5" height="30"/>
@@ -367,10 +363,10 @@
                                                             </button>
                                                         </subviews>
                                                     </stackView>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="fk1-9Z-Nu8">
-                                                        <rect key="frame" x="0.0" y="371" width="382" height="30"/>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="2Ou-1s-RpA">
+                                                        <rect key="frame" x="0.0" y="239" width="382" height="30"/>
                                                         <subviews>
-                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="sqy-CC-mEX" userLabel="Play">
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ITp-Ay-Pks" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="185" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333329999998" alpha="0.14460804920000001" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Subtitle">
@@ -381,11 +377,8 @@
                                                                         <integer key="value" value="5"/>
                                                                     </userDefinedRuntimeAttribute>
                                                                 </userDefinedRuntimeAttributes>
-                                                                <connections>
-                                                                    <action selector="changeSubtitleButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="xEd-zr-ZD0"/>
-                                                                </connections>
                                                             </button>
-                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="PGa-Ku-GNx" userLabel="Play">
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pKx-Tf-nME" userLabel="Play">
                                                                 <rect key="frame" x="197" y="0.0" width="185" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333329999998" alpha="0.14460804920000001" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Audio">
@@ -396,16 +389,13 @@
                                                                         <integer key="value" value="5"/>
                                                                     </userDefinedRuntimeAttribute>
                                                                 </userDefinedRuntimeAttributes>
-                                                                <connections>
-                                                                    <action selector="changeAudioTrackButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="mTJ-gj-EZk"/>
-                                                                </connections>
                                                             </button>
                                                         </subviews>
                                                     </stackView>
-                                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="2Ou-1s-RpA">
-                                                        <rect key="frame" x="0.0" y="405" width="382" height="30"/>
+                                                    <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="LEl-OM-VAw">
+                                                        <rect key="frame" x="0.0" y="273" width="382" height="30"/>
                                                         <subviews>
-                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="ITp-Ay-Pks" userLabel="Play">
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="fea-fs-5b1" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="185" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333329999998" alpha="0.14460804920000001" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Test">
@@ -417,10 +407,10 @@
                                                                     </userDefinedRuntimeAttribute>
                                                                 </userDefinedRuntimeAttributes>
                                                                 <connections>
-                                                                    <action selector="testButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="UK0-9b-AWR"/>
+                                                                    <action selector="testButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="vhq-b6-FR3"/>
                                                                 </connections>
                                                             </button>
-                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="pKx-Tf-nME" userLabel="Play">
+                                                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="3sM-1c-d1d" userLabel="Play">
                                                                 <rect key="frame" x="197" y="0.0" width="185" height="30"/>
                                                                 <color key="backgroundColor" white="0.33333333329999998" alpha="0.14460804920000001" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                                                 <state key="normal" title="Test Two">
@@ -432,13 +422,13 @@
                                                                     </userDefinedRuntimeAttribute>
                                                                 </userDefinedRuntimeAttributes>
                                                                 <connections>
-                                                                    <action selector="testTwoButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="rrW-q7-ifk"/>
+                                                                    <action selector="testTwoButtonAction:" destination="ZCJ-Il-0yo" eventType="touchUpInside" id="WhI-Cb-PFh"/>
                                                                 </connections>
                                                             </button>
                                                         </subviews>
                                                     </stackView>
                                                     <stackView opaque="NO" contentMode="scaleToFill" distribution="fillEqually" spacing="12" translatesAutoresizingMaskIntoConstraints="NO" id="NQI-Oz-khm">
-                                                        <rect key="frame" x="0.0" y="439" width="382" height="30"/>
+                                                        <rect key="frame" x="0.0" y="307" width="382" height="30"/>
                                                         <subviews>
                                                             <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="kU2-Yc-HJX" userLabel="Play">
                                                                 <rect key="frame" x="0.0" y="0.0" width="185" height="30"/>
@@ -491,7 +481,7 @@
                                         <constraints>
                                             <constraint firstItem="zq1-az-9YJ" firstAttribute="leading" secondItem="h8S-Bs-z3P" secondAttribute="leading" constant="16" id="B45-H4-Hd1"/>
                                             <constraint firstAttribute="trailing" secondItem="zq1-az-9YJ" secondAttribute="trailing" constant="16" id="Z0F-Wq-x3P"/>
-                                            <constraint firstItem="zq1-az-9YJ" firstAttribute="top" secondItem="h8S-Bs-z3P" secondAttribute="top" constant="12" id="kMe-Xi-Zv6"/>
+                                            <constraint firstItem="zq1-az-9YJ" firstAttribute="top" secondItem="h8S-Bs-z3P" secondAttribute="top" id="kMe-Xi-Zv6"/>
                                             <constraint firstAttribute="bottom" secondItem="zq1-az-9YJ" secondAttribute="bottom" constant="12" id="wIT-uu-sFE"/>
                                         </constraints>
                                         <variation key="default">
@@ -632,9 +622,8 @@
                     </view>
                     <connections>
                         <outlet property="assetInfoButton" destination="1Pu-Nd-sE9" id="fLw-OP-ZBY"/>
-                        <outlet property="audioButton" destination="PGa-Ku-GNx" id="EzZ-Jh-UMX"/>
+                        <outlet property="audioButton" destination="pKx-Tf-nME" id="ov7-8X-Z0L"/>
                         <outlet property="autoPlaySwitch" destination="rfY-1e-abX" id="8sm-rr-4F1"/>
-                        <outlet property="brightnessSlider" destination="lvm-0f-Tcj" id="MCb-xq-1uV"/>
                         <outlet property="currentTimeLabel" destination="ID2-Do-jtI" id="qcX-qf-Blw"/>
                         <outlet property="debugMessageLabel" destination="gVa-wu-byV" id="39J-Bo-bBg"/>
                         <outlet property="durationLabel" destination="0jp-Ns-ONb" id="cdl-HS-8QF"/>
@@ -646,7 +635,7 @@
                         <outlet property="stateLabel" destination="tq5-Dh-1tR" id="2fZ-7U-tmE"/>
                         <outlet property="stepBackwardButton" destination="XNi-GC-Udy" id="kNg-sL-AfW"/>
                         <outlet property="stepForwardButton" destination="HVX-KZ-Yxr" id="6Cn-bH-HKp"/>
-                        <outlet property="subtitleButton" destination="sqy-CC-mEX" id="zya-YH-u1a"/>
+                        <outlet property="subtitleButton" destination="ITp-Ay-Pks" id="8g5-yS-mCh"/>
                         <outlet property="timeSlider" destination="QMt-xf-amv" id="O1T-y6-roc"/>
                         <outlet property="volumeSlider" destination="3qO-A4-Gq3" id="lMN-H0-lGR"/>
                     </connections>
@@ -686,15 +675,10 @@
             <point key="canvasLocation" x="621.73913043478262" y="97.767857142857139"/>
         </scene>
     </scenes>
-    <designables>
-        <designable name="QMt-xf-amv">
-            <size key="intrinsicContentSize" width="-1" height="30"/>
-        </designable>
-    </designables>
     <resources>
         <image name="next" width="128" height="128"/>
-        <image name="pause.fill" catalog="system" width="117" height="128"/>
-        <image name="play.fill" catalog="system" width="117" height="128"/>
+        <image name="pause.fill" catalog="system" width="114" height="128"/>
+        <image name="play.fill" catalog="system" width="120" height="128"/>
         <image name="speaker.fill" catalog="system" width="128" height="125"/>
         <image name="speaker.slash.fill" catalog="system" width="115" height="128"/>
         <image name="stop.fill" catalog="system" width="128" height="113"/>

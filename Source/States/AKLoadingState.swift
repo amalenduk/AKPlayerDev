@@ -46,7 +46,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     
     private var task: Task<Void, Never>?
     
-    private var cancellables = Set<AnyCancellable>()
+    private var subscriptions = Set<AnyCancellable>()
     
     // MARK: - Init
     
@@ -63,10 +63,10 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     }
     
     deinit {
-        cancellables.removeAll()
+        subscriptions.removeAll()
     }
     
-    public func didChangeState() {
+    public func processStateChange() {
         resetPlayer()
         playerController.delegate?.playerController(playerController,
                                                     didChangeMediaTo: media)
@@ -76,7 +76,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
             .receive(on: DispatchQueue.main)
             .sink { [unowned self] state in
                 hanldeChangeInMedia(state)
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     // MARK: - Commands
@@ -127,7 +127,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     
     public func play(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func pause() {
@@ -150,7 +150,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
                      toleranceAfter: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
@@ -158,98 +158,98 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
                      toleranceBefore: CMTime,
                      toleranceAfter: CMTime) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func seek(to time: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
     public func seek(to time: CMTime) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func seek(to time: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
     public func seek(to time: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func seek(to date: Date,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
     public func seek(to date: Date) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func seek(toOffset offset: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func seek(toOffset offset: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
     public func seek(toPercentage percentage: Double,
                      completionHandler: @escaping (Bool) -> Void) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
         completionHandler(false)
     }
     
     public func seek(toPercentage percentage: Double) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func step(by count: Int) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func fastForward() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func fastForward(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func rewind() {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     public func rewind(at rate: AKPlaybackRate) {
         playerController.delegate?.playerController(playerController,
-                                                    unavailableActionWith: .waitTillMediaLoaded)
+                                                    didEncounterUnavailableAction: .waitTillMediaLoaded)
     }
     
     // MARK: - Additional Helper Functions
     
     private func change(_ controller: AKPlayerStateControllerProtocol) {
-        cancellables.removeAll()
+        subscriptions.removeAll()
         playerController.change(controller)
     }
     
@@ -308,7 +308,7 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
     private func becameReadyToPlay() {
         playerController.player.publisher(for: \.status,
                                           options: [.initial, .new])
-            .receiveOnMainThread()
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] status in
                 switch status {
                 case .readyToPlay:
@@ -322,14 +322,14 @@ public class AKLoadingState: AKPlayerStateControllerProtocol {
                     change(controller)
                 default: break
                 }
-            }.store(in: &cancellables)
+            }.store(in: &subscriptions)
     }
     
     
     private func abortAssetInitialization() {
         task?.cancel()
         isCancelled = true
-        cancellables.removeAll()
+        subscriptions.removeAll()
         media.abortAssetInitialization()
     }
     
