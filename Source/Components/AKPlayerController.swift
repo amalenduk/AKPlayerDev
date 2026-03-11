@@ -572,3 +572,56 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         return (flag: result, reason: result ? nil : .canNotPlayAtSpecifiedRate)
     }
 }
+
+extension AKPlayerController {
+    public func performPlay() {
+        // Directly control AVPlayer and update controller internals.
+        // IMPORTANT: do NOT call `self.play()` (public) here — that would re-enter state routing.
+        DispatchQueue.main.async { // ensure AVPlayer/UI updates happen on main as needed
+            self.player.play()
+            // Let the controller re-evaluate state machine and notify delegates
+            self.processStateChange()
+        }
+    }
+    
+    public func performPlay(at rate: AKPlaybackRate) {
+        DispatchQueue.main.async {
+            self.player.rate = rate.rate
+            self.processStateChange()
+        }
+    }
+    
+    public func performPause() {
+        DispatchQueue.main.async {
+            self.player.pause()
+            self.processStateChange()
+        }
+    }
+    
+    public func performStop() {
+        DispatchQueue.main.async {
+            self.player.pause()
+            self.player.seek(to: .zero) // optional cleanup
+            self.processStateChange()
+        }
+    }
+    
+    public func performSeek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
+        self.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { finished in
+            // update any seeking flags here
+            self.processStateChange()
+            completionHandler(finished)
+        }
+    }
+    
+    public func performSeek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
+        // implement conversion date -> CMTime if you support date-based seeking
+        completionHandler(false)
+    }
+    
+    public func performStep(by count: Int) { /* implement frame stepping */ }
+    public func performFastForward() { /* adjust rate or timeline */ }
+    public func performFastForward(at rate: AKPlaybackRate) { /* set player.rate = rate.rate */ }
+    public func performRewind() { /* adjust rate or timeline */ }
+    public func performRewind(at rate: AKPlaybackRate) { /* set player.rate = rate.rate */ }
+}

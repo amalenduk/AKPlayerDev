@@ -26,18 +26,12 @@
 import AVFoundation
 import Combine
 
-public class AKLoadedState: AKPlayerStateControllerProtocol {
+public class AKLoadedState: AKBaseState {
     
     // MARK: - Properties
     
-    unowned public let playerController: AKPlayerControllerProtocol
-    
-    public let state: AKPlayerState = .loaded
-    
     public private(set) var autoPlay: Bool
-    
     private let position: CMTime?
-    
     private var rate: AKPlaybackRate?
     
     private var subscriptions = Set<AnyCancellable>()
@@ -48,17 +42,17 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
                 autoPlay: Bool = false,
                 position: CMTime? = nil,
                 rate: AKPlaybackRate? = nil) {
-        self.playerController = playerController
         self.autoPlay = autoPlay
         self.position = position
         self.rate = rate
+        super.init(playerController: playerController, state: .loaded)
     }
     
     deinit {
         subscriptions.removeAll()
     }
     
-    public func processStateChange() {
+    public override func processStateChange() {
         startObservingPlayerProperties()
         
         playerController.delegate?.playerController(playerController,
@@ -79,43 +73,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
     
     // MARK: - Commands
     
-    public func load(media: AKPlayable) {
-        let controller = AKLoadingState(playerController: playerController,
-                                        media: media)
-        change(controller)
-    }
-    
-    public func load(media: AKPlayable,
-                     autoPlay: Bool) {
-        let controller = AKLoadingState(playerController: playerController,
-                                        media: media,
-                                        autoPlay: autoPlay)
-        change(controller)
-    }
-    
-    public func load(media: AKPlayable,
-                     autoPlay: Bool,
-                     at position: CMTime) {
-        let controller = AKLoadingState(playerController: playerController,
-                                        media: media,
-                                        autoPlay: autoPlay,
-                                        position: position)
-        change(controller)
-    }
-    
-    public func load(media: AKPlayable,
-                     autoPlay: Bool,
-                     at position: Double) {
-        let time = CMTime(seconds: position,
-                          preferredTimescale: playerController.configuration.preferredTimeScale)
-        let controller = AKLoadingState(playerController: playerController,
-                                        media: media,
-                                        autoPlay: autoPlay,
-                                        position: time)
-        change(controller)
-    }
-    
-    public func play() {
+    public override func play() {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: true,
                                           rate: rate)
@@ -123,7 +81,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func play(at rate: AKPlaybackRate) {
+    public override func play(at rate: AKPlaybackRate) {
         guard playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
@@ -136,7 +94,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func pause() {
+    public override func pause() {
         if autoPlay {
             autoPlay = false
         } else {
@@ -145,7 +103,7 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         }
     }
     
-    public func togglePlayPause() {
+    public override func togglePlayPause() {
         if autoPlay {
             pause()
         } else {
@@ -153,15 +111,15 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         }
     }
     
-    public func stop() {
+    public override func stop() {
         let controller = AKStoppedState(playerController: playerController)
         change(controller)
     }
     
-    public func seek(to time: CMTime,
-                     toleranceBefore: CMTime,
-                     toleranceAfter: CMTime,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(to time: CMTime,
+                              toleranceBefore: CMTime,
+                              toleranceAfter: CMTime,
+                              completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: time,
@@ -171,9 +129,9 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func seek(to time: CMTime,
-                     toleranceBefore: CMTime,
-                     toleranceAfter: CMTime) {
+    public override func seek(to time: CMTime,
+                              toleranceBefore: CMTime,
+                              toleranceAfter: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: time,
@@ -182,8 +140,8 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func seek(to time: CMTime,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(to time: CMTime,
+                              completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: time,
@@ -191,28 +149,28 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func seek(to time: CMTime) {
+    public override func seek(to time: CMTime) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: time)
         change(controller)
     }
     
-    public func seek(to time: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(to time: Double,
+                              completionHandler: @escaping (Bool) -> Void) {
         seek(to: CMTime(seconds: time,
                         preferredTimescale: playerController.configuration.preferredTimeScale),
              completionHandler: completionHandler)
     }
     
-    public func seek(to time: Double) {
+    public override func seek(to time: Double) {
         let time = CMTime(seconds: time,
                           preferredTimescale: playerController.configuration.preferredTimeScale)
         seek(to: time)
     }
     
-    public func seek(to date: Date,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(to date: Date,
+                              completionHandler: @escaping (Bool) -> Void) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: date,
@@ -220,56 +178,56 @@ public class AKLoadedState: AKPlayerStateControllerProtocol {
         change(controller)
     }
     
-    public func seek(to date: Date) {
+    public override func seek(to date: Date) {
         let controller = AKBufferingState(playerController: playerController,
                                           autoPlay: false)
         controller.seek(to: date)
         change(controller)
     }
     
-    public func seek(toOffset offset: Double) {
+    public override func seek(toOffset offset: Double) {
         let time = CMTimeAdd(playerController.currentTime,
                              CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time)
     }
     
-    public func seek(toOffset offset: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(toOffset offset: Double,
+                              completionHandler: @escaping (Bool) -> Void) {
         let time = CMTimeAdd(playerController.currentTime,
                              CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
              completionHandler: completionHandler)
     }
     
-    public func seek(toPercentage percentage: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+    public override func seek(toPercentage percentage: Double,
+                              completionHandler: @escaping (Bool) -> Void) {
         let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time,
              completionHandler: completionHandler)
     }
     
-    public func seek(toPercentage percentage: Double) {
+    public override func seek(toPercentage percentage: Double) {
         let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time)
     }
     
-    public func step(by count: Int) {
+    public override func step(by count: Int) {
         playerController.currentItem!.step(byCount: count)
     }
     
-    public func fastForward() {
+    public override func fastForward() {
         play(at: playerController.configuration.fastForwardRate)
     }
     
-    public func fastForward(at rate: AKPlaybackRate) {
+    public override func fastForward(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     
-    public func rewind() {
+    public override func rewind() {
         play(at: playerController.configuration.rewindRate)
     }
     
-    public func rewind(at rate: AKPlaybackRate) {
+    public override func rewind(at rate: AKPlaybackRate) {
         play(at: rate)
     }
     

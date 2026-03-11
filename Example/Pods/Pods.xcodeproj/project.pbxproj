@@ -13,6 +13,7 @@
 		04267CB02BAB530500738B04 /* Dictionary+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04267CAF2BAB530500738B04 /* Dictionary+Extensions.swift */; };
 		042977B42997FF18006858F8 /* AKTIme.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042977B32997FF18006858F8 /* AKTIme.swift */; };
 		042977B629981D33006858F8 /* CMTime+Extension.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042977B529981D33006858F8 /* CMTime+Extension.swift */; };
+		0444F8562F59CACA00789D0C /* AKBaseState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0444F8552F59CACA00789D0C /* AKBaseState.swift */; };
 		044628602639FBC6002643CE /* Tasks in Resources */ = {isa = PBXBuildFile; fileRef = 0446285F2639FBC6002643CE /* Tasks */; };
 		044EE0DF29A87FE300A77A3A /* AKMediaManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 044EE0DE29A87FE300A77A3A /* AKMediaManager.swift */; };
 		045431C9299B939800DB374E /* AKAudioSessionMediaServicesLostObserver.swift in Sources */ = {isa = PBXBuildFile; fileRef = 045431C8299B939800DB374E /* AKAudioSessionMediaServicesLostObserver.swift */; };
@@ -110,6 +111,7 @@
 		04267CAF2BAB530500738B04 /* Dictionary+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Dictionary+Extensions.swift"; sourceTree = "<group>"; };
 		042977B32997FF18006858F8 /* AKTIme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKTIme.swift; sourceTree = "<group>"; };
 		042977B529981D33006858F8 /* CMTime+Extension.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = "CMTime+Extension.swift"; sourceTree = "<group>"; };
+		0444F8552F59CACA00789D0C /* AKBaseState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKBaseState.swift; sourceTree = "<group>"; };
 		0446285F2639FBC6002643CE /* Tasks */ = {isa = PBXFileReference; lastKnownFileType = text; path = Tasks; sourceTree = "<group>"; };
 		044EE0DE29A87FE300A77A3A /* AKMediaManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKMediaManager.swift; sourceTree = "<group>"; };
 		045431C8299B939800DB374E /* AKAudioSessionMediaServicesLostObserver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AKAudioSessionMediaServicesLostObserver.swift; sourceTree = "<group>"; };
@@ -374,6 +376,7 @@
 		3CA94EE7F417B240616D52882901DF31 /* States */ = {
 			isa = PBXGroup;
 			children = (
+				0444F8552F59CACA00789D0C /* AKBaseState.swift */,
 				AF49FDB8A13D504705241A8CF4DEEF2B /* AKIdleState.swift */,
 				67B9194281D02E9FA4DBB03FFC6D0FE6 /* AKLoadingState.swift */,
 				63FC388B5F6D0DBEB64A6220B314F023 /* AKLoadedState.swift */,
@@ -731,6 +734,7 @@
 				042977B629981D33006858F8 /* CMTime+Extension.swift in Sources */,
 				048C3E0E2ABAAB72005A74B8 /* Event.swift in Sources */,
 				04B3CDAA2AB35A4B00481C3B /* AKPlayable+Extensions.swift in Sources */,
+				0444F8562F59CACA00789D0C /* AKBaseState.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

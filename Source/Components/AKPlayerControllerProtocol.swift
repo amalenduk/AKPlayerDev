@@ -53,7 +53,21 @@ public protocol AKPlayerControllerDelegate: AnyObject {
                           didFailWith error: AKPlayerError)
 }
 
-public protocol AKPlayerControllerProtocol: AKPlayerProtocol {
+public protocol AKPlayerControllerPerforming {
+    func performPlay()
+    func performPlay(at rate: AKPlaybackRate)
+    func performPause()
+    func performStop()
+    func performSeek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void)
+    func performSeek(to date: Date, completionHandler: @escaping (Bool) -> Void)
+    func performStep(by count: Int)
+    func performFastForward()
+    func performFastForward(at rate: AKPlaybackRate)
+    func performRewind()
+    func performRewind(at rate: AKPlaybackRate)
+}
+
+public protocol AKPlayerControllerProtocol: AKPlayerProtocol, AKPlayerControllerPerforming {
     var configuration: AKPlayerConfigurationProtocol { get }
     var controller: AKPlayerStateControllerProtocol { get }
     var delegate: AKPlayerControllerDelegate? { get set }

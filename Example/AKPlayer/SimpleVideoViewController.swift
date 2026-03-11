@@ -270,7 +270,7 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func load(_ sender: Any) {
-        guard let url = URL(string: "http://sample.vodobox.com/planete_interdite/planete_interdite_alternate.m3u8") else { return }
+        guard let url = URL(string: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4") else { return }
         let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title:"Akplayer", artist:"Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
         let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration,
                                                                                   .creationDate,
