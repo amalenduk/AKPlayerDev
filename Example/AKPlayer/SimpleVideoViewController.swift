@@ -158,6 +158,12 @@ class SimpleVideoViewController: UIViewController {
             rateButton.showsMenuAsPrimaryAction = true
         }
     }
+
+    // Public API to load media programmatically
+    public func load(media: AKMedia, autoPlay: Bool) {
+        media.delegate = self
+        player.load(media: media, autoPlay: autoPlay)
+    }
     
     @objc func audioButtonAction(_ sender: UIButton) {
         guard let asset = self.player.currentItem?.asset else { return }
@@ -166,14 +172,14 @@ class SimpleVideoViewController: UIViewController {
             
             guard let group, group.options.count > 0 else { setDebugMessage("No tracks found"); return }
             let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
-    
+            
             for option in group.options {
                 let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
                     self.player.currentMedia?.playerItem?.select(option, in: group)
                 }
                 alert.addAction(action)
             }
-    
+            
             if group.allowsEmptySelection {
                 let action = UIAlertAction(title: "Off", style: .default) { (_) in
                     self.player.currentMedia?.playerItem?.select(nil, in: group)
@@ -193,14 +199,14 @@ class SimpleVideoViewController: UIViewController {
             
             guard let group, group.options.count > 0 else { setDebugMessage("No subtitles found"); return }
             let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
-    
+            
             for option in group.options {
                 let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
                     self.player.currentMedia?.playerItem?.select(option, in: group)
                 }
                 alert.addAction(action)
             }
-    
+            
             if group.allowsEmptySelection {
                 let action = UIAlertAction(title: "Off", style: .default) { (_) in
                     self.player.currentMedia?.playerItem?.select(nil, in: group)
@@ -270,17 +276,19 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @IBAction func load(_ sender: Any) {
-        guard let url = URL(string: "http://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4") else { return }
+        guard let url = URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8") else { return }
+        let headers = ["User-Agent": "AVPlayer/1.0"]
         let staticMetadata = AKNowPlayableStaticMetadata(assetURL: url, mediaType: .video, isLiveStream: false, title:"Akplayer", artist:"Akplayer", artwork: .image(UIImage(named: "artwork.example")!), albumArtist: "Amar maa", albumTitle: "Anik")
-        let media = AKMedia(url: url, type: .clip, automaticallyLoadedAssetKeys: [.duration,
-                                                                                  .creationDate,
-                                                                                  .lyrics,
-                                                                                  .isPlayable,
-                                                                                  .metadata,
-                                                                                  .commonMetadata,
-                                                                                  .metadata,
-                                                                                  .availableMetadataFormats,
-                                                                                  .availableMediaCharacteristicsWithMediaSelectionOptions], staticMetadata: staticMetadata)
+        let media = AKMedia(url: url, type: .clip, assetInitializationOptions: ["AVURLAssetHTTPHeaderFieldsKey": headers], automaticallyLoadedAssetKeys: [.duration,
+                                                                                                                                                          .creationDate,
+                                                                                                                                                .lyrics,
+                                                                                                                                                          .isPlayable,
+                                                                                                                                                          .metadata,
+                                                                                                                                                          .commonMetadata,
+                                                                                                                                                          .metadata,
+                                                                                                                                                          .availableMetadataFormats,
+                                                                                                                                                          .availableMediaCharacteristicsWithMediaSelectionOptions],
+                            staticMetadata: staticMetadata)
         media.delegate = self
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
@@ -467,14 +475,14 @@ extension SimpleVideoViewController: AKMediaDelegate {
     
     func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) {
         DispatchQueue.main.async {
-            self.stepForwardButton.isEnabled = canStepForward
+            // self.stepForwardButton.isEnabled = canStepForward
         }
         
     }
     
     func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) {
         DispatchQueue.main.async {
-            self.stepBackwardButton.isEnabled = canStepBackward
+            // self.stepBackwardButton.isEnabled = canStepBackward
         }
         
     }

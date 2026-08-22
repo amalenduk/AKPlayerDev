@@ -46,56 +46,13 @@ public class AKFailedState: AKBaseState {
                                                     didFailWith: error)
     }
     
-    // MARK: - Commands
-    
-    public override func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
-    }
-    
-    public override func play(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
-    }
-    
-    public override func pause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
-    }
-    
-    public override func togglePlayPause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
-    }
-    
-    public override func stop() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
-    }
-    
-    // MARK: - Additional Helper Functions
-    
-    private func change(_ controller: AKPlayerStateControllerProtocol) {
-        playerController.change(controller)
-    }
-    
-    public override func canLoad(_ media: AKPlayable, autoPlay: Bool) -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return playerController.player.error == nil ? (true, nil) : (false, .playerCanNoLongerPlay)
-    }
-    
-    public override func canSeek() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canFastForward() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canRewind() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canStep() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
+    public override func availability(for action: AKPlayerAction)
+    -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        switch action {
+        case .load:
+            return playerController.player.error == nil ? (true, .none) : (false, .playerCanNoLongerPlay)
+        default:
+            return (false, playerController.player.error == nil ? .playerCanNoLongerPlay : .loadMediaFirst)
+        }
     }
 }

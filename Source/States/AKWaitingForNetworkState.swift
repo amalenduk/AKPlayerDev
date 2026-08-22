@@ -29,7 +29,7 @@ import Combine
 public class AKWaitingForNetworkState: AKBaseState {
     
     // MARK: - Properties
-
+    
     private var rate: AKPlaybackRate?
     public private(set) var autoPlay: Bool = false
     private var stateToNavigateAfterBuffering: AKPlayerState?
@@ -57,7 +57,7 @@ public class AKWaitingForNetworkState: AKBaseState {
         startObservingPlayerStatus()
         
         if !playerController.player.timeControlStatus.isPaused {
-            playerController.player.pause()
+            playerController.performPause()
         }
         
         startObservingPlayerItemNotifications()
@@ -85,28 +85,10 @@ public class AKWaitingForNetworkState: AKBaseState {
         autoPlay = true
     }
     
-    public override func pause() {
-        let controller = AKPausedState(playerController: playerController)
-        change(controller)
-    }
-    
-    public override func togglePlayPause() {
-        if autoPlay {
-            pause()
-        } else {
-            play()
-        }
-    }
-    
-    public override func stop() {
-        let controller = AKStoppedState(playerController: playerController)
-        change(controller)
-    }
-    
     public override func seek(to time: CMTime,
-                     toleranceBefore: CMTime,
-                     toleranceAfter: CMTime,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              toleranceBefore: CMTime,
+                              toleranceAfter: CMTime,
+                              completionHandler: @escaping (Bool) -> Void) {
         targetSeek = AKSeek(position: .time(time),
                             toleranceBefore: toleranceBefore,
                             toleranceAfter: toleranceAfter,
@@ -114,15 +96,15 @@ public class AKWaitingForNetworkState: AKBaseState {
     }
     
     public override func seek(to time: CMTime,
-                     toleranceBefore: CMTime,
-                     toleranceAfter: CMTime) {
+                              toleranceBefore: CMTime,
+                              toleranceAfter: CMTime) {
         targetSeek = AKSeek(position: .time(time),
                             toleranceBefore: toleranceBefore,
                             toleranceAfter: toleranceAfter)
     }
     
     public override func seek(to time: CMTime,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              completionHandler: @escaping (Bool) -> Void) {
         targetSeek = AKSeek(position: .time(time),
                             completionHandler: completionHandler)
     }
@@ -132,7 +114,7 @@ public class AKWaitingForNetworkState: AKBaseState {
     }
     
     public override func seek(to time: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              completionHandler: @escaping (Bool) -> Void) {
         let time = CMTime(seconds: time,
                           preferredTimescale: playerController.configuration.preferredTimeScale)
         targetSeek = AKSeek(position: .time(time),
@@ -146,7 +128,7 @@ public class AKWaitingForNetworkState: AKBaseState {
     }
     
     public override func seek(to date: Date,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              completionHandler: @escaping (Bool) -> Void) {
         targetSeek = AKSeek(position: .date(date),
                             completionHandler: completionHandler)
     }
@@ -162,7 +144,7 @@ public class AKWaitingForNetworkState: AKBaseState {
     }
     
     public override func seek(toOffset offset: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              completionHandler: @escaping (Bool) -> Void) {
         let time = CMTimeAdd(playerController.currentTime,
                              CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
         seek(to: time,
@@ -170,7 +152,7 @@ public class AKWaitingForNetworkState: AKBaseState {
     }
     
     public override func seek(toPercentage percentage: Double,
-                     completionHandler: @escaping (Bool) -> Void) {
+                              completionHandler: @escaping (Bool) -> Void) {
         let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time,
              completionHandler: completionHandler)
@@ -179,27 +161,6 @@ public class AKWaitingForNetworkState: AKBaseState {
     public override func seek(toPercentage percentage: Double) {
         let time = CMTimeGetSeconds(playerController.currentItem!.duration) * (percentage / 100)
         seek(to: time)
-    }
-    
-    public override func step(by count: Int) {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .waitingForEstablishedNetwork)
-    }
-    
-    public override func fastForward() {
-        play(at: playerController.configuration.fastForwardRate)
-    }
-    
-    public override func fastForward(at rate: AKPlaybackRate) {
-        play(at: rate)
-    }
-    
-    public override func rewind() {
-        play(at: playerController.configuration.rewindRate)
-    }
-    
-    public override func rewind(at rate: AKPlaybackRate) {
-        play(at: rate)
     }
     
     // MARK: - Additional Helper Functions
@@ -243,7 +204,7 @@ public class AKWaitingForNetworkState: AKBaseState {
         .store(in: &subscriptions)
     }
     
-    private func change(_ controller: AKPlayerStateControllerProtocol) {
+    public override func change(_ controller: AKPlayerStateControllerProtocol) {
         subscriptions.removeAll()
         playerController.change(controller)
         guard let seek = targetSeek,
@@ -285,5 +246,15 @@ public class AKWaitingForNetworkState: AKBaseState {
                 }
             }
             .store(in: &subscriptions)
+    }
+    
+    public override func availability(for action: AKPlayerAction)
+    -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        switch action {
+        case .step:
+            return (false, .waitingForEstablishedNetwork)
+        default:
+            return super.availability(for: action)
+        }
     }
 }

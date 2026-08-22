@@ -10,6 +10,11 @@
 		04253CFA29C81B030028D194 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04253CF929C81B030028D194 /* AppDelegate.swift */; };
 		0430C1232710ABB500D40AAF /* AudioSearchTableViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */; };
 		04926A2D2C1DBAFC00144A97 /* audio.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 04926A2C2C1DBAFC00144A97 /* audio.mp3 */; };
+		04978FE1303756F500874792 /* TestMedia.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04978FE0303756E900874792 /* TestMedia.swift */; };
+		04978FE3303764D300874792 /* TestMediaListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04978FE2303764D300874792 /* TestMediaListView.swift */; };
+		04978FE530376FBE00874792 /* SimpleVideoPlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04978FE430376FBE00874792 /* SimpleVideoPlayerView.swift */; };
+		04978FE73037730600874792 /* TestMediaHelpers.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04978FE63037730600874792 /* TestMediaHelpers.swift */; };
+		04978FE93038A84300874792 /* SimpleVideoPlayerViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04978FE83038A84200874792 /* SimpleVideoPlayerViewModel.swift */; };
 		5A2E83E4D8DA25F73A9FD72E /* Pods_AKPlayer_Tests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 78F4A1351222960D5319D480 /* Pods_AKPlayer_Tests.framework */; };
 		607FACDB1AFB9204008FA782 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 607FACD91AFB9204008FA782 /* Main.storyboard */; };
 		607FACDD1AFB9204008FA782 /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 607FACDC1AFB9204008FA782 /* Images.xcassets */; };
@@ -45,6 +50,11 @@
 		04253CF929C81B030028D194 /* AppDelegate.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		0430C1222710ABB500D40AAF /* AudioSearchTableViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioSearchTableViewController.swift; sourceTree = "<group>"; };
 		04926A2C2C1DBAFC00144A97 /* audio.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = audio.mp3; sourceTree = "<group>"; };
+		04978FE0303756E900874792 /* TestMedia.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestMedia.swift; sourceTree = "<group>"; };
+		04978FE2303764D300874792 /* TestMediaListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestMediaListView.swift; sourceTree = "<group>"; };
+		04978FE430376FBE00874792 /* SimpleVideoPlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleVideoPlayerView.swift; sourceTree = "<group>"; };
+		04978FE63037730600874792 /* TestMediaHelpers.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestMediaHelpers.swift; sourceTree = "<group>"; };
+		04978FE83038A84200874792 /* SimpleVideoPlayerViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SimpleVideoPlayerViewModel.swift; sourceTree = "<group>"; };
 		0FB847605FBD3AFE367613FA /* Pods-AKPlayer_Tests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Tests.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Tests/Pods-AKPlayer_Tests.debug.xcconfig"; sourceTree = "<group>"; };
 		3235A9DAAE16B3C5C2906893 /* Pods_AKPlayer_Example.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_AKPlayer_Example.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		409D138A202EADAE1074C338 /* Pods-AKPlayer_Example.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-AKPlayer_Example.debug.xcconfig"; path = "Target Support Files/Pods-AKPlayer_Example/Pods-AKPlayer_Example.debug.xcconfig"; sourceTree = "<group>"; };
@@ -200,6 +210,7 @@
 		F40ED5B025E2BBDC003FBD82 /* Helper */ = {
 			isa = PBXGroup;
 			children = (
+				04978FE63037730600874792 /* TestMediaHelpers.swift */,
 			);
 			name = Helper;
 			sourceTree = "<group>";
@@ -240,6 +251,9 @@
 		F48CF84D25493F7C00F64886 /* AKVideoPlayer */ = {
 			isa = PBXGroup;
 			children = (
+				04978FE83038A84200874792 /* SimpleVideoPlayerViewModel.swift */,
+				04978FE430376FBE00874792 /* SimpleVideoPlayerView.swift */,
+				04978FE2303764D300874792 /* TestMediaListView.swift */,
 				F44E64952551D83C00B7BB4D /* AKProgressAndTimeRangesSlider */,
 				F44E64942551D83200B7BB4D /* AKPlaybackButton */,
 				F44E64932551D80600B7BB4D /* AKVideoPlayerControlView */,
@@ -289,6 +303,7 @@
 		F4D6B12A25565A210011F71C /* Model */ = {
 			isa = PBXGroup;
 			children = (
+				04978FE0303756E900874792 /* TestMedia.swift */,
 				F492603E254893DA009844FA /* DemoScreen */,
 			);
 			name = Model;
@@ -482,13 +497,18 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				04978FE73037730600874792 /* TestMediaHelpers.swift in Sources */,
 				04253CFA29C81B030028D194 /* AppDelegate.swift in Sources */,
 				F44E648E25519CA900B7BB4D /* AKPlaybackButton.swift in Sources */,
 				F4926040254893E3009844FA /* DemoScreen.swift in Sources */,
+				04978FE3303764D300874792 /* TestMediaListView.swift in Sources */,
+				04978FE1303756F500874792 /* TestMedia.swift in Sources */,
 				F492604325489400009844FA /* TableViewController.swift in Sources */,
 				F44E648C25512F6300B7BB4D /* ProgressAndBufferedSlider.swift in Sources */,
 				F44E64902551D0FC00B7BB4D /* AKVideoPlayerControlView.swift in Sources */,
 				F42C69DD25E68E31000A8646 /* AssetInfoViewController.swift in Sources */,
+				04978FE93038A84300874792 /* SimpleVideoPlayerViewModel.swift in Sources */,
+				04978FE530376FBE00874792 /* SimpleVideoPlayerView.swift in Sources */,
 				F48CF84F25493F9300F64886 /* AKVideoPlayer.swift in Sources */,
 				F48CF84C25493E9600F64886 /* PlayerWithUIControlViewController.swift in Sources */,
 				F492604625489459009844FA /* SimpleVideoViewController.swift in Sources */,

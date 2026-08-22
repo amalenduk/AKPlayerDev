@@ -24,6 +24,8 @@
 //
 
 import UIKit
+import SwiftUI
+import AKPlayer
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -33,6 +35,15 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         UIApplication.shared.beginReceivingRemoteControlEvents()
+        // Make TestMediaListView the initial screen (simple SwiftUI root)
+//        if window == nil {
+//            window = UIWindow(frame: UIScreen.main.bounds)
+//        }
+//        // Prefer large titles globally for the navigation bar
+//        UINavigationBar.appearance().prefersLargeTitles = true
+//        let hosting = UIHostingController(rootView: TestMediaListView())
+//        window?.rootViewController = hosting
+//        window?.makeKeyAndVisible()
         return true
     }
 

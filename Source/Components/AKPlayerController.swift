@@ -218,79 +218,38 @@ open class AKPlayerController: AKPlayerControllerProtocol {
                    toleranceBefore: CMTime,
                    toleranceAfter: CMTime,
                    completionHandler: @escaping (Bool) -> Void) {
-        let result = canSeek(to: time)
-        
-        if result.flag {
-            controller.seek(to: time,
-                            toleranceBefore: toleranceBefore,
-                            toleranceAfter: toleranceAfter,
-                            completionHandler: completionHandler)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-            completionHandler(false)
-        }
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter,
+                        completionHandler: completionHandler)
     }
     
     open func seek(to time: CMTime,
                    toleranceBefore: CMTime,
                    toleranceAfter: CMTime) {
-        let result = canSeek(to: time)
-        
-        if result.flag {
-            controller.seek(to: time,
-                            toleranceBefore: toleranceBefore,
-                            toleranceAfter: toleranceAfter)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.seek(to: time,
+                        toleranceBefore: toleranceBefore,
+                        toleranceAfter: toleranceAfter)
     }
     
     open func seek(to time: CMTime,
                    completionHandler: @escaping (Bool) -> Void) {
-        let result = canSeek(to: time)
-        
-        if result.flag {
-            controller.seek(to: time,
-                            completionHandler: completionHandler)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-            completionHandler(false)
-        }
+        controller.seek(to: time,
+                        completionHandler: completionHandler)
     }
     
     open func seek(to time: CMTime) {
-        let result = canSeek(to: time)
-        
-        if result.flag {
-            controller.seek(to: time)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.seek(to: time)
     }
     
     open func seek(to time: Double,
                    completionHandler: @escaping (Bool) -> Void) {
-        let result = canSeek(to: CMTime(seconds: time,
-                                        preferredTimescale: configuration.preferredTimeScale))
-        
-        if result.flag {
-            controller.seek(to: time,
-                            completionHandler: completionHandler)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-            completionHandler(false)
-        }
+        controller.seek(to: time,
+                        completionHandler: completionHandler)
     }
     
     open func seek(to time: Double) {
-        let result = canSeek(to: CMTime(seconds: time,
-                                        preferredTimescale: configuration.preferredTimeScale))
-        
-        if result.flag {
-            controller.seek(to: time)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.seek(to: time)
     }
     
     open func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
@@ -303,59 +262,27 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     }
     
     open func seek(toOffset offset: Double) {
-        let result = canSeek(toOffset: offset)
-        
-        if result.flag {
-            controller.seek(toOffset: offset)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.seek(toOffset: offset)
     }
     
     open func seek(toOffset offset: Double,
                    completionHandler: @escaping (Bool) -> Void) {
-        let result = canSeek(toOffset: offset)
-        
-        if result.flag {
-            controller.seek(toOffset: offset,
-                            completionHandler: completionHandler)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-            completionHandler(false)
-        }
+        controller.seek(toOffset: offset,
+                        completionHandler: completionHandler)
     }
     
     open func seek(toPercentage percentage: Double,
                    completionHandler: @escaping (Bool) -> Void) {
-        let result = canSeek(toPercentage: percentage)
-        
-        if result.flag {
-            controller.seek(toPercentage: percentage,
-                            completionHandler: completionHandler)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-            completionHandler(false)
-        }
+        controller.seek(toPercentage: percentage,
+                        completionHandler: completionHandler)
     }
     
     open func seek(toPercentage percentage: Double) {
-        let result = canSeek(toPercentage: percentage)
-        
-        if result.flag {
-            controller.seek(toPercentage: percentage)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.seek(toPercentage: percentage)
     }
     
     open func step(by count: Int) {
-        let result = canStep(by: count)
-        
-        if result.flag {
-            controller.step(by: count)
-        } else {
-            unaivalableCommand(reason: result.reason!)
-        }
+        controller.step(by: count)
     }
     
     open func fastForward() {
@@ -466,111 +393,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
     private func unaivalableCommand(reason: AKPlayerUnavailableCommandReason) {
         delegate?.playerController(self, didEncounterUnavailableAction: reason)
     }
-    
-    private func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
-        
-        guard let currentMedia = currentMedia,
-              currentMedia.state.isReadyToPlay,
-              state.isLoaded
-                || state.isBuffering
-                || state.isPlaying
-                || state.isWaitingForNetwork
-                || state.isPaused else {
-            if currentMedia?.state.isIdle ?? false
-                || currentMedia?.state.isFailed ?? false
-                || state.isIdle
-                || state.isFailed
-                || state.isStopped {
-                return (false, .loadMediaFirst)
-            } else if currentMedia?.state.isAssetLoaded ?? false
-                        || currentMedia?.state.isPlayerItemLoaded ?? false
-                        || state.isLoading {
-                return (false, .waitTillMediaLoaded)
-            }
-            return (false, .actionNotPermitted)
-        }
-        
-        let result = currentMedia.canSeek(to: time)
-        
-        return result
-    }
-    
-    private func canSeek(toOffset offset: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
-        
-        let time = CMTimeAdd(currentTime,
-                             CMTimeMakeWithSeconds(offset,
-                                                   preferredTimescale: configuration.preferredTimeScale))
-        
-        let result = canSeek(to: time)
-        
-        return result
-    }
-    
-    private func canSeek(toPercentage percentage: Double) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
-        
-        let time = CMTime(seconds: (currentItem!.duration.seconds * (percentage / 100)),
-                          preferredTimescale: configuration.preferredTimeScale)
-        
-        let result = currentMedia!.canSeek(to: time)
-        
-        return result
-    }
-    
-    private func canStep(by count: Int) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
-        
-        guard let currentMedia = currentMedia,
-              currentMedia.state.isReadyToPlay,
-              state.isLoaded
-                || state.isBuffering
-                || state.isPlaying
-                || state.isWaitingForNetwork
-                || state.isPaused else {
-            if currentMedia?.state.isIdle ?? false
-                || currentMedia?.state.isFailed ?? false
-                || state.isIdle
-                || state.isFailed
-                || state.isStopped {
-                return (false, .loadMediaFirst)
-            } else if currentMedia?.state.isAssetLoaded ?? false
-                        || currentMedia?.state.isPlayerItemLoaded ?? false
-                        || state.isLoading {
-                return (false, .waitTillMediaLoaded)
-            }
-            return (false, .actionNotPermitted)
-        }
-        
-        let result = currentMedia.canStep(by: count)
-        
-        return (flag: result, reason: result ? nil : count.signum() == 1 ? .canNotStepForward : .canNotStepBackward)
-    }
-    
-    private func canPlay(at rate: AKPlaybackRate) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
-        
-        guard let currentMedia = currentMedia,
-              currentMedia.state.isReadyToPlay,
-              state.isLoaded
-                || state.isBuffering
-                || state.isPlaying
-                || state.isWaitingForNetwork
-                || state.isPaused else {
-            if currentMedia?.state.isIdle ?? false
-                || currentMedia?.state.isFailed ?? false
-                || state.isIdle
-                || state.isFailed
-                || state.isStopped {
-                return (false, .loadMediaFirst)
-            } else if currentMedia?.state.isAssetLoaded ?? false
-                        || currentMedia?.state.isPlayerItemLoaded ?? false
-                        || state.isLoading {
-                return (false, .waitTillMediaLoaded)
-            }
-            return (false, .actionNotPermitted)
-        }
-        
-        let result = currentMedia.canPlay(at: rate)
-        
-        return (flag: result, reason: result ? nil : .canNotPlayAtSpecifiedRate)
-    }
 }
 
 extension AKPlayerController {
@@ -579,49 +401,35 @@ extension AKPlayerController {
         // IMPORTANT: do NOT call `self.play()` (public) here — that would re-enter state routing.
         DispatchQueue.main.async { // ensure AVPlayer/UI updates happen on main as needed
             self.player.play()
-            // Let the controller re-evaluate state machine and notify delegates
-            self.processStateChange()
         }
     }
     
     public func performPlay(at rate: AKPlaybackRate) {
         DispatchQueue.main.async {
             self.player.rate = rate.rate
-            self.processStateChange()
         }
     }
     
     public func performPause() {
         DispatchQueue.main.async {
             self.player.pause()
-            self.processStateChange()
         }
     }
     
     public func performStop() {
         DispatchQueue.main.async {
             self.player.pause()
-            self.player.seek(to: .zero) // optional cleanup
-            self.processStateChange()
+            self.player.seek(to: .zero)
         }
     }
-    
-    public func performSeek(to time: CMTime, toleranceBefore: CMTime, toleranceAfter: CMTime, completionHandler: @escaping (Bool) -> Void) {
-        self.player.seek(to: time, toleranceBefore: toleranceBefore, toleranceAfter: toleranceAfter) { finished in
-            // update any seeking flags here
-            self.processStateChange()
-            completionHandler(finished)
+
+    public func performSeek(to targetSeek: AKSeek) {
+        playerSeekingThroughMediaService.seek(to: targetSeek)
+    }
+
+    public func performStep(by count: Int) {
+        DispatchQueue.main.async {
+            self.player.currentItem?.step(byCount: count)
         }
     }
-    
-    public func performSeek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        // implement conversion date -> CMTime if you support date-based seeking
-        completionHandler(false)
-    }
-    
-    public func performStep(by count: Int) { /* implement frame stepping */ }
-    public func performFastForward() { /* adjust rate or timeline */ }
-    public func performFastForward(at rate: AKPlaybackRate) { /* set player.rate = rate.rate */ }
-    public func performRewind() { /* adjust rate or timeline */ }
-    public func performRewind(at rate: AKPlaybackRate) { /* set player.rate = rate.rate */ }
 }

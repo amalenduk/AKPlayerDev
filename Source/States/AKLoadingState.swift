@@ -89,19 +89,7 @@ public class AKLoadingState: AKBaseState {
         autoPlay ? pause() : play()
     }
     
-    public override func stop() {
-        abortAssetInitialization()
-        stopPlayerItemObservers()
-        let controller = AKStoppedState(playerController: playerController)
-        change(controller)
-    }
-    
     // MARK: - Additional Helper Functions
-    
-    private func change(_ controller: AKPlayerStateControllerProtocol) {
-        subscriptions.removeAll()
-        playerController.change(controller)
-    }
     
     private func hanldeChangeInMedia(_ state: AKPlayableState) {
         switch state {
@@ -190,7 +178,7 @@ public class AKLoadingState: AKBaseState {
     
     private func resetPlayer() {
         if !playerController.player.timeControlStatus.isPaused {
-            playerController.player.pause()
+            playerController.performPause()
         }
         stopPlayerItemObservers()
         /*
@@ -209,23 +197,26 @@ public class AKLoadingState: AKBaseState {
         change(controller)
     }
     
-    public override func beforeLoad(media: any AKPlayable, autoPlay: Bool, position: CMTime?) {
+    override func beforeLoad(media: any AKPlayable, autoPlay: Bool, position: CMTime?) {
         abortAssetInitialization()
     }
     
-    public override func canSeek() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .waitTillMediaLoaded)
+    override func beforeStop() {
+        abortAssetInitialization()
+        stopPlayerItemObservers()
     }
     
-    public override func canFastForward() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .waitTillMediaLoaded)
+    public override func availability(for action: AKPlayerAction)
+    -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        switch action {
+        case .seek, .step, .fastForward, .rewind:
+            return (false, .waitTillMediaLoaded)
+        default:
+            return super.availability(for: action)
+        }
     }
     
-    public override func canRewind() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .waitTillMediaLoaded)
-    }
-    
-    public override func canStep() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .waitTillMediaLoaded)
+    override func beforeStateChange() {
+        subscriptions.removeAll()
     }
 }

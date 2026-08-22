@@ -46,38 +46,11 @@ public class AKStoppedState: AKBaseState {
         startObservingPlayerStatus()
         
         if !playerController.player.timeControlStatus.isPaused {
-            playerController.player.pause()
+            playerController.performStop()
         }
         
         playerController.currentMedia?.playerItem?.cancelPendingSeeks()
         playerController.player.replaceCurrentItem(with: nil)
-    }
-    
-    // MARK: - Commands
-    
-    public override func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func play(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func pause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .alreadyStopped)
-    }
-    
-    public override func togglePlayPause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func stop() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .alreadyStopped)
     }
     
     // MARK: - Additional Helper Functions
@@ -94,24 +67,17 @@ public class AKStoppedState: AKBaseState {
             }.store(in: &subscriptions)
     }
     
-    private func change(_ controller: AKPlayerStateControllerProtocol) {
+    public override func availability(for action: AKPlayerAction)
+    -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        switch action {
+        case .play, .pause, .stop, .seek,. fastForward, .rewind, .step:
+            return (false, .loadMediaFirst)
+        default:
+            return super.availability(for: action)
+        }
+    }
+    
+    public override func beforeStateChange() {
         subscriptions.removeAll()
-        playerController.change(controller)
-    }
-    
-    public override func canSeek() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canFastForward() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canRewind() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canStep() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
     }
 }

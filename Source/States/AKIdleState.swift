@@ -27,64 +27,14 @@ import AVFoundation
 
 public class AKIdleState: AKBaseState {
     
-    // MARK: - Properties
-    
     // MARK: - Init
     
     public init(playerController: AKPlayerControllerProtocol) {
         super.init(playerController: playerController, state: .idle)
     }
     
-    deinit { }
-    
-    public override func processStateChange() { }
-    
-    // MARK: - Commands
-    
-    public override func play() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func play(at rate: AKPlaybackRate) {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func pause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func togglePlayPause() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    public override func stop() {
-        playerController.delegate?.playerController(playerController,
-                                                    didEncounterUnavailableAction: .loadMediaFirst)
-    }
-    
-    // MARK: - Additional Helper Functions
-    
-    private func change(_ controller: AKPlayerStateControllerProtocol) {
-        playerController.change(controller)
-    }
-    
-    public override func canSeek() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canFastForward() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canRewind() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
-    }
-    
-    public override func canStep() -> (Bool, AKPlayerUnavailableCommandReason?) {
-        return (false, .loadMediaFirst)
+    public override func availability(for action: AKPlayerAction)
+    -> (Bool, AKPlayerUnavailableCommandReason?) {
+        (false, .loadMediaFirst)
     }
 }
