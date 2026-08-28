@@ -59,7 +59,8 @@ public class AKPlayingState: AKBaseState {
     // MARK: - Commands
     
     public override func play(at rate: AKPlaybackRate) {
-        guard playerController.currentMedia!.canPlay(at: rate) else {
+        guard let currentMedia = playerController.currentMedia,
+              currentMedia.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
@@ -86,7 +87,7 @@ public class AKPlayingState: AKBaseState {
             }.store(in: &subscriptions)
         
         playerController.player.publisher(for: \.timeControlStatus)
-            .receive(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] timeControlStatus in
                 guard playerController.player.currentItem == nil else { return }
                 stop()

@@ -69,7 +69,7 @@ public extension AKPlayable {
     func createAsset() {
         manager.createAsset()
     }
-
+    
     func validateAssetPlayability() async throws {
         try await manager.validateAssetPlayability()
     }
@@ -109,8 +109,7 @@ public extension AKPlayable {
         return manager.canPlay(at: rate)
     }
     
-    func canSeek(to time: CMTime) -> (flag: Bool,
-                                      reason: AKPlayerUnavailableCommandReason?) {
+    func canSeek(to time: CMTime) -> Bool {
         return manager.canSeek(to: time)
     }
 }
@@ -294,5 +293,16 @@ public extension AKPlayable {
     var externalMetadata: [AVMetadataItem] {
         get { playerItem?.externalMetadata ?? [] }
         set { playerItem?.externalMetadata = newValue }
+    }
+}
+
+public extension AKPlayable {
+    
+    var trackSelection: AKTrackSelectionServiceProtocol {
+        return manager.trackSelectionService
+    }
+    
+    var seekingThroughMedia: AKSeekingThroughMediaServiceProtocol {
+        return manager.seekingThroughMediaService
     }
 }

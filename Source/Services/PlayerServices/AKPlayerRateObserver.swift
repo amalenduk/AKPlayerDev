@@ -26,12 +26,10 @@
 import AVFoundation
 import Combine
 
-// https://developer.apple.com/documentation/avfoundation/media_playback/controlling_the_transport_behavior_of_a_player
-
 public struct AKPlaybackRateChange {
-    let previousRate: AKPlaybackRate
-    let currentRate: AKPlaybackRate
-    let reason: AVPlayer.RateDidChangeReason
+    public let previousRate: AKPlaybackRate
+    public let currentRate: AKPlaybackRate
+    public let reason: AVPlayer.RateDidChangeReason
 }
 
 public protocol AKPlayerRateObserverProtocol {
@@ -60,9 +58,10 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     
     private var subscriptions = Set<AnyCancellable>()
     
-    private var oldRate: AKPlaybackRate!
+    // Safely typed as standard optionals
+    private var oldRate: AKPlaybackRate?
     
-    private var newRate: AKPlaybackRate!
+    private var newRate: AKPlaybackRate?
     
     // MARK: - Init
     
@@ -77,29 +76,39 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     open func startObserving() {
         guard !isObserving else { return }
         
+        // Populate initial baseline rate safely from the player directly
+        let initialRate = AKPlaybackRate(rate: player.rate)
+        self.oldRate = initialRate
+        self.newRate = initialRate
+        
         rateChangeObserver = player.observe(\AVPlayer.rate,
-                                             options: [.old, .new, .initial],
-                                             changeHandler: { [unowned self] player, change in
-            guard let newValue = change.newValue,
-                  let oldValue = change.oldValue else { return }
+                                             options: [.old, .new],
+                                             changeHandler: { [weak self] player, change in
+            guard let self = self else { return }
             
-            newRate = AKPlaybackRate(rate: newValue)
-            oldRate = AKPlaybackRate(rate: oldValue)
+            if let newValue = change.newValue {
+                self.oldRate = self.newRate ?? AKPlaybackRate(rate: change.oldValue ?? player.rate)
+                self.newRate = AKPlaybackRate(rate: newValue)
+            }
         })
         
         NotificationCenter.default.publisher(for: AVPlayer.rateDidChangeNotification, object: player)
             .receive(on: DispatchQueue.global(qos: .background))
-            .sink { [unowned self] notification in
+            .sink { [weak self] notification in
+                guard let self = self else { return }
                 guard let userInfo = notification.userInfo,
-                      let key = userInfo[AVPlayer.rateDidChangeReasonKey] as? String else {
+                      let reason = userInfo[AVPlayer.rateDidChangeReasonKey] as? AVPlayer.RateDidChangeReason else {
                     return
                 }
                 
-                let reason = AVPlayer.RateDidChangeReason(rawValue: key)
-                let change = AKPlaybackRateChange(previousRate: oldRate,
-                                                  currentRate: newRate,
+                // Fallback safely to current player rate if values aren't populated yet
+                let previous = self.oldRate ?? AKPlaybackRate(rate: self.player.rate)
+                let current = self.newRate ?? AKPlaybackRate(rate: self.player.rate)
+                
+                let change = AKPlaybackRateChange(previousRate: previous,
+                                                  currentRate: current,
                                                   reason: reason)
-                _rateChangePublisher.send(change)
+                self._rateChangePublisher.send(change)
             }
             .store(in: &subscriptions)
         
@@ -109,6 +118,7 @@ open class AKPlayerRateObserver: AKPlayerRateObserverProtocol {
     open func stopObserving() {
         guard isObserving else { return }
         rateChangeObserver?.invalidate()
+        rateChangeObserver = nil
         subscriptions.removeAll()
         isObserving = false
     }

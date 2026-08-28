@@ -54,7 +54,7 @@ public class AKPausedState: AKBaseState {
             playerController.performPause()
         }
         
-        if playerItemDidPlayToEndTime {
+        if playerItemDidPlayToEndTime, let currentMedia = playerController.currentMedia {
             playerController.delegate?.playerController(playerController,
                                                         didReachEndAt: playerController.currentTime,
                                                         for: playerController.currentMedia!)
@@ -64,9 +64,11 @@ public class AKPausedState: AKBaseState {
     // MARK: - Commands
     
     public override func play() {
-        guard playerController.currentMedia!.state.isReadyToPlay else {
-            load(media: playerController.currentMedia!,
-                 autoPlay: true)
+        guard let currentMedia = playerController.currentMedia,
+              playerController.currentMedia!.state.isReadyToPlay else {
+            if let media = playerController.currentMedia {
+                load(media: media, autoPlay: true)
+            }
             return
         }
         
@@ -81,7 +83,8 @@ public class AKPausedState: AKBaseState {
     }
     
     public override func play(at rate: AKPlaybackRate) {
-        guard playerController.currentMedia!.state.isReadyToPlay else {
+        guard let currentMedia = playerController.currentMedia,
+              playerController.currentMedia!.state.isReadyToPlay else {
             let controller = AKLoadingState(playerController: playerController,
                                             media: playerController.currentMedia!,
                                             autoPlay: true,
@@ -89,7 +92,7 @@ public class AKPausedState: AKBaseState {
             return change(controller)
         }
         
-        guard playerController.currentMedia!.canPlay(at: rate) else {
+        guard currentMedia.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return
@@ -105,7 +108,7 @@ public class AKPausedState: AKBaseState {
         }
         change(controller)
     }
-
+    
     // MARK: - Additional Helper Functions
     
     private func startObservingPlayerStatus() {
@@ -128,8 +131,9 @@ public class AKPausedState: AKBaseState {
     }
     
     private func startObservingPlayerItemNotifications() {
+        guard let playerItem = playerController.currentMedia?.playerItem else { return }
         NotificationCenter.default.publisher(for: .AVPlayerItemFailedToPlayToEndTime,
-                                             object: playerController.currentMedia!.playerItem!)
+                                             object: playerItem)
         .receive(on: DispatchQueue.main)
         .sink { [weak self] notification in
             guard let self,

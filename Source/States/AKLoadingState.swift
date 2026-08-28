@@ -55,6 +55,7 @@ public class AKLoadingState: AKBaseState {
     
     deinit {
         subscriptions.removeAll()
+        task?.cancel()
     }
     
     public override func processStateChange() {
@@ -109,7 +110,9 @@ public class AKLoadingState: AKBaseState {
         case .readyToPlay:
             becameReadyToPlay()
         case .failed:
-            failedToPrepareForPlayback(with: media.error!)
+            if let error = media.error {
+                failedToPrepareForPlayback(with: error)
+            }
         }
     }
     
@@ -120,8 +123,11 @@ public class AKLoadingState: AKBaseState {
     private func validateAssetPlayability() async {
         do {
             try await media.validateAssetPlayability()
+        } catch let playerError as AKPlayerError {
+            failedToPrepareForPlayback(with: playerError)
         } catch {
-            failedToPrepareForPlayback(with: error as! AKPlayerError)
+            // Will not call
+            failedToPrepareForPlayback(with: .playerCanNoLongerPlay(error: error))
         }
     }
     
@@ -140,7 +146,9 @@ public class AKLoadingState: AKBaseState {
          sure you capture all state changes to the item’s status.
          */
         media.startPlayerItemReadinessObserver()
-        playerController.player.replaceCurrentItem(with: media.playerItem!)
+        if let item = media.playerItem {
+            playerController.player.replaceCurrentItem(with: item)
+        }
     }
     
     private func becameReadyToPlay() {

@@ -46,7 +46,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         didSet {
             stateSubject.send(state)
             media.delegate?.akMedia(media,
-                                    didChangedState: state)
+                                    didChangeState: state)
         }
     }
     
@@ -56,17 +56,33 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     
     private let stateSubject = PassthroughSubject<AKPlayableState, Never>()
     
-    private var playerItemInitService: AKPlayerItemInitServiceProtocol!
+    private var playerItemInitService: AKPlayerItemInitServiceProtocol
+    private var _seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol!
+    private var _trackSelectionService: AKTrackSelectionServiceProtocol!
     
-    private var seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol!
+    // Distinct subscription sets so lifecycle calls don't clear each other
+    private var readinessSubscriptions = Set<AnyCancellable>()
+    private var assetKeySubscriptions = Set<AnyCancellable>()
     
-    private var subscriptions: Set<AnyCancellable> = Set<AnyCancellable>()
+    public var seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
+        _seekingThroughMediaService
+    }
+    public var trackSelectionService: AKTrackSelectionServiceProtocol {
+        _trackSelectionService
+    }
     
-    // MARK: - Init
+    // MARK: - Init & Deinit
     
     public init(media: AKPlayable) {
         self.media = media
-        playerItemInitService = AKPlayerItemInitService(with: media)
+        self.playerItemInitService = AKPlayerItemInitService(with: media)
+        super.init()
+        self._seekingThroughMediaService = AKSeekingThroughMediaService { [weak self] in
+            return self?.playerItem
+        }
+        self._trackSelectionService = AKTrackSelectionService { [weak self] in
+            return self?.playerItem
+        }
     }
     
     deinit {
@@ -87,11 +103,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     open func validateAssetPlayability() async throws {
         assert(state.isAssetLoaded,
                "This function requires the asset to be loaded first.")
-        do {
-            try await playerItemInitService.validateAssetPlayability()
-        } catch {
-            throw error
-        }
+        try await playerItemInitService.validateAssetPlayability()
     }
     
     open func createPlayerItemFromAsset() {
@@ -99,17 +111,23 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
                "This function requires the asset to be loaded first.")
         self.error = nil
         playerItemInitService.createPlayerItemFromAsset()
-        seekingThroughMediaService = AKSeekingThroughMediaService(with: playerItemInitService.playerItem!)
+        
+        Task {
+            await _trackSelectionService.resetSession()
+        }
         state = .playerItemLoaded
     }
     
     open func abortAssetInitialization() {
-        playerItemInitService?.abortAssetInitialization()
+        playerItemInitService.abortAssetInitialization()
     }
     
     open func startPlayerItemReadinessObserver() {
-        guard state.isPlayerItemLoaded
-                || state.isReadyToPlay else { return }
+        assert(state.isPlayerItemLoaded || state.isReadyToPlay,
+               "Cannot start readiness observer before player item is loaded.")
+        
+        guard let item = playerItem else { return }
+        stopPlayerItemReadinessObserver()
         
         playerItem!.publisher(for: \.status,
                               options: [.initial,
@@ -125,11 +143,11 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
             default: break
             }
         }
-        .store(in: &subscriptions)
+        .store(in: &readinessSubscriptions)
     }
     
     open func stopPlayerItemReadinessObserver() {
-        subscriptions.removeAll()
+        readinessSubscriptions.removeAll()
     }
     
     open func startPlayerItemAssetKeysObserver() {
@@ -140,7 +158,7 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
     }
     
     open func stopPlayerItemAssetKeysObserver() {
-        subscriptions.removeAll()
+        assetKeySubscriptions.removeAll()
     }
     
     open func canStep(by count: Int) -> Bool {
@@ -179,6 +197,14 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         }
     }
     
+    open func canSeek(to time: CMTime) -> Bool {
+        guard state.isPlayerItemLoaded
+                || state.isReadyToPlay else {
+            return false
+        }
+        return seekingThroughMediaService.canSeek(to: time)
+    }
+    
     open func canSeek(to time: CMTime) -> (flag: Bool,
                                            reason: AKPlayerUnavailableCommandReason?) {
         guard state.isPlayerItemLoaded
@@ -202,9 +228,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] tracks in
             media.delegate?.akMedia(media,
-                                    didChangeTracks: tracks)
+                                    didChangeTracksTo: tracks)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canStepForward,
                               options: [.initial,
@@ -212,9 +238,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canStepForward in
             media.delegate?.akMedia(media,
-                                    didChangeCanStepForwardStatus: canStepForward)
+                                    didChangeCanStepForwardStatusTo: canStepForward)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canStepBackward,
                               options: [.initial,
@@ -222,9 +248,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canStepBackward in
             media.delegate?.akMedia(media,
-                                    didChangeCanStepBackwardStatus: canStepBackward)
+                                    didChangeCanStepBackwardStatusTo: canStepBackward)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         
         playerItem!.publisher(for: \.presentationSize,
@@ -233,9 +259,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] presentationSize in
             media.delegate?.akMedia(media,
-                                    didChangePresentationSize: presentationSize)
+                                    didChangePresentationSizeTo: presentationSize)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.loadedTimeRanges,
                               options: [.initial,
@@ -243,9 +269,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] loadedTimeRanges in
             media.delegate?.akMedia(media,
-                                    didChangeLoadedTimeRanges: loadedTimeRanges)
+                                    didChangeLoadedTimeRangesTo: loadedTimeRanges)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.seekableTimeRanges,
                               options: [.initial,
@@ -253,9 +279,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] seekableTimeRanges in
             media.delegate?.akMedia(media,
-                                    didChangeSeekableTimeRanges: seekableTimeRanges)
+                                    didChangeSeekableTimeRangesTo: seekableTimeRanges)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.duration,
                               options: [.initial,
@@ -263,9 +289,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] duration in
             media.delegate?.akMedia(media,
-                                    didChangeItemDuration: duration)
+                                    didChangeItemDurationTo: duration)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.timebase,
                               options: [.initial,
@@ -273,9 +299,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] timebase in
             media.delegate?.akMedia(media,
-                                    didChangeTimebase: timebase)
+                                    didChangeTimebaseTo: timebase)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canPlayReverse,
                               options: [.initial,
@@ -283,9 +309,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayReverse in
             media.delegate?.akMedia(media,
-                                    didChangeCanPlayReverseStatus: canPlayReverse)
+                                    didChangeCanPlayReverseStatusTo: canPlayReverse)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canPlayFastForward,
                               options: [.initial,
@@ -293,9 +319,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayFastForward in
             media.delegate?.akMedia(media,
-                                    didChangeCanPlayFastForwardStatus: canPlayFastForward)
+                                    didChangeCanPlayFastForwardStatusTo: canPlayFastForward)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canPlayFastReverse,
                               options: [.initial,
@@ -303,9 +329,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlayFastReverse in
             media.delegate?.akMedia(media,
-                                    didChangeCanPlayFastReverseStatus: canPlayFastReverse)
+                                    didChangeCanPlayFastReverseStatusTo: canPlayFastReverse)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canPlaySlowForward,
                               options: [.initial,
@@ -313,9 +339,9 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlaySlowForward in
             media.delegate?.akMedia(media,
-                                    didChangeCanPlaySlowForwardStatus: canPlaySlowForward)
+                                    didChangeCanPlaySlowForwardStatusTo: canPlaySlowForward)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
         
         playerItem!.publisher(for: \.canPlaySlowReverse,
                               options: [.initial,
@@ -323,8 +349,8 @@ open class AKMediaManager: NSObject, AKMediaManagerProtocol {
         .receive(on: DispatchQueue.main)
         .sink { [unowned self] canPlaySlowReverse in
             media.delegate?.akMedia(media,
-                                    didChangeCanPlaySlowReverseStatus: canPlaySlowReverse)
+                                    didChangeCanPlaySlowReverseStatusTo: canPlaySlowReverse)
         }
-        .store(in: &subscriptions)
+        .store(in: &assetKeySubscriptions)
     }
 }

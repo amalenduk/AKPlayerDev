@@ -67,6 +67,7 @@ class SimpleVideoViewController: UIViewController {
     var isTracking: Bool = false
     static let session = AVAudioSession.sharedInstance()
     let audioSession = AKAudioSessionService(audioSession: session)
+    private var media: AKPlayable?
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -166,57 +167,159 @@ class SimpleVideoViewController: UIViewController {
     }
     
     @objc func audioButtonAction(_ sender: UIButton) {
-        guard let asset = self.player.currentItem?.asset else { return }
-        Task {
-            let group = try await asset.loadMediaSelectionGroup(for: .audible)
-            
-            guard let group, group.options.count > 0 else { setDebugMessage("No tracks found"); return }
-            let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
-            
-            for option in group.options {
-                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
-                    self.player.currentMedia?.playerItem?.select(option, in: group)
-                }
-                alert.addAction(action)
+//        guard let asset = self.player.currentItem?.asset else { return }
+//        Task {
+//            let group = try await asset.loadMediaSelectionGroup(for: .audible)
+//            
+//            guard let group, group.options.count > 0 else { setDebugMessage("No tracks found"); return }
+//            let alert = UIAlertController(title: "Audio", message: "Select", preferredStyle: .actionSheet)
+//            
+//            for option in group.options {
+//                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+//                    self.player.currentMedia?.playerItem?.select(option, in: group)
+//                }
+//                alert.addAction(action)
+//            }
+//            
+//            if group.allowsEmptySelection {
+//                let action = UIAlertAction(title: "Off", style: .default) { (_) in
+//                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+//                }
+//                alert.addAction(action)
+//            }
+//            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+//            alert.addAction(destruct)
+//            present(alert, animated: true, completion: nil)
+//        }
+//        
+//
+        
+        guard let trackService = self.player.currentMedia?.trackSelection else {
+                setDebugMessage("Track selection service unavailable")
+                return
             }
             
-            if group.allowsEmptySelection {
-                let action = UIAlertAction(title: "Off", style: .default) { (_) in
-                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+            Task { [weak self] in
+                guard let self = self else { return }
+                
+                do {
+                    // 1. Fetch available options and current selection state from your service
+                    let info = try await trackService.availableTracks(for: .audio)
+                    
+                    guard !info.options.isEmpty else {
+                        self.setDebugMessage("No subtitles found")
+                        return
+                    }
+                    
+                    let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
+                    
+                    // 2. Iterate through the service's domain wrapper options (AKMediaTrackOption)
+                    for trackOption in info.options {
+                        // Determine checkmark or label styling if selected
+                        let isSelected = (trackOption == info.selected)
+                        let title = isSelected ? "✓ \(trackOption.title)" : trackOption.title
+                        
+                        let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
+                            Task {
+                                try? await self?.player.currentMedia?.trackSelection.select(trackOption, for: .audio)
+                            }
+                        }
+                        alert.addAction(action)
+                    }
+                    
+                    // 3. Add Cancel action
+                    let cancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+                    alert.addAction(cancel)
+                    
+                    // Popover presentation anchor for iPad compatibility
+                    if let popover = alert.popoverPresentationController {
+                        popover.sourceView = sender
+                        popover.sourceRect = sender.bounds
+                    }
+                    
+                    self.present(alert, animated: true, completion: nil)
+                    
+                } catch {
+                    self.setDebugMessage("Failed to load subtitles: \(error.localizedDescription)")
                 }
-                alert.addAction(action)
             }
-            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
-            alert.addAction(destruct)
-            present(alert, animated: true, completion: nil)
-        }
     }
     
     @objc func subtitleButtonAction(_ sender: UIButton) {
-        guard let asset = self.player.currentItem?.asset else { return }
-        Task {
-            let group = try await asset.loadMediaSelectionGroup(for: .legible)
-            
-            guard let group, group.options.count > 0 else { setDebugMessage("No subtitles found"); return }
-            let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
-            
-            for option in group.options {
-                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
-                    self.player.currentMedia?.playerItem?.select(option, in: group)
-                }
-                alert.addAction(action)
+//        guard let asset = self.player.currentItem?.asset else { return }
+//        Task {
+//            let group = try await asset.loadMediaSelectionGroup(for: .legible)
+//            
+//            guard let group, group.options.count > 0 else { setDebugMessage("No subtitles found"); return }
+//            let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
+//            
+//            for option in group.options {
+//                let action = UIAlertAction(title: option.displayName, style: .default) { (_) in
+//                    self.player.currentMedia?.playerItem?.select(option, in: group)
+//                }
+//                alert.addAction(action)
+//            }
+//            
+//            if group.allowsEmptySelection {
+//                let action = UIAlertAction(title: "Off", style: .default) { (_) in
+//                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+//                }
+//                alert.addAction(action)
+//            }
+//            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
+//            alert.addAction(destruct)
+//            present(alert, animated: true, completion: nil)
+//        }
+        
+        guard let trackService = self.player.currentMedia?.trackSelection else {
+                setDebugMessage("Track selection service unavailable")
+                return
             }
             
-            if group.allowsEmptySelection {
-                let action = UIAlertAction(title: "Off", style: .default) { (_) in
-                    self.player.currentMedia?.playerItem?.select(nil, in: group)
+            Task { [weak self] in
+                guard let self = self else { return }
+                
+                do {
+                    // 1. Fetch available options and current selection state from your service
+                    let info = try await trackService.availableTracks(for: .subtitle)
+                    
+                    guard !info.options.isEmpty else {
+                        self.setDebugMessage("No subtitles found")
+                        return
+                    }
+                    
+                    let alert = UIAlertController(title: "Subtitle", message: "Select", preferredStyle: .actionSheet)
+                    
+                    // 2. Iterate through the service's domain wrapper options (AKMediaTrackOption)
+                    for trackOption in info.options {
+                        // Determine checkmark or label styling if selected
+                        let isSelected = (trackOption == info.selected)
+                        let title = isSelected ? "✓ \(trackOption.title)" : trackOption.title
+                        
+                        let action = UIAlertAction(title: title, style: .default) { [weak self] _ in
+                            Task {
+                                try? await self?.player.currentMedia?.trackSelection.select(trackOption, for: .subtitle)
+                            }
+                        }
+                        alert.addAction(action)
+                    }
+                    
+                    // 3. Add Cancel action
+                    let cancel = UIAlertAction(title: "Cancel", style: .cancel, handler: nil)
+                    alert.addAction(cancel)
+                    
+                    // Popover presentation anchor for iPad compatibility
+                    if let popover = alert.popoverPresentationController {
+                        popover.sourceView = sender
+                        popover.sourceRect = sender.bounds
+                    }
+                    
+                    self.present(alert, animated: true, completion: nil)
+                    
+                } catch {
+                    self.setDebugMessage("Failed to load subtitles: \(error.localizedDescription)")
                 }
-                alert.addAction(action)
             }
-            let destruct = UIAlertAction(title: "Cancel", style: .destructive, handler: nil)
-            alert.addAction(destruct)
-            present(alert, animated: true, completion: nil)
-        }
     }
     
     // MARK: - User Interactions
@@ -290,6 +393,7 @@ class SimpleVideoViewController: UIViewController {
                                                                                                                                                           .availableMediaCharacteristicsWithMediaSelectionOptions],
                             staticMetadata: staticMetadata)
         media.delegate = self
+        self.media = media
         player.load(media: media, autoPlay: autoPlaySwitch.isOn)
     }
     
@@ -308,11 +412,11 @@ class SimpleVideoViewController: UIViewController {
         //            ])
         
         //player.player.replaceCurrentItem(with: nil)
-        try? audioSession.audioSession.setActive(false)
+        // try? audioSession.audioSession.setActive(false)
         //        print(CMTimeGetSeconds(player.currentMedia!.getLivePosition()) , "", CMTimeGetSeconds(player.currentMedia!.currentTime), player.currentMedia!.configuredTimeOffsetFromLive.seconds)
         //        player.seek(to: player.currentMedia!.getLivePosition().seconds - 0.01)
         
-        
+        print(media?.seekingThroughMedia.getRangesAvailable())
     }
     
     @IBAction func testTwoButtonAction(_ sender: Any) {
@@ -418,15 +522,20 @@ extension SimpleVideoViewController: AKPlayerDelegate {
     
     func akPlayer(_ player: AKPlayer, didChangeCurrentTimeTo currentTime: CMTime, for media: AKPlayable) {
         DispatchQueue.main.async {
+            let displayTime = player.isSeeking
+                ? (player.lastRequestedSeekPosition?.time ?? currentTime)
+                : currentTime
+
             if media.isLive() {
-                self.currentTimeLabel.text = "Current Timing: " + "\(player.seekPosition?.time.stringValue ?? currentTime.stringValue)"
+                self.currentTimeLabel.text = "Current Timing: " + displayTime.stringValue
                 
                 self.currentTimeLabel.textColor = media.isLivePositionCloseToLive() ? .red : .green
                 
-                self.setSliderProgress(player.seekPosition?.time.seconds ?? currentTime.seconds, itemDuration: media.getLivePosition().seconds)
+                self.setSliderProgress(displayTime.seconds, itemDuration: media.getLivePosition().seconds)
             } else {
-                self.currentTimeLabel.text = "Current Timing: " + "\(currentTime.seconds)"
-                self.setSliderProgress(player.seekPosition?.time.seconds ?? currentTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
+                self.currentTimeLabel.text = "Current Timing: " + "\(displayTime.seconds)"
+                
+                self.setSliderProgress(displayTime.seconds, itemDuration: player.currentItem?.duration.seconds ?? 0)
             }
         }
     }
@@ -463,7 +572,7 @@ extension SimpleVideoViewController: AKPlayerDelegate {
 
 extension SimpleVideoViewController: AKMediaDelegate {
     
-    func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) {
+    func akMedia(_ media: AKPlayable, didChangeItemDurationTo itemDuration: CMTime) {
         DispatchQueue.main.async {
             if media.isLive() {
                 self.durationLabel.text = "Duration: " + "Live"
@@ -473,21 +582,21 @@ extension SimpleVideoViewController: AKMediaDelegate {
         }
     }
     
-    func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) {
+    func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatusTo canStepForward: Bool) {
         DispatchQueue.main.async {
             // self.stepForwardButton.isEnabled = canStepForward
         }
         
     }
     
-    func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) {
+    func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatusTo canStepBackward: Bool) {
         DispatchQueue.main.async {
             // self.stepBackwardButton.isEnabled = canStepBackward
         }
         
     }
     
-    func akMedia(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) {
+    func akMedia(_ media: AKPlayable, didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue]) {
         var availableDuration: Double {
             guard let timeRange = player.currentItem?.loadedTimeRanges.first?.timeRangeValue else {
                 return 0.0
@@ -503,9 +612,6 @@ extension SimpleVideoViewController: AKMediaDelegate {
     }
     
     func akMedia(_ media: AKPlayable,
-                 didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) {
-    }
-    
-    func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) {
+                 didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue]) {
     }
 }

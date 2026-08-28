@@ -27,70 +27,62 @@ import AVFoundation
 
 public protocol AKMediaDelegate: AnyObject {
     func akMedia(_ media: AKPlayable,
-                 didChangedState state: AKPlayableState)
+                 didChangeState state: AKPlayableState)
     func akMedia(_ media: AKPlayable,
-                 didLoadedAssetProperties properties: [AVPartialAsyncProperty<AVAsset>],
-                 with error: Error?,
-                 forAsset asset: AVURLAsset)
+                 didChangeItemDurationTo itemDuration: CMTime)
     func akMedia(_ media: AKPlayable,
-                 didChangeItemDuration itemDuration: CMTime)
+                 didChangeTimebaseTo timebase: CMTimebase?)
     func akMedia(_ media: AKPlayable,
-                 didChangeTimebase timebase: CMTimebase?)
+                 didChangeCanPlayReverseStatusTo canPlayReverse: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayReverseStatus canPlayReverse: Bool)
+                 didChangeCanPlayFastForwardStatusTo canPlayFastForward: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayFastForwardStatus canPlayFastForward: Bool)
+                 didChangeCanPlayFastReverseStatusTo canPlayFastReverse: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool)
+                 didChangeCanPlaySlowForwardStatusTo canPlaySlowForward: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlaySlowForwardStatus canPlaySlowForward: Bool)
+                 didChangeCanPlaySlowReverseStatusTo canPlaySlowReverse: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlaySlowReverseStatus canPlaySlowReverse: Bool)
+                 didChangeCanStepForwardStatusTo canStepForward: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanStepForwardStatus canStepForward: Bool)
+                 didChangeCanStepBackwardStatusTo canStepBackward: Bool)
     func akMedia(_ media: AKPlayable,
-                 didChangeCanStepBackwardStatus canStepBackward: Bool)
+                 didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue])
     func akMedia(_ media: AKPlayable,
-                 didChangeLoadedTimeRanges loadedTimeRanges: [NSValue])
+                 didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue])
     func akMedia(_ media: AKPlayable,
-                 didChangeSeekableTimeRanges seekableTimeRanges: [NSValue])
+                 didChangeTracksTo tracks: [AVPlayerItemTrack])
     func akMedia(_ media: AKPlayable,
-                 didChangeTracks tracks: [AVPlayerItemTrack])
-    func akMedia(_ media: AKPlayable,
-                 didChangePresentationSize size: CGSize)
+                 didChangePresentationSizeTo size: CGSize)
 }
 
 public extension AKMediaDelegate {
     func akMedia(_ media: AKPlayable,
-                 didChangedState state: AKPlayableState) { }
+                 didChangeState state: AKPlayableState) { }
     func akMedia(_ media: AKPlayable,
-                 didLoadedAssetProperties properties: [AVPartialAsyncProperty<AVAsset>],
-                 with error: Error?,
-                 forAsset asset: AVURLAsset) { }
+                 didChangeItemDurationTo itemDuration: CMTime) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeItemDuration itemDuration: CMTime) { }
+                 didChangeTimebaseTo timebase: CMTimebase?) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeTimebase timebase: CMTimebase?) { }
+                 didChangeCanPlayReverseStatusTo canPlayReverse: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayReverseStatus canPlayReverse: Bool) { }
+                 didChangeCanPlayFastForwardStatusTo canPlayFastForward: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayFastForwardStatus canPlayFastForward: Bool) { }
+                 didChangeCanPlayFastReverseStatusTo canPlayFastReverse: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlayFastReverseStatus canPlayFastReverse: Bool) { }
+                 didChangeCanPlaySlowForwardStatusTo canPlaySlowForward: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlaySlowForwardStatus canPlaySlowForward: Bool) { }
+                 didChangeCanPlaySlowReverseStatusTo canPlaySlowReverse: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanPlaySlowReverseStatus canPlaySlowReverse: Bool) { }
+                 didChangeCanStepForwardStatusTo canStepForward: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanStepForwardStatus canStepForward: Bool) { }
+                 didChangeCanStepBackwardStatusTo canStepBackward: Bool) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeCanStepBackwardStatus canStepBackward: Bool) { }
+                 didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue]) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) { }
+                 didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue]) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) { }
+                 didChangeTracksTo tracks: [AVPlayerItemTrack]) { }
     func akMedia(_ media: AKPlayable,
-                 didChangeTracks tracks: [AVPlayerItemTrack]) { }
-    func akMedia(_ media: AKPlayable,
-                 didChangePresentationSize size: CGSize) { }
+                 didChangePresentationSizeTo size: CGSize) { }
 }

@@ -77,8 +77,8 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         return playerController.isSeeking
     }
     
-    open var seekPosition: AKSeekPosition? {
-        return playerController.seekPosition
+    open var lastRequestedSeekPosition: AKSeekPosition? {
+        return playerController.lastRequestedSeekPosition
     }
     
     public var volume: Float {
@@ -239,14 +239,14 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         case .skipBackward:
             guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
+            guard currentMedia.seekingThroughMedia.canSeek(to: CMTime(seconds: currentTime.seconds - event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)
         case .skipForward:
             guard let currentMedia = currentMedia,
                   let event = event as? MPSkipIntervalCommandEvent else { return .commandFailed }
-            guard currentMedia.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
+            guard currentMedia.seekingThroughMedia.canSeek(to: CMTime(seconds: currentTime.seconds + event.interval, preferredTimescale: configuration.preferredTimeScale)).flag else {
                 return .commandFailed
             }
             seek(toOffset: event.interval)
@@ -408,16 +408,6 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
         playerController.seek(to: time)
     }
     
-    open func seek(to date: Date,
-                   completionHandler: @escaping (Bool) -> Void) {
-        playerController.seek(to: date,
-                              completionHandler: completionHandler)
-    }
-    
-    open func seek(to date: Date) {
-        playerController.seek(to: date)
-    }
-    
     open func seek(toOffset offset: Double) {
         playerController.seek(toOffset: offset)
     }
@@ -535,11 +525,17 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
     
     private func getNowPlayableDynamicMetadata() -> AKNowPlayableDynamicMetadataProtocol? {
         guard let currentMedia = currentMedia else { return nil }
-        let position = currentMedia.isLive() ? nil : currentItem?.currentTime().isValid ?? false ? Double(currentItem!.currentTime().seconds) : nil
-        let duration = currentMedia.isLive() ? nil : currentItem?.duration.isValid ?? false ? Float(currentItem!.duration.seconds) : nil
-        let playbackProgress = currentMedia.isLive() ? nil : (position != nil) && (duration != nil) ? Float(duration! / Float(currentItem!.currentTime().seconds)) : nil
         
-        let nynamicMetadata = AKNowPlayableDynamicMetadata(rate: Double(rate.rate),
+        let position = currentMedia.isLive() ? nil : (currentItem?.currentTime().isValid ?? false ? Double(currentItem!.currentTime().seconds) : nil)
+        let duration = currentMedia.isLive() ? nil : (currentItem?.duration.isValid ?? false ? Float(currentItem!.duration.seconds) : nil)
+        
+        // Fix: Guard against zero duration and calculate position / duration cleanly
+        let playbackProgress: Float? = {
+            guard let pos = position, let dur = duration, dur > 0 else { return nil }
+            return min(max(Float(pos / Double(dur)), 0.0), 1.0)
+        }()
+        
+        let dynamicMetadata = AKNowPlayableDynamicMetadata(rate: Double(rate.rate),
                                                            defaultRate: Double(defaultRate.rate),
                                                            position: position,
                                                            duration: duration,
@@ -553,7 +549,7 @@ public class AKPlayerManager: NSObject, AKPlayerManagerProtocol {
                                                            playbackQueueCount: nil,
                                                            playbackQueueIndex: nil,
                                                            serviceIdentifier: nil)
-        return nynamicMetadata
+        return dynamicMetadata
     }
     
     private func actionNotPermitted() {
@@ -667,7 +663,7 @@ extension AKPlayerManager: AKApplicationLifeCycleEventsObserverDelegate {
             } else {
                 
                 if !autoPlay
-                     && !state.isPlaying {
+                    && !state.isPlaying {
                     
                     savePlayerStateSnapshot(playbackInterruptionReason: .applicationResignActive,
                                             shouldResume: false)

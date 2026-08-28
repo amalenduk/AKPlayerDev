@@ -57,8 +57,8 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
         return manager.isSeeking
     }
     
-    open var seekPosition: AKSeekPosition? {
-        return manager.seekPosition
+    open var lastRequestedSeekPosition: AKSeekPosition? {
+        return manager.lastRequestedSeekPosition
     }
     
     open var state: AKPlayerState {
@@ -207,16 +207,6 @@ open class AKPlayer: NSObject, AKPlayerProtocol {
     
     open func seek(to time: Double) {
         manager.seek(to: time)
-    }
-    
-    open func seek(to date: Date,
-                   completionHandler: @escaping (Bool) -> Void) {
-        manager.seek(to: date,
-                     completionHandler: completionHandler)
-    }
-    
-    open func seek(to date: Date) {
-        manager.seek(to: date)
     }
     
     open func seek(toOffset offset: Double) {

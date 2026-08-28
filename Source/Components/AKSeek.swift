@@ -52,6 +52,7 @@ public enum AKSeekPosition: Hashable {
 }
 
 public struct AKSeek: Equatable, Hashable {
+    public let id = UUID()
     public let position: AKSeekPosition
     public let toleranceBefore: CMTime
     public let toleranceAfter: CMTime
@@ -68,10 +69,10 @@ public struct AKSeek: Equatable, Hashable {
     }
     
     public static func == (lhs: Self, rhs: Self) -> Bool {
-        lhs.position.time == rhs.position.time
+        lhs.id == rhs.id
     }
     
     public func hash(into hasher: inout Hasher) {
-        hasher.combine(position.time)
+        hasher.combine(id)
     }
 }

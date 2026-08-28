@@ -55,16 +55,18 @@ public class AKLoadedState: AKBaseState {
     public override func processStateChange() {
         startObservingPlayerProperties()
         
-        playerController.delegate?.playerController(playerController,
-                                                    didChangeCurrentTimeTo: playerController.currentTime,
-                                                    for: playerController.currentMedia!)
+        if let currentMedia = playerController.currentMedia {
+            playerController.delegate?.playerController(playerController,
+                                                        didChangeCurrentTimeTo: playerController.currentTime,
+                                                        for: currentMedia)
+        }
         if autoPlay {
             play()
-        } else if let position = position {
-            let result = playerController.currentMedia!.canSeek(to: position)
-            guard result.flag else {
+        } else if let position = position, let currentMedia = playerController.currentMedia {
+            let (flag, reason) = currentMedia.seekingThroughMedia.canSeek(to: position)
+            guard flag else {
                 playerController.delegate?.playerController(playerController,
-                                                            didEncounterUnavailableAction: result.reason!)
+                                                            didEncounterUnavailableAction: reason!)
                 return
             }
             seek(to: position)
@@ -82,7 +84,8 @@ public class AKLoadedState: AKBaseState {
     }
     
     public override func play(at rate: AKPlaybackRate) {
-        guard playerController.currentMedia!.canPlay(at: rate) else {
+        guard let currentMedia = playerController.currentMedia,
+              playerController.currentMedia!.canPlay(at: rate) else {
             playerController.delegate?.playerController(playerController,
                                                         didEncounterUnavailableAction: .canNotPlayAtSpecifiedRate)
             return

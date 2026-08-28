@@ -29,7 +29,7 @@ public struct AKPlayerConfiguration: AKPlayerConfigurationProtocol {
     
     // MARK: - Properties
     
-    public var periodicTimeInterval: AKTimeEventFrequency = .everyHalfSecond
+    public var periodicTimeInterval: AKTimeEventFrequency = .everyQuarterSecond
     
     public var preferredTimeScale: CMTimeScale = CMTimeScale(NSEC_PER_SEC)
     

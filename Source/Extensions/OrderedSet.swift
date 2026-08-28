@@ -41,6 +41,10 @@ public struct OrderedSet<Element: Hashable>: Sequence {
         return elements.count
     }
     
+    public var isEmpty: Bool {
+        return elements.count == 0
+    }
+    
     init() {
         elements = []
         set = Set()

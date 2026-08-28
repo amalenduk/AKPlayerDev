@@ -44,8 +44,6 @@ public protocol AKPlayerActionsProtocol {
     func seek(to time: CMTime)
     func seek(to time: Double, completionHandler: @escaping (Bool) -> Void)
     func seek(to time: Double)
-    func seek(to date: Date, completionHandler: @escaping (Bool) -> Void)
-    func seek(to date: Date)
     func seek(toOffset offset: Double)
     func seek(toOffset offset: Double, completionHandler: @escaping (Bool) -> Void)
     func seek(toPercentage percentage: Double, completionHandler: @escaping (Bool) -> Void)

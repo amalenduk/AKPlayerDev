@@ -68,7 +68,7 @@ public protocol AKPlayerManagerProtocol: AKPlayerProtocol, AKPlayerActionsProtoc
     func canPlay() -> Bool
     func updateNowPlayingControl()
     func setNowPlayingInfo()
-    func handleRemoteCommand(_ command: AKRemoteCommand, 
+    func handleRemoteCommand(_ command: AKRemoteCommand,
                              with event: MPRemoteCommandEvent) -> MPRemoteCommandHandlerStatus
 }
 
@@ -84,7 +84,7 @@ public enum AKPlaybackInterruptionReason: uint {
     case applicationEnteredBackground
     
     var isLifeCycleEvent: Bool {
-        return self == .applicationEnteredBackground 
+        return self == .applicationEnteredBackground
         || self == .applicationResignActive
     }
 }

@@ -32,8 +32,10 @@ public protocol AKMediaManagerProtocol: NSObjectProtocol {
     var playerItem: AVPlayerItem? { get }
     var error: AKPlayerError? { get }
     var state: AKPlayableState { get }
-
+    
     var statePublisher: AnyPublisher<AKPlayableState, Never> { get }
+    var seekingThroughMediaService: AKSeekingThroughMediaServiceProtocol { get }
+    var trackSelectionService: AKTrackSelectionServiceProtocol { get }
     
     func createAsset()
     func createPlayerItemFromAsset()
@@ -47,6 +49,7 @@ public protocol AKMediaManagerProtocol: NSObjectProtocol {
     
     func canStep(by count: Int) -> Bool
     func canPlay(at rate: AKPlaybackRate) -> Bool
+    func canSeek(to time: CMTime) -> Bool
     func canSeek(to time: CMTime) -> (flag: Bool,
                                       reason: AKPlayerUnavailableCommandReason?)
 }

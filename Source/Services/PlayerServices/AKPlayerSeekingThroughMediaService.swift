@@ -28,10 +28,11 @@ import AVKit
 public protocol AKPlayerSeekingThroughMediaServiceProtocol: AnyObject {
     var player: AVPlayer { get }
     var pendingSeeks: OrderedSet<AKSeek> { get }
-    var seekPosition: AKSeekPosition? { get }
+    var lastRequestedSeekPosition: AKSeekPosition? { get }
     var isSeeking: Bool { get }
     
     func seek(to seek: AKSeek)
+    func cancelAll()
 }
 
 open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServiceProtocol {
@@ -42,9 +43,16 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
     
     public private(set) var pendingSeeks = OrderedSet<AKSeek>()
     
-    open var seekPosition: AKSeekPosition? { pendingSeeks.last?.position }
+    private var activeSeek: AKSeek?
+    private var requestedSeekPosition: AKSeekPosition?
     
-    open var isSeeking: Bool { !(seekPosition == nil) }
+    open var lastRequestedSeekPosition: AKSeekPosition? {
+        requestedSeekPosition
+    }
+    
+    open var isSeeking: Bool {
+        activeSeek != nil || !pendingSeeks.isEmpty
+    }
     
     // MARK: - Init
     
@@ -52,75 +60,98 @@ open class AKPlayerSeekingThroughMediaService: AKPlayerSeekingThroughMediaServic
         self.player = player
     }
     
-    deinit { }
+    // MARK: - Public API
     
     open func seek(to seek: AKSeek) {
-        self.seek(to: seek.position,
-                  toleranceBefore: seek.toleranceBefore,
-                  toleranceAfter: seek.toleranceAfter,
-                  completionHandler: seek.completionHandler)
-    }
-    
-    private func seek(to position: AKSeekPosition,
-                      toleranceBefore: CMTime = .positiveInfinity,
-                      toleranceAfter: CMTime = .positiveInfinity,
-                      completionHandler: ((Bool) -> Void)? = nil) {
         guard player.currentItem != nil else {
-            completionHandler?(false)
+            requestedSeekPosition = nil
+            seek.completionHandler?(false)
             return
         }
         
-        let seek = AKSeek(position: position,
-                          toleranceBefore: toleranceBefore,
-                          toleranceAfter: toleranceAfter,
-                          completionHandler: completionHandler)
+        requestedSeekPosition = seek.position
         
+        // Always store the newest requested seek
         pendingSeeks.insert(seek)
         
-        guard pendingSeeks.count == 1 else {
+        // If no seek is actively being processed by AVPlayer, start immediately
+        if activeSeek == nil {
+            performNextSeek()
+        }
+    }
+
+    open func cancelAll() {
+        activeSeek?.completionHandler?(false)
+        activeSeek = nil
+        
+        while let seek = pendingSeeks.first {
+            pendingSeeks.removeFirst()
+            seek.completionHandler?(false)
+        }
+        requestedSeekPosition = nil
+    }
+    
+    // MARK: - Private Pipeline
+    
+    private func performNextSeek() {
+        // Grab the LATEST requested seek (skip all intermediate seeks)
+        guard let latestSeek = pendingSeeks.last else {
+            activeSeek = nil
+            requestedSeekPosition = nil
             return
         }
         
-        enqueue(seek: seek)
+        // Cancel and notify all skipped intermediate seeks with `false`
+        while let seekToCancel = pendingSeeks.first, seekToCancel != latestSeek {
+            pendingSeeks.removeFirst()
+            seekToCancel.completionHandler?(false)
+        }
+        
+        // Mark the current active seek and remove from pending queue
+        activeSeek = latestSeek
+        pendingSeeks.remove(latestSeek)
+        
+        // Dispatch to AVPlayer
+        enqueue(seek: latestSeek)
     }
     
     private func enqueue(seek: AKSeek) {
+        let completion: (Bool) -> Void = { [weak self] finished in
+            // Ensure thread safety on main thread
+            if Thread.isMainThread {
+                self?.handleSeekCompletion(for: seek, finished: finished)
+            } else {
+                DispatchQueue.main.async {
+                    self?.handleSeekCompletion(for: seek, finished: finished)
+                }
+            }
+        }
+        
         switch seek.position {
         case .time(let cmTime):
             player.seek(to: cmTime,
                         toleranceBefore: seek.toleranceBefore,
-                        toleranceAfter: seek.toleranceAfter) { [weak self] finished in
-                guard let self = self else { return }
-                process(seek: seek, finished: finished)
-            }
+                        toleranceAfter: seek.toleranceAfter,
+                        completionHandler: completion)
         case .date(let date):
-            player.seek(to: date) { [weak self] finished in
-                guard let self = self else { return }
-                process(seek: seek, finished: finished)
-            }
+            player.seek(to: date, completionHandler: completion)
         }
     }
     
-    private func process(seek: AKSeek, finished: Bool) {
-        if let targetSeek = pendingSeeks.last,
-           !(seek == targetSeek) {
-            while let pendingSeek = pendingSeeks.first,
-                  !(pendingSeek == targetSeek) {
-                pendingSeeks.removeFirst()
-                pendingSeek.completionHandler?(true)
-            }
-            if finished  {
-                enqueue(seek: targetSeek)
-            }
-        } else if finished {
-            seek.completionHandler?(finished)
-            pendingSeeks.removeAll()
+    private func handleSeekCompletion(for completedSeek: AKSeek, finished: Bool) {
+        // Only process if this completion corresponds to our active seek
+        guard activeSeek == completedSeek else { return }
+        
+        // Notify completion for the seek that just finished
+        completedSeek.completionHandler?(finished)
+        activeSeek = nil
+        
+        if !pendingSeeks.isEmpty {
+            // New seeks arrived while AVPlayer was busy; execute the newest one
+            performNextSeek()
         } else {
-            pendingSeeks.remove(seek)
-            seek.completionHandler?(false)
-            if let targetSeek = pendingSeeks.last {
-                enqueue(seek: targetSeek) // Was seek
-            }
+            // Queue is completely clean
+            requestedSeekPosition = nil
         }
     }
 }

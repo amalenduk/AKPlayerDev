@@ -181,14 +181,6 @@ extension AKVideoPlayer: AKPlayerActionsProtocol {
         player.seek(to: time)
     }
     
-    public func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        player.seek(to: date, completionHandler: completionHandler)
-    }
-    
-    public func seek(to date: Date) {
-        player.seek(to: date)
-    }
-    
     public func seek(toOffset offset: Double) {
         player.seek(to: offset)
     }

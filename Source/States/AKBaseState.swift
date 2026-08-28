@@ -27,6 +27,7 @@
 import Foundation
 import AVFoundation
 import Combine
+import Network
 
 public enum AKPlayerAction {
     case load
@@ -183,18 +184,37 @@ open class AKBaseState: AKPlayerStateControllerProtocol {
     
     public func seek(to time: CMTime,
                      completionHandler: @escaping (Bool) -> Void) {
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: state.isPlaying || autoPlay)
-        controller.seek(to: time,
-                        completionHandler: completionHandler)
-        change(controller)
+        performIfAllowed(check: { [unowned self] in
+            return availability(for: .seek(to: time))
+        }, action: { [weak self] in
+            guard let s = self else { completionHandler(false); return }
+            let controller = AKBufferingState(playerController: s.playerController,
+                                              autoPlay: s.state.isPlaying || s.autoPlay)
+            controller.seek(to: time,
+                            completionHandler: completionHandler)
+            s.change(controller)
+        }, blocked: { [weak self] reason in
+            completionHandler(false)
+            guard let s = self else { return }
+            s.playerController.delegate?.playerController(s.playerController,
+                                                          didEncounterUnavailableAction: reason)
+        })
     }
     
     public func seek(to time: CMTime) {
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: state.isPlaying || autoPlay)
-        controller.seek(to: time)
-        change(controller)
+        performIfAllowed(check: { [unowned self] in
+            return availability(for: .seek(to: time))
+        }, action: { [weak self] in
+            guard let s = self else { return }
+            let controller = AKBufferingState(playerController: s.playerController,
+                                              autoPlay: s.state.isPlaying || s.autoPlay)
+            controller.seek(to: time)
+            s.change(controller)
+        }, blocked: { [weak self] reason in
+            guard let s = self else { return }
+            s.playerController.delegate?.playerController(s.playerController,
+                                                          didEncounterUnavailableAction: reason)
+        })
     }
     
     public func seek(to time: Double,
@@ -208,22 +228,6 @@ open class AKBaseState: AKPlayerStateControllerProtocol {
         let time = CMTime(seconds: time,
                           preferredTimescale: playerController.configuration.preferredTimeScale)
         seek(to: time)
-    }
-    
-    public func seek(to date: Date,
-                     completionHandler: @escaping (Bool) -> Void) {
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: state.isPlaying || autoPlay)
-        controller.seek(to: date,
-                        completionHandler: completionHandler)
-        change(controller)
-    }
-    
-    public func seek(to date: Date) {
-        let controller = AKBufferingState(playerController: playerController,
-                                          autoPlay: state.isPlaying || autoPlay)
-        controller.seek(to: date)
-        change(controller)
     }
     
     public func seek(toOffset offset: Double) {
@@ -291,8 +295,8 @@ open class AKBaseState: AKPlayerStateControllerProtocol {
     }
     
     public func performIfAllowed(check: @escaping () -> (Bool, AKPlayerUnavailableCommandReason?),
-                               action: @escaping () -> Void,
-                               blocked: ((AKPlayerUnavailableCommandReason) -> Void)? = nil) {
+                                 action: @escaping () -> Void,
+                                 blocked: ((AKPlayerUnavailableCommandReason) -> Void)? = nil) {
         // controller-level preflight could be added here if needed
         let result = check()
         guard result.0 else {
@@ -312,11 +316,11 @@ open class AKBaseState: AKPlayerStateControllerProtocol {
         case .seek(to: let time):
             guard let currentMedia = playerController.currentMedia else { return (false, .loadMediaFirst)}
             
-            let result = currentMedia.canSeek(to: time)
+            let (flag, reason) = currentMedia.seekingThroughMedia.canSeek(to: time)
             
             return (
-                allowed: result.flag,
-                reason: result.reason
+                allowed: flag,
+                reason: reason
             )
         case .step(by: let count):
             guard let currentMedia = playerController.currentMedia else { return (false, .loadMediaFirst)}
@@ -334,6 +338,19 @@ open class AKBaseState: AKPlayerStateControllerProtocol {
             // canStep() default: allow, concrete state can check media.canStep(by:) if needed
             return (true, .none)
         }
+    }
+    
+    public func observeNetworkStatus(in subscriptions: inout Set<AnyCancellable>,
+                                     handler: @escaping (NWPath.Status) -> Void) {
+        // Automatically skip network tracking for local files
+        guard let currentMedia = playerController.currentMedia, currentMedia.isOverNetwork() else { return }
+        
+        playerController.networkStatusMonitor.networkStatusPublisher
+            .receive(on: DispatchQueue.main)
+            .sink { status in
+                handler(status)
+            }
+            .store(in: &subscriptions)
     }
     
     private func startLoad(media: AKPlayable, autoPlay: Bool, at position: CMTime? = nil) {

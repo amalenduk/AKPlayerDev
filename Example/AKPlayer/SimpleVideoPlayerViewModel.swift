@@ -198,16 +198,16 @@ extension SimpleVideoPlayerViewModel: AKPlayerDelegate {
 }
 
 extension SimpleVideoPlayerViewModel: AKMediaDelegate {
-    public func akMedia(_ media: AKPlayable, didChangeItemDuration itemDuration: CMTime) {
+    public func akMedia(_ media: AKPlayable, didChangeItemDurationTo itemDuration: CMTime) {
         DispatchQueue.main.async {
             if itemDuration.isNumeric && itemDuration.seconds.isFinite {
                 self.duration = itemDuration.seconds
             }
         }
     }
-    public func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatus canStepForward: Bool) {}
-    public func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatus canStepBackward: Bool) {}
-    public func akMedia(_ media: AKPlayable, didChangeLoadedTimeRanges loadedTimeRanges: [NSValue]) {
+    public func akMedia(_ media: AKPlayable, didChangeCanStepForwardStatusTo canStepForward: Bool) {}
+    public func akMedia(_ media: AKPlayable, didChangeCanStepBackwardStatusTo canStepBackward: Bool) {}
+    public func akMedia(_ media: AKPlayable, didChangeLoadedTimeRangesTo loadedTimeRanges: [NSValue]) {
         DispatchQueue.main.async {
             guard self.duration > 0 else { self.bufferedRanges = []; return }
             let ranges = loadedTimeRanges.compactMap { (ns: NSValue) -> ClosedRange<Double>? in
@@ -220,6 +220,5 @@ extension SimpleVideoPlayerViewModel: AKMediaDelegate {
             self.bufferedRanges = ranges
         }
     }
-    public func akMedia(_ media: AKPlayable, didChangeSeekableTimeRanges seekableTimeRanges: [NSValue]) {}
-    public func akPlayback(_ media: AKPlayable, didChangeTracks tracks: [AVPlayerItemTrack]) {}
+    public func akMedia(_ media: AKPlayable, didChangeSeekableTimeRangesTo seekableTimeRanges: [NSValue]) {}
 }

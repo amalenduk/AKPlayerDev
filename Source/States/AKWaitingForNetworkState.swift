@@ -127,16 +127,6 @@ public class AKWaitingForNetworkState: AKBaseState {
         targetSeek = AKSeek(position: .time(time))
     }
     
-    public override func seek(to date: Date,
-                              completionHandler: @escaping (Bool) -> Void) {
-        targetSeek = AKSeek(position: .date(date),
-                            completionHandler: completionHandler)
-    }
-    
-    public override func seek(to date: Date) {
-        targetSeek = AKSeek(position: .date(date))
-    }
-    
     public override func seek(toOffset offset: Double) {
         let time = CMTimeAdd(playerController.currentTime,
                              CMTimeMakeWithSeconds(offset, preferredTimescale: playerController.configuration.preferredTimeScale))
@@ -168,7 +158,7 @@ public class AKWaitingForNetworkState: AKBaseState {
     private func startObservingPlayerStatus() {
         playerController.player.publisher(for: \.status)
             .prepend(playerController.player.status)
-            .receive(on: DispatchQueue.global(qos: .background))
+            .receive(on: DispatchQueue.main)
             .sink { [unowned self] status in
                 guard status == .failed else { return }
                 let controller = AKFailedState(playerController: playerController,
@@ -207,49 +197,48 @@ public class AKWaitingForNetworkState: AKBaseState {
     public override func change(_ controller: AKPlayerStateControllerProtocol) {
         subscriptions.removeAll()
         playerController.change(controller)
+        
         guard let seek = targetSeek,
-              let controller = controller as? AKBufferingState else { return }
+              let bufferingState = controller as? AKBufferingState else { return }
+        
         if let completionHandler = seek.completionHandler {
             switch seek.position {
             case .time(let cmTime):
-                controller.seek(to: cmTime,
-                                toleranceBefore: seek.toleranceBefore,
-                                toleranceAfter: seek.toleranceAfter,
-                                completionHandler: completionHandler)
+                bufferingState.seek(to: cmTime,
+                                    toleranceBefore: seek.toleranceBefore,
+                                    toleranceAfter: seek.toleranceAfter,
+                                    completionHandler: completionHandler)
             case .date(let date):
-                controller.seek(to: date,
-                                completionHandler: completionHandler)
+                break
             }
         } else {
             switch seek.position {
             case .time(let cmTime):
-                controller.seek(to: cmTime,
-                                toleranceBefore: seek.toleranceBefore,
-                                toleranceAfter: seek.toleranceAfter)
+                bufferingState.seek(to: cmTime,
+                                    toleranceBefore: seek.toleranceBefore,
+                                    toleranceAfter: seek.toleranceAfter)
             case .date(let date):
-                controller.seek(to: date)
+                break
             }
         }
     }
     
     private func observeNetworkChanges() {
-        playerController.networkStatusMonitor.networkStatusPublisher
-            .receive(on: DispatchQueue.main)
-            .prepend(playerController.networkStatusMonitor.currentNetworkStatus)
-            .sink { [unowned self] status in
-                if status == .satisfied {
-                    let controller = AKBufferingState(playerController: playerController,
-                                                      autoPlay: autoPlay,
-                                                      rate: rate,
-                                                      stateToNavigateAfterBuffering: stateToNavigateAfterBuffering)
-                    change(controller)
-                }
-            }
-            .store(in: &subscriptions)
+        observeNetworkStatus(in: &subscriptions) { [weak self] status in
+            guard let self, status == .satisfied else { return }
+            
+            // Context is restored back into buffering
+            let controller = AKBufferingState(
+                playerController: self.playerController,
+                autoPlay: self.autoPlay,
+                rate: self.rate,
+                stateToNavigateAfterBuffering: self.stateToNavigateAfterBuffering ?? .paused
+            )
+            self.change(controller)
+        }
     }
     
-    public override func availability(for action: AKPlayerAction)
-    -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
+    public override func availability(for action: AKPlayerAction) -> (allowed: Bool, reason: AKPlayerUnavailableCommandReason?) {
         switch action {
         case .step:
             return (false, .waitingForEstablishedNetwork)

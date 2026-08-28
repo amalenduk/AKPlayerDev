@@ -36,6 +36,7 @@ public enum AKPlayerError: Error, Equatable {
     
     case audioSessionFailure(reason: AudioSessionFailureReason)
     case nowPlayingSessionFailure
+    case trackSelectionFailure(reason: TrackSelectionFailureReason)
     
     public enum AudioSessionFailureReason {
         case failedToActivate(error: Error) // Error occurred while activating audio session.
@@ -59,20 +60,10 @@ public enum AKPlayerError: Error, Equatable {
     public enum PlayerItemFailedToPlayReason {
         case failedToPlayToEndTime(error: Error)
     }
-}
-
-public func == (lhs: AKPlayerError, rhs: AKPlayerError) -> Bool {
-    switch (lhs, rhs) {
-    case (.noItemToPlay, .noItemToPlay),
-        (.playerCanNoLongerPlay, .playerCanNoLongerPlay),
-        (.assetLoadingFailed, .assetLoadingFailed),
-        (.playerItemLoadingFailed, .playerItemLoadingFailed),
-        (.playerItemFailedToPlay, .playerItemFailedToPlay),
-        (.audioSessionFailure, .audioSessionFailure),
-        (.nowPlayingSessionFailure, .nowPlayingSessionFailure):
-        return true
-    default:
-        return false
+    
+    public enum TrackSelectionFailureReason {
+        case emptySelectionForbidden(AKTrackType)
+        case groupLoadFailed(AKTrackType, error: Error?)
     }
 }
 
@@ -195,6 +186,23 @@ extension AKPlayerError.AssetLoadingFailureReason: LocalizedError {
     }
 }
 
+extension AKPlayerError.TrackSelectionFailureReason: LocalizedError {
+    public var localizedDescription: String {
+        switch self {
+        case .emptySelectionForbidden(let type):
+            return NSLocalizedString("Attempted to clear selection for \(type), but the media content forbids empty selection.",
+                                     comment: "Error description for emptySelectionForbidden")
+        case .groupLoadFailed(let type, let error):
+            return NSLocalizedString("Failed to load media selection group for \(type): \(error?.localizedDescription ?? "Unknown error")",
+                                     comment: "Error description for groupLoadFailed")
+        }
+    }
+    
+    public var errorDescription: String? { localizedDescription }
+    public var failureReason: String? { localizedDescription }
+}
+
+
 extension AKPlayerError: LocalizedError {
     
     public var localizedDescription: String {
@@ -219,6 +227,8 @@ extension AKPlayerError: LocalizedError {
         case .nowPlayingSessionFailure:
             return NSLocalizedString("Failed to active now playing session",
                                      comment: "Failed to active now playing session")
+        case .trackSelectionFailure(let reason):
+            return reason.localizedDescription
         }
     }
     
@@ -244,6 +254,8 @@ extension AKPlayerError: LocalizedError {
         case .nowPlayingSessionFailure:
             return NSLocalizedString("Failed to active now playing session",
                                      comment: "Failed to active now playing session")
+        case .trackSelectionFailure(let reason):
+            return reason.localizedDescription
         }
     }
 }
@@ -266,13 +278,14 @@ public extension AKPlayerError.AudioSessionFailureReason {
 public extension AKPlayerError.AssetLoadingFailureReason {
     var underlyingError: Error? {
         switch self {
+        case .notPlayable, .protectedContent:
+            return nil
         case .propertyKeyLoadingFailed(error: let error):
             return error
         case .notConnectedToInternet(error: let error):
             return error
         case .assetInitializationFailed(error: let error):
             return error
-        default: return nil
         }
     }
 }
@@ -282,7 +295,8 @@ public extension AKPlayerError.PlayerItemLoadingFailureReason {
         switch self {
         case .statusLoadingFailed(error: let error):
             return error
-        default: return nil
+        case .invalidAsset:
+            return nil
         }
     }
 }
@@ -296,9 +310,22 @@ public extension AKPlayerError.PlayerItemFailedToPlayReason {
     }
 }
 
+public extension AKPlayerError.TrackSelectionFailureReason {
+    var underlyingError: Error? {
+        switch self {
+        case .emptySelectionForbidden:
+            return nil
+        case .groupLoadFailed(_, let error):
+            return error
+        }
+    }
+}
+
 public extension AKPlayerError {
     var underlyingError: Error? {
         switch self {
+        case .noItemToPlay, .itemFailedToPlayToEndTime, .nowPlayingSessionFailure:
+            return nil
         case .playerCanNoLongerPlay(error: let error):
             return error
         case .assetLoadingFailed(reason: let reason):
@@ -309,7 +336,103 @@ public extension AKPlayerError {
             return reason.underlyingError
         case .audioSessionFailure(reason: let reason):
             return reason.underlyingError
-        default: return nil
+        case .trackSelectionFailure(let reason):
+            return reason.underlyingError
+        }
+    }
+}
+
+public func == (lhs: AKPlayerError, rhs: AKPlayerError) -> Bool {
+    switch (lhs, rhs) {
+    case (.noItemToPlay, .noItemToPlay),
+        (.itemFailedToPlayToEndTime, .itemFailedToPlayToEndTime),
+        (.nowPlayingSessionFailure, .nowPlayingSessionFailure):
+        return true
+        
+    case (.playerCanNoLongerPlay, .playerCanNoLongerPlay):
+        // Error isn't Equatable, so we can only confirm both sides carry
+        // the same case, not that the wrapped errors are identical.
+        return true
+        
+    case (.assetLoadingFailed(let lReason), .assetLoadingFailed(let rReason)):
+        return lReason == rReason
+        
+    case (.playerItemLoadingFailed(let lReason), .playerItemLoadingFailed(let rReason)):
+        return lReason == rReason
+        
+    case (.playerItemFailedToPlay(let lReason), .playerItemFailedToPlay(let rReason)):
+        return lReason == rReason
+        
+    case (.audioSessionFailure(let lReason), .audioSessionFailure(let rReason)):
+        return lReason == rReason
+        
+    default:
+        return false
+    }
+}
+
+extension AKPlayerError.AudioSessionFailureReason: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.failedToActivate, .failedToActivate),
+            (.failedToDeactivate, .failedToDeactivate),
+            (.failedToSetCategory, .failedToSetCategory):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+extension AKPlayerError.AssetLoadingFailureReason: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.notPlayable, .notPlayable),
+            (.protectedContent, .protectedContent),
+            (.propertyKeyLoadingFailed, .propertyKeyLoadingFailed),
+            (.notConnectedToInternet, .notConnectedToInternet),
+            (.assetInitializationFailed, .assetInitializationFailed):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+extension AKPlayerError.PlayerItemLoadingFailureReason: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.statusLoadingFailed, .statusLoadingFailed),
+            (.invalidAsset, .invalidAsset):
+            return true
+        default:
+            return false
+        }
+    }
+}
+
+extension AKPlayerError.PlayerItemFailedToPlayReason: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.failedToPlayToEndTime, .failedToPlayToEndTime):
+            return true
+        }
+    }
+}
+
+extension AKPlayerError.TrackSelectionFailureReason: Equatable {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
+        switch (lhs, rhs) {
+        case (.emptySelectionForbidden(let lType), .emptySelectionForbidden(let rType)):
+            return lType == rType
+            
+        case (.groupLoadFailed(let lType, _), .groupLoadFailed(let rType, _)):
+            // Error isn't Equatable, so we compare the track types
+            // and verify both cases match (mirroring playerCanNoLongerPlay)
+            return lType == rType
+            
+        default:
+            return false
         }
     }
 }

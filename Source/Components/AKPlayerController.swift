@@ -69,8 +69,8 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         return playerSeekingThroughMediaService.isSeeking
     }
     
-    open var seekPosition: AKSeekPosition? {
-        return playerSeekingThroughMediaService.seekPosition
+    open var lastRequestedSeekPosition: AKSeekPosition? {
+        return playerSeekingThroughMediaService.lastRequestedSeekPosition
     }
     
     open var volume: Float {
@@ -252,15 +252,6 @@ open class AKPlayerController: AKPlayerControllerProtocol {
         controller.seek(to: time)
     }
     
-    open func seek(to date: Date, completionHandler: @escaping (Bool) -> Void) {
-        controller.seek(to: date,
-                        completionHandler: completionHandler)
-    }
-    
-    open func seek(to date: Date) {
-        controller.seek(to: date)
-    }
-    
     open func seek(toOffset offset: Double) {
         controller.seek(toOffset: offset)
     }
@@ -420,11 +411,14 @@ extension AKPlayerController {
         DispatchQueue.main.async {
             self.player.pause()
             self.player.seek(to: .zero)
+            self.playerSeekingThroughMediaService.cancelAll()
         }
     }
 
     public func performSeek(to targetSeek: AKSeek) {
-        playerSeekingThroughMediaService.seek(to: targetSeek)
+        DispatchQueue.main.async {
+            self.playerSeekingThroughMediaService.seek(to: targetSeek)
+        }
     }
 
     public func performStep(by count: Int) {

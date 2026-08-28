@@ -81,10 +81,12 @@ open class AKPlayerItemInitService: AKPlayerItemInitServiceProtocol {
     }
     
     open func validateAssetPlayability() async throws {
-        assert(!(asset == nil),
-               "Asset must be created before calling this function.")
+        guard let asset = asset else {
+            assertionFailure("Asset must be created before calling this function.")
+            return
+        }
         do {
-            let (isPlayable, hasProtectedContent) = try await asset!.load(.isPlayable,
+            let (isPlayable, hasProtectedContent) = try await asset.load(.isPlayable,
                                                                           .hasProtectedContent)
             try verifyPlayability(isPlayable: isPlayable,
                                   hasProtectedContent: hasProtectedContent)

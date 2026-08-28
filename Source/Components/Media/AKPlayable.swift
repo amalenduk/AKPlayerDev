@@ -57,11 +57,15 @@ public extension AKPlayable {
 }
 
 public extension AKPlayable {
+    /// Returns `true` if the URL represents a local file on disk.
     func isLocal() -> Bool {
-        return true
+        return url.isFileURL
     }
     
+    /// Returns `true` if the URL scheme points to a remote network resource (HTTP, HTTPS, HLS, RTMP, etc.).
     func isOverNetwork() -> Bool {
-        return true
+        guard !url.isFileURL else { return false }
+        guard let scheme = url.scheme?.lowercased() else { return false }
+        return ["http", "https", "rtsp", "rtmp"].contains(scheme)
     }
 }

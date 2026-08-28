@@ -28,8 +28,7 @@ import Network
 import Combine
 
 public protocol AKNetworkStatusMonitorProtocol {
-    var networkPathMonitor: NWPathMonitor { get }
-    var currentPath: NWPath { get }
+    var currentPath: NWPath? { get }
     var currentNetworkStatus: NWPath.Status { get }
     var isConnected: Bool { get }
     var networkStatusPublisher: AnyPublisher<NWPath.Status, Never> { get }
@@ -42,56 +41,63 @@ open class AKNetworkStatusMonitor: AKNetworkStatusMonitorProtocol {
     
     // MARK: - Properties
     
-    public let networkPathMonitor: NWPathMonitor
-    
+    private var networkPathMonitor: NWPathMonitor?
     private var isObserving = false
+    private let monitorQueue = DispatchQueue(label: "com.akplayer.networkmonitor", qos: .utility)
     
-    public var currentPath: NWPath {
-        return networkPathMonitor.currentPath
+    // Track the latest confirmed path state safely
+    private var latestPath: NWPath?
+    
+    public var currentPath: NWPath? {
+        return networkPathMonitor?.currentPath ?? latestPath
     }
     
     public var currentNetworkStatus: NWPath.Status {
-        return currentPath.status
+        return currentPath?.status ?? .requiresConnection
     }
     
     public var isConnected: Bool {
         return currentNetworkStatus == .satisfied
     }
     
-    private var networkStatusSubject: PassthroughSubject<NWPath.Status, Never> = PassthroughSubject<NWPath.Status, Never>()
+    private let networkStatusSubject = CurrentValueSubject<NWPath.Status, Never>(.requiresConnection)
     
     public var networkStatusPublisher: AnyPublisher<NWPath.Status, Never> {
-        return networkStatusSubject.eraseToAnyPublisher()
+        return networkStatusSubject
+            .removeDuplicates()
+            .eraseToAnyPublisher()
     }
     
     // MARK: - Init
     
-    public init() {
-        self.networkPathMonitor = NWPathMonitor()
-        
-        networkPathMonitor.pathUpdateHandler = { [unowned self] path in
-            networkStatusSubject.send(path.status)
-        }
-    }
+    public init() {}
     
     deinit {
         stopObserving()
     }
     
+    // MARK: - Control Methods
+    
     open func startObserving() {
         guard !isObserving else { return }
         
-        networkPathMonitor.start(queue: DispatchQueue.global(qos: .background))
+        let monitor = NWPathMonitor()
         
+        monitor.pathUpdateHandler = { [weak self] path in
+            self?.latestPath = path
+            self?.networkStatusSubject.send(path.status)
+        }
+        
+        self.networkPathMonitor = monitor
+        monitor.start(queue: monitorQueue)
         isObserving = true
     }
     
     open func stopObserving() {
         guard isObserving else { return }
         
-        networkPathMonitor.cancel()
-        
+        networkPathMonitor?.cancel()
+        networkPathMonitor = nil
         isObserving = false
     }
 }
-

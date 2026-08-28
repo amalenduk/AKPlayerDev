@@ -25,39 +25,57 @@
 
 import AVFoundation
 
-public protocol AKSeekingThroughMediaServiceProtocol {
-    var playerItem: AVPlayerItem { get }
-    
-    func canSeek(to time: CMTime) -> (flag: Bool,
-                                      reason: AKPlayerUnavailableCommandReason?)
-    func isTimeInRanges(_ time: CMTime,
-                        _ ranges: [CMTimeRange]) -> Bool
-    
+import AVFoundation
+
+public protocol AKSeekingThroughMediaServiceProtocol: Sendable {
+    func canSeek(to time: CMTime) -> Bool
+    func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?)
+    func isTimeInRanges(_ time: CMTime, _ ranges: [CMTimeRange]) -> Bool
     func getRangesAvailable() -> [CMTimeRange]
 }
 
-open class AKSeekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
+public final class AKSeekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
     
     // MARK: - Properties
     
-    public let playerItem: AVPlayerItem
+    private let playerItemProvider: @Sendable () -> AVPlayerItem?
     
-    // MARK: - Init
-    
-    public init(with playerItem: AVPlayerItem) {
-        self.playerItem = playerItem
+    private var playerItem: AVPlayerItem? {
+        playerItemProvider()
     }
     
-    deinit { }
+    // MARK: - Init & Deinit
     
-    // MARK: - Additional Helper Functions
+    public init(playerItemProvider: @escaping @Sendable () -> AVPlayerItem?) {
+        self.playerItemProvider = playerItemProvider
+    }
     
-    open func canSeek(to time: CMTime) -> (flag: Bool,
-                                           reason: AKPlayerUnavailableCommandReason?) {
+    // MARK: - Public API
+    
+    public func canSeek(to time: CMTime) -> Bool {
+        guard let playerItem = playerItem else { return false }
         
-        guard time.isValid
-                && time.isNumeric
-                && CMTimeGetSeconds(time) >= 0 else { return (false, .seekPositionNotAvailable)}
+        guard time.isValid && time.isNumeric && CMTimeGetSeconds(time) >= 0 else {
+            return false
+        }
+        
+        let duration = CMTimeGetSeconds(playerItem.duration)
+        guard duration.isNormal else {
+            let ranges = getRangesAvailable()
+            return isTimeInRanges(time, ranges)
+        }
+        
+        return CMTimeGetSeconds(time) < duration
+    }
+    
+    public func canSeek(to time: CMTime) -> (flag: Bool, reason: AKPlayerUnavailableCommandReason?) {
+        guard let playerItem = playerItem else {
+            return (false, .waitTillMediaLoaded)
+        }
+        
+        guard time.isValid && time.isNumeric && CMTimeGetSeconds(time) >= 0 else {
+            return (false, .seekPositionNotAvailable)
+        }
         
         let duration = CMTimeGetSeconds(playerItem.duration)
         guard duration.isNormal else {
@@ -65,17 +83,19 @@ open class AKSeekingThroughMediaService: AKSeekingThroughMediaServiceProtocol {
             return isTimeInRanges(time, ranges) ? (true, nil) : (false, .seekPositionNotAvailable)
         }
         
-        guard CMTimeGetSeconds(time) < duration else { return (false, .seekOverstepPosition) }
+        guard CMTimeGetSeconds(time) < duration else {
+            return (false, .seekOverstepPosition)
+        }
         
         return (true, nil)
     }
     
-    open func isTimeInRanges(_ time: CMTime,
-                             _ ranges: [CMTimeRange]) -> Bool {
-        return ranges.filter({$0.containsTime(time)}).count > 0
+    public func isTimeInRanges(_ time: CMTime, _ ranges: [CMTimeRange]) -> Bool {
+        return ranges.contains { $0.containsTime(time) }
     }
     
-    open func getRangesAvailable() -> [CMTimeRange] {
+    public func getRangesAvailable() -> [CMTimeRange] {
+        guard let playerItem = playerItem else { return [] }
         let ranges = playerItem.seekableTimeRanges + playerItem.loadedTimeRanges
         return ranges.map { $0.timeRangeValue }
     }
